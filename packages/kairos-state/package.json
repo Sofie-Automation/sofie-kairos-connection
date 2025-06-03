@@ -1,0 +1,5 @@
+{
+  "name": "kairos-state",
+	"license": "MIT",
+  "packageManager": "yarn@4.9.1"
+}
