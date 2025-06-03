@@ -3,6 +3,10 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
 	test: {
-		// ... Specify options here.
+		environment: 'node',
+		coverage: {
+			provider: 'v8',
+			include: ['**/src/**/*.ts', '!**/node_modules/**'],
+		},
 	},
 })

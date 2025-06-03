@@ -85,7 +85,7 @@ jobs:
         if: ${{ steps.do-publish.outputs.publish }}
         run: |
           PRERELEASE_TAG=nightly-$(echo "${{ github.ref_name }}" | sed -r 's/[^a-z0-9]+/-/gi')
-          yarn release --prerelease $PRERELEASE_TAG # TODO - does this work with monorepo?
+          yarn release --prerelease $PRERELEASE_TAG
           yarn build
         env:
           CI: true
