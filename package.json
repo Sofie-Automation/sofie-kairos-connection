@@ -18,6 +18,7 @@
     "node": ">= 20"
   },
   "scripts": {
+    "prepare": "husky",
     "build": "(rimraf packages/*/dist packages/*/*.tsbuildinfo || true) && run build:main",
     "build:main": "tsc --build tsconfig.build.json --force",
     "build:watch": "run build:main --watch",
@@ -26,7 +27,9 @@
     "lint-fix": "run lint --fix",
     "test": "run lint && vitest --run",
     "unit": "vitest",
-    "prepare": "husky"
+    "docs": "run docs:html",
+    "docs:test": "run docs:html",
+    "docs:html": "typedoc --tsconfig tsconfig.build.json"
   },
   "devDependencies": {
     "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#feat/support-vite-testrunner",
@@ -36,6 +39,7 @@
     "lint-staged": "^16.1.0",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
+    "typedoc": "^0.28.5",
     "typescript": "~5.7.3",
     "vitest": "^3.2.0"
   },

@@ -1,0 +1,11 @@
+{
+	"entryPointStrategy": "packages",
+	"entryPoints": ["packages/*"],
+	"packageOptions": {
+		"entryPoints": ["src/main.ts"],
+		"compilerOptions": {
+			// Vitest causes some errors
+			"skipLibCheck": true
+		}
+	}
+}
