@@ -29,9 +29,8 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@sofie-automation/code-standard-preset": "^3.0.0",
+    "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#feat/support-vite-testrunner",
     "@types/node": "^22.15.29",
-    "@vitest/eslint-plugin": "^1.2.1",
     "eslint": "^9.28.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.0",

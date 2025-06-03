@@ -555,11 +555,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sofie-automation/code-standard-preset@npm:^3.0.0":
+"@sofie-automation/code-standard-preset@https://github.com/Sofie-Automation/sofie-code-standard-preset#feat/support-vite-testrunner":
   version: 3.0.0
-  resolution: "@sofie-automation/code-standard-preset@npm:3.0.0"
+  resolution: "@sofie-automation/code-standard-preset@https://github.com/Sofie-Automation/sofie-code-standard-preset.git#commit=817020c38254ab0d5d9ab868cfdab89e750f0079"
   dependencies:
     "@sofie-automation/eslint-plugin": "npm:0.2.0"
+    "@vitest/eslint-plugin": "npm:^1.2.1"
     date-fns: "npm:^4.1.0"
     eslint-config-prettier: "npm:^10.0.1"
     eslint-plugin-jest: "npm:^28.11.0"
@@ -577,7 +578,7 @@ __metadata:
   bin:
     sofie-licensecheck: ./bin/checkLicenses.mjs
     sofie-version: ./bin/updateVersion.mjs
-  checksum: 10c0/8937842081722fbb6af661f4ff09a6aed6b6c6999d18c0b0ea4dcb85e5c75677ddafb9928e08b5bea9f3560dd4d7d3ae3e50d21635ac12331caeb5d0635d609a
+  checksum: 10c0/3dd7155ce3f688aaee775d90291df1352848cedc55bc107633ac9cc8cbae691b6645a5c8c97b432a78b5a52f22d10455c6f433830d5a4a3fa3e7906083b8001f
   languageName: node
   linkType: hard
 
@@ -3309,9 +3310,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "sofie-kairos-connection@workspace:."
   dependencies:
-    "@sofie-automation/code-standard-preset": "npm:^3.0.0"
+    "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#feat/support-vite-testrunner"
     "@types/node": "npm:^22.15.29"
-    "@vitest/eslint-plugin": "npm:^1.2.1"
     eslint: "npm:^9.28.0"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.1.0"
