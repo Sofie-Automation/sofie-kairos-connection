@@ -2,5 +2,5 @@ import { expect, test } from 'vitest'
 import { hello } from '../main.js'
 
 test('check export', () => {
-  expect(hello).toBe('world')
+	expect(hello).toBe('world')
 })

@@ -3,12 +3,12 @@
   "version": "0.0.1",
   "license": "MIT",
   "packageManager": "yarn@4.9.1",
-	"exports": {
-		".": {
-			"import": "./dist/main.js",
-			"require": "./dist/main.js"
-		}
-	},
+  "exports": {
+    ".": {
+      "import": "./dist/main.js",
+      "require": "./dist/main.js"
+    }
+  },
   "engines": {
     "node": ">= 20"
   }
