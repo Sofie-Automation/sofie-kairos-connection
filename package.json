@@ -3,6 +3,14 @@
   "license": "MIT",
   "packageManager": "yarn@4.9.1",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sofie-Automation/sofie-kairos-connection.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sofie-Automation/sofie-kairos-connection/issues"
+  },
+  "homepage": "https://github.com/Sofie-Automation/sofie-kairos-connection#readme",
   "workspaces": [
     "packages/*"
   ],

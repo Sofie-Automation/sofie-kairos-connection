@@ -11,5 +11,10 @@
   },
   "engines": {
     "node": ">= 20"
-  }
+  },
+  "files": [
+    "/CHANGELOG.md",
+    "/dist"
+  ],
+  "dependencies": {}
 }
