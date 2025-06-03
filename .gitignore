@@ -6,3 +6,6 @@
 !.yarn/versions
 !.yarn/cache
 node_modules
+
+packages/*/dist/
+*.tsbuildinfo

@@ -1,5 +1,12 @@
 {
   "name": "kairos-state",
-	"license": "MIT",
-  "packageManager": "yarn@4.9.1"
+  "version": "0.0.1",
+  "license": "MIT",
+  "packageManager": "yarn@4.9.1",
+  "engines": {
+    "node": ">= 20"
+  },
+  "dependencies": {
+    "kairos-connection": "0.0.1"
+  }
 }

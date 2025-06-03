@@ -1,0 +1,8 @@
+{
+	"files": [],
+	"references": [
+		//
+		{ "path": "./packages/kairos-connection" },
+		{ "path": "./packages/kairos-state" },
+	]
+}
