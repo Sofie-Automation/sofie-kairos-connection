@@ -21,18 +21,32 @@
     "build": "(rimraf packages/*/dist packages/*/*.tsbuildinfo || true) && run build:main",
     "build:main": "tsc --build tsconfig.build.json --force",
     "build:watch": "run build:main --watch",
-    "test": "vitest",
-    "test:once": "vitest --run",
+    "lint:raw": "run eslint --ext .ts --ext .js --ext .tsx --ext .jsx ",
+    "lint": "run lint:raw .",
+    "lint-fix": "run lint --fix",
+    "test": "run lint && vitest --run",
+    "unit": "vitest",
     "prepare": "husky"
   },
   "devDependencies": {
     "@sofie-automation/code-standard-preset": "^3.0.0",
     "@types/node": "^22.15.29",
+    "@vitest/eslint-plugin": "^1.2.1",
     "eslint": "^9.28.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
     "typescript": "~5.7.3",
     "vitest": "^3.2.0"
   },
-  "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json"
+  "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
+  "lint-staged": {
+    "*.{css,json,md,scss}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx,js,jsx}": [
+      "yarn lint-fix"
+    ]
+  }
 }
