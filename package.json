@@ -1,5 +1,6 @@
 {
   "name": "sofie-kairos-connection",
+  "version": "0.0.1",
   "license": "MIT",
   "packageManager": "yarn@4.9.1",
   "private": true,
@@ -29,10 +30,12 @@
     "unit": "vitest",
     "docs": "run docs:html",
     "docs:test": "run docs:html",
-    "docs:html": "typedoc --tsconfig tsconfig.build.json"
+    "docs:html": "typedoc --tsconfig tsconfig.build.json",
+    "release": "sofie-version",
+    "publish:all": "yarn workspaces foreach --all --exclude sofie-kairos-connection npm publish --access=public"
   },
   "devDependencies": {
-    "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#feat/support-vite-testrunner",
+    "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#wip/kairos",
     "@types/node": "^22.15.29",
     "eslint": "^9.28.0",
     "husky": "^9.1.7",
