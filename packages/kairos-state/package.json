@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sofie-Automation/sofie-kairos-connection.git",
-		"directory": "packages/kairos-connection"
+    "directory": "packages/kairos-connection"
   },
   "bugs": {
     "url": "https://github.com/Sofie-Automation/sofie-kairos-connection/issues"

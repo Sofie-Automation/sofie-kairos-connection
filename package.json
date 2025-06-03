@@ -22,7 +22,8 @@
     "build:main": "tsc --build tsconfig.build.json --force",
     "build:watch": "run build:main --watch",
     "test": "vitest",
-    "test:once": "vitest --run"
+    "test:once": "vitest --run",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@sofie-automation/code-standard-preset": "^3.0.0",
