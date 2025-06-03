@@ -1,3 +1,3 @@
 import 'kairos-connection'
 
-throw new Error('Not implemented')
+export const hello = 'world2'
