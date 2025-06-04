@@ -1,5 +1,5 @@
 import EventEmitter from 'node:events'
-import { AMCPCommand, CReturnType, Commands } from './commands.js'
+import { KairosCommand, CReturnType, Commands } from './commands.js'
 import { Connection, ResponseTypes } from './connection.js'
 
 export interface Options {
@@ -24,8 +24,7 @@ export type SendResult<ReturnData> =
 	  }
 
 interface InternalRequest {
-	requestId?: string
-	command: AMCPCommand
+	command: KairosCommand
 
 	resolve: (response: Response<any>) => void
 	reject: (error: Error) => void
@@ -37,7 +36,6 @@ interface InternalRequest {
 }
 
 export interface Response<ReturnData> {
-	reqId: string | undefined
 	command: Commands
 	responseCode: number
 	data: ReturnData
@@ -160,23 +158,20 @@ export class BasicKairosConnection extends EventEmitter<KairosConnectionEvents> 
 	}
 
 	/**
-	 * Sends a command to CasparCG
+	 * Sends a command to the KAIROS
 	 * @return { error: Error } if there was an error when sending the command (such as being disconnected)
-	 * @return { request: Promise<Response> } a Promise that resolves when CasparCG replies after a command has been sent.
+	 * @return { request: Promise<Response> } a Promise that resolves when the KAIROS replies after a command has been sent.
 	 * If this throws, there's something seriously wrong :)
 	 */
-	async executeCommand<Command extends AMCPCommand>(
+	async executeCommand<Command extends KairosCommand>(
 		command: Command
 	): Promise<SendResult<CReturnType<Command['command']>>> {
-		const reqId = Math.random().toString(35).slice(2, 7)
-
 		let outerResolve: InternalRequest['sentResolve'] = () => null
 		const s = new Promise<SendResult<any>>((resolve) => {
 			outerResolve = resolve
 		})
 
 		const internalRequest: InternalRequest = {
-			requestId: reqId,
 			command,
 
 			// stubs to be replaced
@@ -196,10 +191,12 @@ export class BasicKairosConnection extends EventEmitter<KairosConnectionEvents> 
 	private async _processQueue(): Promise<void> {
 		if (this._requestQueue.length < 1) return
 
+		// TODO - this needs rewriting to be sequential, not parallel
+
 		this._requestQueue.forEach((r) => {
 			if (!r.processed) {
 				this._connection
-					.sendCommand(r.command, r.requestId)
+					.sendCommand(r.command)
 					.then((sendError) => {
 						if (sendError) {
 							this._requestQueue = this._requestQueue.filter((req) => req !== r)

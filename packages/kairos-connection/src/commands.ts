@@ -24,4 +24,4 @@ export interface AllTypedCommands {
 
 export type CustomCommand = AllTypedCommands[Commands.Custom]['command']
 
-export type AMCPCommand = CustomCommand
+export type KairosCommand = CustomCommand

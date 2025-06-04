@@ -1,7 +1,7 @@
 import EventEmitter from 'node:events'
 import { Socket } from 'node:net'
 import { Response } from './api.js'
-import { AMCPCommand, Commands } from './commands.js'
+import { KairosCommand, Commands } from './commands.js'
 // import { deserializers } from './deserializers.js'
 import { serializers } from './serializers.js'
 
@@ -80,7 +80,7 @@ export type ConnectionEvents = {
 	error: [error: Error]
 }
 export interface SentRequest {
-	command: AMCPCommand
+	command: KairosCommand
 }
 
 const KEEPALIVE_INTERVAL = 5000
@@ -126,11 +126,13 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 		}
 	}
 
-	async sendCommand(cmd: AMCPCommand, reqId?: string): Promise<Error | undefined> {
+	async sendCommand(cmd: KairosCommand): Promise<Error | undefined> {
 		if (!cmd.command) throw new Error('No command specified')
 		if (!cmd.params) throw new Error('No parameters specified')
 
-		const payload = this._serializeCommand(cmd, reqId)
+		const payload = this._serializeCommand(cmd)
+
+		console.log('DEBUG: sending', payload)
 
 		return new Promise<Error | undefined>((r) => {
 			this._socket?.write(payload + '\r\n', (e) => (e ? r(e) : r(undefined)))
@@ -148,6 +150,8 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 		this._unprocessedData = newLines.pop() ?? ''
 		this._unprocessedLines.push(...newLines)
 
+		console.log('lines', this._unprocessedData, this._unprocessedLines)
+
 		while (this._unprocessedLines.length > 0) {
 			const result = RESPONSE_REGEX.exec(this._unprocessedLines[0])
 
@@ -157,7 +161,6 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 				// create a response object
 				const responseCode = parseInt(result?.groups?.['ResponseCode'])
 				const response: Response<unknown> = {
-					reqId: result?.groups?.['ReqId'],
 					command: result?.groups?.['Action'] as Commands,
 					responseCode,
 					data: undefined,
@@ -311,17 +314,18 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 		// TODO: we don't get a response to this, should this be a query so that we can check the connection is still responding?
 	}
 
-	private _serializeCommand(cmd: AMCPCommand, reqId?: string): string {
+	private _serializeCommand(cmd: KairosCommand): string {
 		const serializers = this._getVersionedSerializers()
 
 		// use a cheeky type assertion here to easen up a bit, TS doesn't let us use just cmd.command
-		const serializer = serializers[cmd.command] as ((c: AMCPCommand['command'], p: AMCPCommand['params']) => string)[]
-		let payload = serializer
+		const serializer = serializers[cmd.command] as ((
+			c: KairosCommand['command'],
+			p: KairosCommand['params']
+		) => string)[]
+		const payload = serializer
 			.map((fn) => fn(cmd.command, cmd.params).trim())
 			.filter((p) => p !== '')
 			.join(' ')
-
-		if (reqId) payload = 'REQ ' + reqId + ' ' + payload
 
 		return payload
 	}
