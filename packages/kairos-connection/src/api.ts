@@ -5,7 +5,7 @@ import { Connection, ResponseTypes } from './connection.js'
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
 	host?: string
-	/** Port number to connect to. Defaults to 5250 */
+	/** Port number to connect to. Defaults to 3005 */
 	port?: number
 	/** Minimum amount of time before a request is considered to be timed out */
 	timeoutTime?: number
@@ -74,7 +74,7 @@ export class BasicKairosConnection extends EventEmitter<KairosConnectionEvents> 
 		super()
 
 		this._host = options?.host || '127.0.0.1'
-		this._port = options?.port || 5250
+		this._port = options?.port || 3005
 
 		this._connection = new Connection(
 			this._host,

@@ -20,7 +20,7 @@ const PARSED_INFO_CHANNEL_720p50 = {
 describe('connection', () => {
 	describe('version handing', () => {
 		function setupConnectionClass(v = Version.v23x) {
-			const conn = new Connection('127.0.0.1', 5250, false, () => undefined)
+			const conn = new Connection('127.0.0.1', 3005, false, () => undefined)
 			conn.version = v
 
 			return conn
@@ -101,7 +101,7 @@ describe('connection', () => {
 			) => Promise<void>
 		) {
 			const getRequestForResponse = jest.fn()
-			const conn = new Connection('127.0.0.1', 5250, true, getRequestForResponse)
+			const conn = new Connection('127.0.0.1', 3005, true, getRequestForResponse)
 			try {
 				expect(conn).toBeTruthy()
 
@@ -347,9 +347,9 @@ describe('connection', () => {
 		})
 
 		it('test with full client', async () => {
-			const client = new BasicCasparCGAPI({
+			const client = new BasicKairosConnection({
 				host: '127.0.0.1',
-				port: 5250,
+				port: 3005,
 				autoConnect: true,
 			})
 			try {

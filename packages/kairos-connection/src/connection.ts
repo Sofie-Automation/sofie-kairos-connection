@@ -83,6 +83,8 @@ export interface SentRequest {
 	command: AMCPCommand
 }
 
+const KEEPALIVE_INTERVAL = 5000
+
 export class Connection extends EventEmitter<ConnectionEvents> {
 	private _socket?: Socket
 	private _unprocessedData = ''
@@ -90,9 +92,11 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 	private _reconnectTimeout?: NodeJS.Timeout
 	private _connected = false
 
+	private _keepaliveTimer?: NodeJS.Timeout
+
 	constructor(
 		private host: string,
-		private port = 5250,
+		private port = 3005,
 		autoConnect: boolean,
 		private _getRequestForResponse: (response: Response<any>) => SentRequest | undefined
 	) {
@@ -104,7 +108,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 		return this._connected
 	}
 
-	changeConnection(host: string, port = 5250): void {
+	changeConnection(host: string, port = 3005): void {
 		this.host = host
 		this.port = port
 
@@ -115,6 +119,11 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 
 	disconnect(): void {
 		this._socket?.end()
+
+		if (this._keepaliveTimer) {
+			clearTimeout(this._keepaliveTimer)
+			this._keepaliveTimer = undefined
+		}
 	}
 
 	async sendCommand(cmd: AMCPCommand, reqId?: string): Promise<Error | undefined> {
@@ -272,16 +281,34 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 
 	private _setConnected(connected: boolean) {
 		if (connected) {
+			if (!this._keepaliveTimer) {
+				this._keepaliveTimer = setInterval(() => this._sendKeepalive(), KEEPALIVE_INTERVAL)
+			}
+
 			if (!this._connected) {
 				this._connected = true
 				this.emit('connect')
 			}
 		} else {
+			if (this._keepaliveTimer) {
+				clearInterval(this._keepaliveTimer)
+				this._keepaliveTimer = undefined
+			}
+
 			if (this._connected) {
 				this._connected = false
 				this.emit('disconnect')
 			}
 		}
+	}
+
+	private _sendKeepalive(): void {
+		// Fire and forget, it won't respond
+		// TODO: should we avoid sending this while a message is in-flight?
+		// TODO: we could be more intelligent about this, and only send it if we haven't sent anything in a while
+		this._socket?.write('\r\n')
+
+		// TODO: we don't get a response to this, should this be a query so that we can check the connection is still responding?
 	}
 
 	private _serializeCommand(cmd: AMCPCommand, reqId?: string): string {
