@@ -153,6 +153,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 		console.log('lines', this._unprocessedData, this._unprocessedLines)
 
 		while (this._unprocessedLines.length > 0) {
+			// nocommit - this parsing
 			const result = RESPONSE_REGEX.exec(this._unprocessedLines[0])
 
 			if (result?.groups?.['ResponseCode']) {
@@ -202,6 +203,8 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 	private _deserializeAndEmitResponse(response: Response<unknown>, responseData: string[] | undefined) {
 		Promise.resolve()
 			.then(async () => {
+				// nocommit - this parsing
+
 				// Ask what the request was for this response:
 				const previouslySentRequest = this._getRequestForResponse(response)
 				if (previouslySentRequest) {

@@ -146,7 +146,7 @@ export class BasicKairosConnection extends EventEmitter<KairosConnectionEvents> 
 			if (r.processed) {
 				r.reject(new Error('Disconnected before response was received'))
 			} else {
-				r.sentResolve({ request: undefined, error: new Error('Disconnected before response was received') })
+				r.sentResolve({ request: undefined, error: new Error('Disconnected before message was sent') })
 			}
 		})
 	}
@@ -191,7 +191,7 @@ export class BasicKairosConnection extends EventEmitter<KairosConnectionEvents> 
 	private async _processQueue(): Promise<void> {
 		if (this._requestQueue.length < 1) return
 
-		// TODO - this needs rewriting to be sequential, not parallel
+		// nocommit - this needs rewriting to be sequential, not parallel
 
 		this._requestQueue.forEach((r) => {
 			if (!r.processed) {
@@ -223,6 +223,8 @@ export class BasicKairosConnection extends EventEmitter<KairosConnectionEvents> 
 	}
 
 	private _checkTimeouts() {
+		// nocommit - this needs rewriting to be sequential, not parallel
+
 		const deadRequests = this._requestQueue.filter(
 			(req) => req.processed && req.processedTime && req.processedTime < Date.now() - this._timeoutTime
 		)
