@@ -10,3 +10,4 @@ packages/*/dist/
 *.tsbuildinfo
 docs
 coverage
+scratch

@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
-import { hello } from '../main.js'
+import { KairosConnection, MinimalKairosConnection } from '../main.js'
 
 test('check export', () => {
-	expect(hello).toBe('world')
+	expect(KairosConnection).not.toBeUndefined()
+	expect(MinimalKairosConnection).not.toBeUndefined()
 })
