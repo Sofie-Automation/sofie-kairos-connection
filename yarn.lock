@@ -700,9 +700,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sofie-automation/code-standard-preset@https://github.com/Sofie-Automation/sofie-code-standard-preset#wip/kairos":
-  version: 3.0.0
-  resolution: "@sofie-automation/code-standard-preset@https://github.com/Sofie-Automation/sofie-code-standard-preset.git#commit=e4003c494aef1b089d353e433d53731321ca63df"
+"@sofie-automation/code-standard-preset@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "@sofie-automation/code-standard-preset@npm:3.1.0"
   dependencies:
     "@sofie-automation/eslint-plugin": "npm:0.2.0"
     "@vitest/eslint-plugin": "npm:^1.2.1"
@@ -723,7 +723,7 @@ __metadata:
   bin:
     sofie-licensecheck: ./bin/checkLicenses.mjs
     sofie-version: ./bin/updateVersion.mjs
-  checksum: 10c0/d162f6374b4a36179431a8023870ac1f9f525ba684018caedaf50c0a1d085a1a024ff003e7ae82f8913f9444155e706e6caa058d4f3d8c350262876203a8fd75
+  checksum: 10c0/7fcd2ca6f6ef89cc7ba5d7b852f8247ed2c81147b2827c98e2d1856a59fde6d82b1aafb2ffb214e75dfe5204c771da7869f0fcbd5dcabf95361169f75262dd1e
   languageName: node
   linkType: hard
 
@@ -3635,7 +3635,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "sofie-kairos-connection@workspace:."
   dependencies:
-    "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#wip/kairos"
+    "@sofie-automation/code-standard-preset": "npm:^3.1.0"
     "@types/node": "npm:^22.15.29"
     "@vitest/coverage-v8": "npm:3.2.0"
     eslint: "npm:^9.28.0"

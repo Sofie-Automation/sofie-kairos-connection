@@ -2,7 +2,7 @@
   "name": "sofie-kairos-connection",
   "version": "0.0.1",
   "license": "MIT",
-  "packageManager": "yarn@4.9.1",
+  "packageManager": "yarn@4.9.2",
   "private": true,
   "repository": {
     "type": "git",
@@ -35,7 +35,7 @@
     "publish:all": "yarn workspaces foreach --all --exclude sofie-kairos-connection npm publish --access=public"
   },
   "devDependencies": {
-    "@sofie-automation/code-standard-preset": "https://github.com/Sofie-Automation/sofie-code-standard-preset#wip/kairos",
+    "@sofie-automation/code-standard-preset": "^3.1.0",
     "@types/node": "^22.15.29",
     "@vitest/coverage-v8": "3.2.0",
     "eslint": "^9.28.0",
