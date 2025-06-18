@@ -1,6 +1,9 @@
 # Sofie Kairos Connection Library
 
 [![Node CI](https://github.com/Sofie-Automation/sofie-kairos-connection/actions/workflows/node.yaml/badge.svg)](https://github.com/Sofie-Automation/sofie-kairos-connection/actions/workflows/node.yaml)
+[![NPM Version](https://img.shields.io/npm/v/kairos-connection?label=npm:kairos-connection)](https://www.npmjs.com/package/kairos-connection)
+[![NPM Version](https://img.shields.io/npm/v/kairos-state?label=npm:kairos-state)](https://www.npmjs.com/package/kairos-state)
+
 
 This is the _KAIROS Connection_ library of the [**Sofie** TV Automation System](https://github.com/Sofie-Automation/Sofie-TV-automation/). The library is used for controlling Panasonic KAIROS devices.
 
