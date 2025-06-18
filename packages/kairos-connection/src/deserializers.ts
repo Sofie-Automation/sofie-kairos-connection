@@ -1,78 +1,47 @@
-import {
-	Commands,
-	KairosCommand,
-	ListCommand,
-	QueryValueCommand,
-	SetValueCommand,
-	SubscribeValueCommand,
-	UnsubscribeValueCommand,
-} from './commands.js'
-import { ResponseTypes } from './connection.js'
-import type { Response } from './kairos-minimal.js'
-
-export interface DeserializeResult {
+export interface DeserializeResult<TRes> {
 	remainingLines: string[]
-	response: Response<any>
+	response: TRes
 }
 
-export type Deserializer<C extends KairosCommand> = (
-	lineBuffer: readonly string[],
-	command: C
-) => DeserializeResult | null
-
-const setValueDeserializer: Deserializer<SetValueCommand> = (lineBuffer, command) => {
+export function okOrErrorDeserializer(lineBuffer: readonly string[]): DeserializeResult<undefined> | null {
 	const firstLine = lineBuffer[0]
 
 	if (firstLine === 'OK') {
 		return {
 			remainingLines: lineBuffer.slice(1),
-			response: {
-				command: command.command,
-				data: undefined,
-				type: ResponseTypes.OK,
-				message: firstLine,
-			},
+			response: undefined,
 		}
 	} else {
 		throw new Error(`Error response received: ${firstLine}`)
 	}
 }
-const queryValueDeserializer: Deserializer<QueryValueCommand> = (lineBuffer, command) => {
+export function queryAttributeDeserializer(
+	lineBuffer: readonly string[],
+	path: string
+): DeserializeResult<string> | null {
 	const firstLine = lineBuffer[0]
 
-	if (firstLine.startsWith(`${command.params.path}=`)) {
-		const value = firstLine.slice(command.params.path.length + 1)
+	if (firstLine.startsWith(`${path}=`)) {
+		const value = firstLine.slice(path.length + 1)
 		return {
 			remainingLines: lineBuffer.slice(1),
-			response: {
-				command: command.command,
-				data: value,
-				type: ResponseTypes.OK,
-				message: firstLine,
-			},
+			response: value,
 		}
 	} else {
 		throw new Error(`Error response received: ${firstLine}`)
 	}
 }
-const listDeserializer: Deserializer<ListCommand> = (lineBuffer, command) => {
+export function listDeserializer(lineBuffer: readonly string[], path: string): DeserializeResult<string[]> | null {
 	const firstLine = lineBuffer[0]
 
-	if (firstLine === `list_ex:${command.params.path}=`) {
+	if (firstLine === `list_ex:${path}=`) {
 		const emptyLineIndex = lineBuffer.indexOf('')
 		if (emptyLineIndex !== -1) {
-			const listItems = lineBuffer.slice(0, emptyLineIndex)
-			const messageString = listItems.join('\n')
-			listItems.shift()
+			const listItems = lineBuffer.slice(1, emptyLineIndex)
 
 			return {
 				remainingLines: lineBuffer.slice(emptyLineIndex + 1),
-				response: {
-					command: command.command,
-					data: listItems,
-					type: ResponseTypes.OK,
-					message: messageString,
-				},
+				response: listItems,
 			}
 		} else {
 			// Data not yet ready, stop processing
@@ -82,21 +51,9 @@ const listDeserializer: Deserializer<ListCommand> = (lineBuffer, command) => {
 		throw new Error(`Error response received: ${firstLine}`)
 	}
 }
-const subscribeValueDeserializer: Deserializer<SubscribeValueCommand> = () => {
+export function subscribeValueDeserializer(_lineBuffer: readonly string[]): DeserializeResult<undefined> | null {
 	throw new Error('Not implemented yet')
 }
-const unsubscribeValueDeserializer: Deserializer<UnsubscribeValueCommand> = () => {
+export function unsubscribeValueDeserializer(_lineBuffer: readonly string[]): DeserializeResult<undefined> | null {
 	throw new Error('Not implemented yet')
-}
-
-type Deserializers<C extends KairosCommand> = {
-	[command in C as command['command']]: Deserializer<command>
-}
-
-export const deserializers: Readonly<Deserializers<KairosCommand>> = {
-	[Commands.SetValue]: setValueDeserializer,
-	[Commands.QueryValue]: queryValueDeserializer,
-	[Commands.SubscribeValue]: subscribeValueDeserializer,
-	[Commands.UnsubscribeValue]: unsubscribeValueDeserializer,
-	[Commands.List]: listDeserializer,
 }

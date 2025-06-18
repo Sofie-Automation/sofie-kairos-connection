@@ -1,22 +1,11 @@
 import EventEmitter from 'node:events'
 import { Socket } from 'node:net'
-import { KairosCommand } from './commands.js'
-
-export enum ResponseTypes {
-	Info = 'INFO',
-	OK = 'OK',
-	ClientError = 'ERROR',
-	ServerError = 'FAILED',
-}
 
 export type ConnectionEvents = {
 	lines: [lines: string[]]
 	connect: []
 	disconnect: []
 	error: [error: Error]
-}
-export interface SentRequest {
-	command: KairosCommand
 }
 
 const KEEPALIVE_INTERVAL = 5000

@@ -1,8 +1,11 @@
 import EventEmitter from 'node:events'
-import { KairosCommand, CReturnType, Commands } from './commands.js'
-import { Connection, ResponseTypes } from './connection.js'
-import { serializers } from './serializers.js'
-import { Deserializer, deserializers } from './deserializers.js'
+import { Connection } from './connection.js'
+import {
+	queryAttributeDeserializer,
+	okOrErrorDeserializer,
+	listDeserializer,
+	type DeserializeResult,
+} from './deserializers.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -15,37 +18,18 @@ export interface Options {
 	autoConnect?: boolean
 }
 
-export type APIRequest<C extends Commands> = SendResult<CReturnType<C>>
-
-export type SendResult<ReturnData> =
-	| {
-			error: Error
-			request: undefined
-	  }
-	| {
-			error: undefined
-			request: Promise<Response<ReturnData>>
-	  }
+type Deserializer<TRes> = (lineBuffer: readonly string[]) => DeserializeResult<TRes> | null
 
 interface InternalRequest {
-	command: KairosCommand
+	serializedCommand: string
+	deserializer: Deserializer<any>
 
-	resolve: (response: Response<any>) => void
+	resolve: (response: any) => void
 	reject: (error: Error) => void
 
 	processed: boolean
 	processedTime?: number
-	sentResolve: (sent: SendResult<any>) => void
 	sentTime?: number
-}
-
-export interface Response<ReturnData> {
-	command: Commands
-	// responseCode: number
-	data: ReturnData
-
-	type: ResponseTypes
-	message: string
 }
 
 export type KairosConnectionEvents = {
@@ -130,17 +114,8 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 					continue
 				}
 
-				// use a cheeky type assertion here to easen up a bit, TS doesn't let us use just cmd.command
-				const deserializer = deserializers[nextCommand.command.command] as Deserializer<KairosCommand>
-				if (!deserializer) {
-					nextCommand.reject(new Error(`Missing deserializer for command: ${nextCommand.command.command}`))
-
-					this._unprocessedLines.shift()
-					continue
-				}
-
 				try {
-					const res = deserializer(this._unprocessedLines, nextCommand.command)
+					const res = nextCommand.deserializer(this._unprocessedLines)
 					if (!res) {
 						// Data not yet ready, stop processing
 						return
@@ -191,11 +166,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		this._canSendCommands = false
 		this._connection.disconnect()
 		this._requestQueue.forEach((r) => {
-			if (r.processed) {
-				r.reject(new Error('Disconnected before response was received'))
-			} else {
-				r.sentResolve({ request: undefined, error: new Error('Disconnected before message was sent') })
-			}
+			r.reject(new Error('Disconnected before response was received'))
 		})
 		this._requestQueue = []
 	}
@@ -212,44 +183,30 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @return { request: Promise<Response> } a Promise that resolves when the KAIROS replies after a command has been sent.
 	 * If this throws, there's something seriously wrong :)
 	 */
-	async executeCommand<Command extends KairosCommand>(
-		command: Command
-	): Promise<SendResult<CReturnType<Command['command']>>> {
+	protected async executeCommand<TRes>(commandStr: string, deserializer: Deserializer<TRes>): Promise<TRes> {
 		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
 
-		let outerResolve: InternalRequest['sentResolve'] = () => null
-		const s = new Promise<SendResult<any>>((resolve) => {
-			outerResolve = resolve
-		})
-
 		const internalRequest: InternalRequest = {
-			command,
+			serializedCommand: commandStr,
+			deserializer,
 
 			// stubs to be replaced
 			resolve: () => null,
 			reject: () => null,
 
 			processed: false,
-			sentResolve: outerResolve,
 		}
+		const request = new Promise<TRes>((resolve, reject) => {
+			internalRequest.resolve = resolve
+			internalRequest.reject = reject
+		})
 
 		this._requestQueue.push(internalRequest)
 		this._processQueue().catch((e) => this.emit('error', e))
 
-		return s
+		return request
 	}
 
-	// Note: This doesn't need to be a promise, but it makes error handling easier
-	private async _serializeCommand(cmd: KairosCommand): Promise<string> {
-		if (!cmd.command) throw new Error('No command specified')
-		if (!cmd.params) throw new Error('No parameters specified')
-
-		// use a cheeky type assertion here to easen up a bit, TS doesn't let us use just cmd.command
-		const serializer = serializers[cmd.command] as (c: KairosCommand['command'], p: KairosCommand['params']) => string
-		const payload = serializer(cmd.command, cmd.params).trim()
-
-		return payload
-	}
 	private async _processQueue(): Promise<void> {
 		if (this._requestQueue.length < 1) return
 
@@ -259,24 +216,17 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 			r.processed = true
 			r.processedTime = Date.now()
 
-			this._serializeCommand(r.command)
-				.then(async (payload) => this._connection.sendCommand(payload))
+			this._connection
+				.sendCommand(r.serializedCommand)
 				.then((sendError) => {
 					if (sendError) {
 						this._requestQueue = this._requestQueue.filter((req) => req !== r)
-						r.sentResolve({ error: sendError, request: undefined })
+						r.reject(sendError)
 					} else {
-						const request = new Promise<Response<any>>((resolve, reject) => {
-							r.resolve = resolve
-							r.reject = reject
-						})
-						request.catch(() => null) // Avoid unhandled promise rejections
 						r.sentTime = Date.now()
-						r.sentResolve({ error: undefined, request })
 					}
 				})
 				.catch((e: string) => {
-					r.sentResolve({ error: Error(e), request: undefined })
 					r.reject(new Error(e))
 					this._requestQueue = this._requestQueue.filter((req) => req !== r)
 				})
@@ -289,7 +239,6 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		)
 		deadRequests.forEach((req) => {
 			req.reject(new Error('Time out'))
-			req.sentResolve({ request: undefined, error: new Error('Time out') })
 		})
 		this._requestQueue = this._requestQueue.filter((req) => !deadRequests.includes(req))
 	}
@@ -303,7 +252,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async setAttribute(path: string, value: string): Promise<void> {
 		const commandStr = `${path}=${value}`
-		return this.executeCommand(commandStr)
+		return this.executeCommand(commandStr, okOrErrorDeserializer)
 	}
 	/**
 	 * Set the values of multiple attributes at the same path on the KAIROS
@@ -331,7 +280,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async getAttribute(path: string): Promise<string> {
 		const commandStr = `${path}`
-		return this.executeCommand(commandStr)
+		return this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path))
 	}
 	/**
 	 * Get the values of multiple attributes at the same path from the KAIROS
@@ -356,7 +305,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async getList(path: string): Promise<string[]> {
 		const commandStr = `list_ex:${path}`
-		return this.executeCommand(commandStr)
+		return this.executeCommand(commandStr, (lineBuffer) => listDeserializer(lineBuffer, path))
 	}
 
 	async executeFunction(path: string, ...args: string[]): Promise<void> {
@@ -370,7 +319,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 			escapedArgs.push(arg.replaceAll(',', '&#44;').replaceAll('\r', '&#13;').replaceAll('\n', '&#10;'))
 		}
-		return this.executeCommand(`${path}=${escapedArgs.join(',')}`)
+		return this.executeCommand(`${path}=${escapedArgs.join(',')}`, okOrErrorDeserializer)
 	}
 
 	// TODO - implement this

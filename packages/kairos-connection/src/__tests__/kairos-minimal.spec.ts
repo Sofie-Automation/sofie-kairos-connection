@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect, test, describe, beforeEach, afterEach, vi } from 'vitest'
 import { MinimalKairosConnection, Options } from '../kairos-minimal.js'
-import { Commands } from '../commands.js'
 
 // Mock the Connection class
 vi.mock(import('../connection.js'), async (original) => {
@@ -204,19 +202,8 @@ describe('MinimalKairosConnection', () => {
 			// Verify the internal connection disconnect was called
 			expect(mockConnection.disconnect).toHaveBeenCalled()
 
-			// Verify that the processed request was rejected with disconnect error
-			const processedResult = await processedRequest
-			if (processedResult.error) {
-				// If sendCommand returned an error, check that
-				expect(processedResult.error.message).toContain('Disconnected')
-				expect(processedResult.request).toBeUndefined()
-			} else {
-				// If it was processed successfully, the request promise should reject
-				await expect(processedResult.request).rejects.toThrow('Disconnected before response was received')
-			}
-
-			// Verify that the unprocessed request was rejected with disconnect error
-			await expect(unprocessedRequest).rejects.toMatchObject(/Cannot send commands/)
+			await expect(processedRequest).rejects.toMatchObject(/Disconnected/)
+			await expect(unprocessedRequest).rejects.toMatchObject(/Disconnected/)
 		})
 
 		test('should update host and port properties when connecting', () => {
@@ -296,103 +283,74 @@ describe('MinimalKairosConnection', () => {
 		test('should execute setAttribute command and send correct message', async () => {
 			// Mock the tracked connection's sendCommand
 			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			const result = await connection.setAttribute('SCENES.Main.Layers.PGM.source_pgm', 'IP1')
+			// Execute the command (this will not resolve until we send a response)
+			const promise = connection.setAttribute('SCENES.Main.Layers.PGM.source_pgm', 'IP1')
 
-			expect(result.error).toBeUndefined()
-			expect(result.request).toBeInstanceOf(Promise)
+			// Process the queue to send the command
+			await vi.runOnlyPendingTimersAsync()
 
 			// Verify the correct serialized command was sent
 			expect(mockConnection.sendCommand).toHaveBeenCalledWith('SCENES.Main.Layers.PGM.source_pgm=IP1')
+
+			// Simulate receiving an "OK" response from the connection
+			mockConnection.emit('lines', ['OK'])
+
+			// Now the promise should resolve
+			await expect(promise).resolves.toBeUndefined()
 		})
 
 		test('should execute getAttribute command and send correct message', async () => {
 			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			const result = await connection.getAttribute('SCENES.Main.Layers.PGM.source_pgm')
+			// Execute the command (this will not resolve until we send a response)
+			const promise = connection.getAttribute('SCENES.Main.Layers.PGM.source_pgm')
 
-			expect(result.error).toBeUndefined()
-			expect(result.request).toBeInstanceOf(Promise)
+			// Process the queue to send the command
+			await vi.runOnlyPendingTimersAsync()
 
 			// Verify the correct serialized command was sent
 			expect(mockConnection.sendCommand).toHaveBeenCalledWith('SCENES.Main.Layers.PGM.source_pgm')
+
+			// Simulate receiving a response from the connection
+			mockConnection.emit('lines', ['SCENES.Main.Layers.PGM.source_pgm=IP1'])
+
+			// Now the promise should resolve with the value
+			await expect(promise).resolves.toBe('IP1')
 		})
 
 		test('should execute getList command and send correct message', async () => {
 			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			const result = await connection.getList('SCENES.Main.Layers.PGM.sources')
+			// Execute the command (this will not resolve until we send a response)
+			const promise = connection.getList('SCENES.Main.Layers.PGM.sources')
 
-			expect(result.error).toBeUndefined()
-			expect(result.request).toBeInstanceOf(Promise)
+			// Process the queue to send the command
+			await vi.runOnlyPendingTimersAsync()
 
 			// Verify the correct serialized command was sent
 			expect(mockConnection.sendCommand).toHaveBeenCalledWith('list_ex:SCENES.Main.Layers.PGM.sources')
-		})
 
-		test('should execute subscribe command via executeCommand', async () => {
-			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			// Simulate receiving a list response from the connection
+			mockConnection.emit('lines', ['list_ex:SCENES.Main.Layers.PGM.sources=', 'IP1', 'IP2', 'IP3', ''])
 
-			const result = await connection.executeCommand({
-				command: Commands.SubscribeValue,
-				params: { path: 'SCENES.Main.Layers.PGM.source_pgm' },
-			})
-
-			expect(result.error).toBeUndefined()
-			expect(result.request).toBeInstanceOf(Promise)
-
-			// Verify the correct serialized command was sent
-			expect(mockConnection.sendCommand).toHaveBeenCalledWith('subscribe:SCENES.Main.Layers.PGM.source_pgm')
-		})
-
-		test('should execute unsubscribe command via executeCommand', async () => {
-			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
-
-			const result = await connection.executeCommand({
-				command: Commands.UnsubscribeValue,
-				params: { path: 'SCENES.Main.Layers.PGM.source_pgm' },
-			})
-
-			expect(result.error).toBeUndefined()
-			expect(result.request).toBeInstanceOf(Promise)
-
-			// Verify the correct serialized command was sent
-			expect(mockConnection.sendCommand).toHaveBeenCalledWith('unsubscribe:SCENES.Main.Layers.PGM.source_pgm')
-		})
-
-		test('should execute custom command with proper serialization', async () => {
-			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
-
-			const result = await connection.executeCommand({
-				command: Commands.SetValue,
-				params: { path: 'custom.path', value: 'custom_value' },
-			})
-
-			expect(result.error).toBeUndefined()
-			expect(result.request).toBeInstanceOf(Promise)
-
-			// Verify the correct serialized command was sent
-			expect(mockConnection.sendCommand).toHaveBeenCalledWith('custom.path=custom_value')
+			// Now the promise should resolve with the list
+			await expect(promise).resolves.toEqual(['IP1', 'IP2', 'IP3'])
 		})
 
 		test('should execute multiple commands in sequence with correct serialization', async () => {
 			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			const result1 = await connection.setAttribute('path1', 'value1')
-			const result2 = await connection.getAttribute('path2')
-			const result3 = await connection.getList('path3')
+			// Execute the commands (they will not resolve until we send responses)
+			const promise1 = connection.setAttribute('path1', 'value1')
+			const promise2 = connection.getAttribute('path2')
+			const promise3 = connection.getList('path3')
 
-			expect(result1.error).toBeUndefined()
-			expect(result2.error).toBeUndefined()
-			expect(result3.error).toBeUndefined()
-
+			// Process the queue to send the commands
 			await vi.runOnlyPendingTimersAsync()
 
 			// Verify all commands were sent with correct serialization
@@ -400,51 +358,35 @@ describe('MinimalKairosConnection', () => {
 			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(2, 'path2')
 			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(3, 'list_ex:path3')
 			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(3)
+
+			// Simulate receiving responses from the connection
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', ['path2=test_value'])
+			mockConnection.emit('lines', ['list_ex:path3=', 'item1', 'item2', ''])
+
+			// Now all promises should resolve
+			await expect(promise1).resolves.toBeUndefined()
+			await expect(promise2).resolves.toBe('test_value')
+			await expect(promise3).resolves.toEqual(['item1', 'item2'])
 		})
 
 		test('should return error when sendCommand fails', async () => {
 			const testError = new Error('Send failed')
 			mockConnection.sendCommand.mockResolvedValue(testError)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			const result = await connection.setAttribute('test.path', 'value')
+			// The promise should reject when sendCommand fails
+			const promise = connection.setAttribute('test.path', 'value')
+			promise.catch(() => null) // Prevent unhandled rejection warning
 
-			expect(result.error).toEqual(testError)
-			expect(result.request).toBeUndefined()
+			// Process the queue to send the command
+			await vi.runOnlyPendingTimersAsync()
 
 			// Verify the command was still attempted to be sent
 			expect(mockConnection.sendCommand).toHaveBeenCalledWith('test.path=value')
-		})
 
-		test('should handle serialization errors', async () => {
-			mockConnection.emit('connect') // Simulate
-
-			const result = await connection.executeCommand({
-				command: Commands.SetValue,
-				params: undefined as any, // Invalid params to trigger serialization error
-			})
-
-			expect(result.error).toBeInstanceOf(Error)
-			expect(result.request).toBeUndefined()
-
-			// Verify sendCommand was not called due to serialization error
-			expect(mockConnection.sendCommand).not.toHaveBeenCalled()
-		})
-
-		test('should handle missing command in executeCommand', async () => {
-			mockConnection.emit('connect') // Simulate
-
-			const result = await connection.executeCommand({
-				command: undefined as any,
-				params: { path: 'test', value: 'test' },
-			})
-
-			expect(result.error).toBeInstanceOf(Error)
-			expect(result.error?.message).toContain('No command specified')
-			expect(result.request).toBeUndefined()
-
-			// Verify sendCommand was not called due to missing command
-			expect(mockConnection.sendCommand).not.toHaveBeenCalled()
+			// The promise should reject with the error
+			await expect(promise).rejects.toEqual(testError)
 		})
 	})
 
@@ -455,20 +397,19 @@ describe('MinimalKairosConnection', () => {
 
 		test('should handle error response', async () => {
 			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			// Execute a command
-			const result = await connection.getAttribute('test.path')
-			expect(result.error).toBeUndefined()
+			// Execute a command (this will not resolve until we send a response)
+			const promise = connection.getAttribute('test.path')
+
+			// Process the queue to send the command
+			await vi.runOnlyPendingTimersAsync()
 
 			// Simulate error response
-			await vi.runOnlyPendingTimersAsync()
 			mockConnection.emit('lines', ['Error: Command failed'])
 
-			await vi.runOnlyPendingTimersAsync()
-
 			// The request should be rejected with an error
-			await expect(result.request).rejects.toThrow('Error response received: Error: Command failed')
+			await expect(promise).rejects.toThrow('Error response received: Error: Command failed')
 		})
 
 		test('should handle unexpected lines when no command is in flight', async () => {
@@ -497,22 +438,21 @@ describe('MinimalKairosConnection', () => {
 
 		test('should timeout requests that take too long', async () => {
 			mockConnection.sendCommand.mockResolvedValue(undefined)
-			mockConnection.emit('connect') // Simulate
+			mockConnection.emit('connect') // Simulate connection
 
-			// Execute a command
-			const result = await connection.setAttribute('test.path', 'value')
-			expect(result.error).toBeUndefined()
+			// Execute a command (this will not resolve until we send a response)
+			const promise = connection.setAttribute('test.path', 'value')
+			promise.catch(() => null) // Prevent unhandled rejection warning
 
-			const responsePromise = result.request!
-			responsePromise.catch(() => null) // Prevent unhandled promise rejection
-
-			// Advance time past timeout
+			// Process the queue to send the command
 			await vi.runOnlyPendingTimersAsync()
+
+			// Advance time past timeout without sending a response
 			vi.advanceTimersByTime(2000)
 			await vi.runOnlyPendingTimersAsync()
 
 			// The request should be rejected with timeout error
-			await expect(responsePromise).rejects.toThrow('Time out')
+			await expect(promise).rejects.toThrow('Time out')
 		})
 	})
 
