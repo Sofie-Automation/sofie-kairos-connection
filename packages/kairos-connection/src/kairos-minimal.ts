@@ -55,6 +55,10 @@ export type KairosConnectionEvents = {
 	reset: []
 }
 
+/**
+ * The bare minimum class that just handles the basic connection and raw logic.
+ *
+ */
 export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents> {
 	private _connection: Connection
 	private _host: string
@@ -297,14 +301,9 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @param value The value to set the attribute to, e.g. `IP1`
 	 * @returns A promise that resolves when the command has been sent to the KAIROS
 	 */
-	async setAttribute(path: string, value: string): Promise<APIRequest<Commands.SetValue>> {
-		return this.executeCommand({
-			command: Commands.SetValue,
-			params: {
-				path,
-				value,
-			},
-		})
+	async setAttribute(path: string, value: string): Promise<void> {
+		const commandStr = `${path}=${value}`
+		return this.executeCommand(commandStr)
 	}
 
 	/**
@@ -313,13 +312,23 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @param path The path to the attribute to query, e.g. `SCENES.Main.Layers.PGM.source_pgm`
 	 * @returns The value of the attribute as a string, or an error if the attribute could not be found
 	 */
-	async getAttribute(path: string): Promise<APIRequest<Commands.QueryValue>> {
-		return this.executeCommand({
-			command: Commands.QueryValue,
-			params: {
-				path,
-			},
-		})
+	async getAttribute(path: string): Promise<string> {
+		const commandStr = `${path}`
+		return this.executeCommand(commandStr)
+	}
+	/**
+	 * Get the values of multiple attributes at the same path from the KAIROS
+	 * @param path The path to the attribute to query, e.g. `SCENES.Main.Layers.PGM`
+	 * @param names Array of the attributes on the path to query, eg `['source_pgm', 'source_pst']`
+	 * @returns An key-value object where the keys are the attribute names and the values are the attribute values as strings.
+	 */
+	async getAttributes<const TNames extends readonly string[]>(
+		path: string,
+		names: TNames
+	): Promise<{ [K in TNames[number]]: string }> {
+		return Object.fromEntries(
+			await Promise.all(names.map(async (name) => [name, await this.getAttribute(`${path}.${name}`)]))
+		)
 	}
 
 	/**
@@ -328,13 +337,9 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @param path The path to the list to query, e.g. `SCENES.Main.Layers.PGM.sources`
 	 * @returns The list of items in the list, or an error if the list could not be found
 	 */
-	async getList(path: string): Promise<APIRequest<Commands.List>> {
-		return this.executeCommand({
-			command: Commands.List,
-			params: {
-				path,
-			},
-		})
+	async getList(path: string): Promise<string[]> {
+		const commandStr = `list_ex:${path}`
+		return this.executeCommand(commandStr)
 	}
 
 	// TODO - implement this
