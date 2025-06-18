@@ -101,6 +101,42 @@ export enum SceneResolution {
 	Resolution3840x2160 = 2,
 }
 
+export interface ClipPlayerObject {
+	colorOverwrite: boolean
+	/**
+	 * RGB color value
+	 * @example rgb(255,0,0)
+	 */
+	color: string
+	timecode: string
+	remainingTime: string
+	/** int */
+	position: number
+	repeat: boolean
+	tms: ClipPlayerTMS
+
+	/** ObjectID */
+	clip: string
+
+	/** int */
+	readonly tally: number
+
+	autoplay: boolean
+}
+export type UpdateClipPlayerObject = OmitReadonly<ClipPlayerObject>
+
+export enum ClipPlayerTMS {
+	Pause = 0,
+	Reverse = 1,
+	Rewind = 2,
+	Play = 3,
+	LoopPlay = 4,
+	FastForward = 5,
+	Stop = 6,
+	Begin = 7,
+	End = 8,
+}
+
 /** Copied from https://github.com/piotrwitek/utility-types/blob/2ae7412a9edf12f34fedbf594facf43cf04f7e32/src/mapped-types.ts#L112 */
 
 /**

@@ -7,7 +7,13 @@ import {
 	stringifyInt,
 } from './data-parsers.js'
 import { MinimalKairosConnection } from './kairos-minimal.js'
-import { MediaObject, UpdateSceneObject, SceneObject } from './kairos-types.js'
+import type {
+	MediaObject,
+	UpdateSceneObject,
+	SceneObject,
+	ClipPlayerObject,
+	UpdateClipPlayerObject,
+} from './kairos-types.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	// async updateLayer(params: UpdateLayerCommandParameters): Promise<APIRequest<Commands.UpdateLayer>> {
@@ -175,8 +181,114 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		Starfield
 	// RAMRECORDERS
 	// 	RR<1-8>
+
 	// PLAYERS
 	// 	CP<1-2>
+	async getClipPlayer(playerId: number): Promise<ClipPlayerObject> {
+		this._assertPlayerIdIsValid(playerId)
+
+		const values = await this.getAttributes(`CP${playerId}`, [
+			'color_overwrite',
+			'color',
+			'timecode',
+			'remaining_time',
+			'position',
+			'repeat',
+			'tms',
+			'clip',
+			'tally',
+			'autoplay',
+		])
+		return {
+			colorOverwrite: parseBoolean(values.color_overwrite),
+			color: values.color,
+			timecode: values.timecode,
+			remainingTime: values.remaining_time,
+			position: parseInt(values.position, 10),
+			repeat: parseBoolean(values.repeat),
+			tms: parseInt(values.tms, 10),
+			clip: values.clip,
+			tally: parseInt(values.tally, 10),
+			autoplay: parseBoolean(values.autoplay),
+		}
+	}
+	async updateClipPlayer(playerId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		await this.setAttributes(`CP${playerId}`, [
+			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
+			{ attribute: 'color', value: props.color },
+			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'timecode', value: props.timecode },
+			{ attribute: 'remaining_time', value: props.remainingTime },
+			{ attribute: 'position', value: stringifyInt(props.position) },
+			{ attribute: 'repeat', value: stringifyBoolean(props.repeat) },
+			{ attribute: 'tms', value: stringifyInt(props.tms) },
+			{ attribute: 'autoplay', value: stringifyBoolean(props.autoplay) },
+			// 'tally' is read-only, so can't be set
+		])
+	}
+	async clipPlayerBegin(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.begin`)
+	}
+	async clipPlayerRewind(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.rewind`)
+	}
+	async clipPlayerStepBack(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.step_back`)
+	}
+	async clipPlayerReverse(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.reverse`)
+	}
+	async clipPlayerPlay(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.play`)
+	}
+	async clipPlayerPause(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.pause`)
+	}
+	async clipPlayerStop(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.stop`)
+	}
+	async clipPlayerStepForward(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.step_forward`)
+	}
+	async clipPlayerFastForward(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.fast_forward`)
+	}
+	async clipPlayerEnd(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.end`)
+	}
+	async clipPlayerPlaylistBegin(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.playlist_begin`)
+	}
+	async clipPlayerPlaylistBack(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.playlist_back`)
+	}
+	async clipPlayerPlaylistNext(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.playlist_next`)
+	}
+	async clipPlayerPlaylistEnd(playerId: number): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.executeFunction(`CP${playerId}.playlist_end`)
+	}
+
+	private _assertPlayerIdIsValid(playerId: number): void {
+		if (typeof playerId !== 'number' || playerId < 1 || playerId > 2) {
+			throw new Error(`Invalid playerId: ${playerId}. Must be 1 or 2.`)
+		}
+	}
 
 	// MEDIA
 	// 	clips
