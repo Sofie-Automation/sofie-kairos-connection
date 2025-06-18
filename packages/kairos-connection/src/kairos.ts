@@ -1,4 +1,5 @@
 import { MinimalKairosConnection } from './kairos-minimal.js'
+import { MediaObject } from './kairos-types.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	// async updateLayer(params: UpdateLayerCommandParameters): Promise<APIRequest<Commands.UpdateLayer>> {
@@ -92,6 +93,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	RR<1-8>
 	// PLAYERS
 	// 	CP<1-2>
+
 	// MEDIA
 	// 	clips
 	// 		file_name.mov
@@ -103,6 +105,47 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		file_name.png
 	// 	sounds
 	// 		file_name.wav
+
+	async listMediaClips(): Promise<string[]> {
+		return this.getList('MEDIA.clips')
+	}
+	async getMediaClip(name: string): Promise<MediaObject> {
+		return this._getMediaObject(`MEDIA.clips.${name}`)
+	}
+	async listMediaStills(): Promise<string[]> {
+		return this.getList('MEDIA.stills')
+	}
+	async getMediaStill(name: string): Promise<MediaObject> {
+		return this._getMediaObject(`MEDIA.stills.${name}`)
+	}
+	async listMediaRamRec(): Promise<string[]> {
+		return this.getList('MEDIA.ramrec')
+	}
+	async getMediaRamRec(name: string): Promise<MediaObject> {
+		return this._getMediaObject(`MEDIA.ramrec.${name}`)
+	}
+	async listMediaImage(): Promise<string[]> {
+		return this.getList('MEDIA.images')
+	}
+	async getMediaImage(name: string): Promise<MediaObject> {
+		return this._getMediaObject(`MEDIA.images.${name}`)
+	}
+	async listMediaSounds(): Promise<string[]> {
+		return this.getList('MEDIA.sounds')
+	}
+	async getMediaSound(name: string): Promise<MediaObject> {
+		return this._getMediaObject(`MEDIA.sounds.${name}`)
+	}
+
+	private async _getMediaObject(path: string): Promise<MediaObject> {
+		const values = await this.getAttributes(path, ['name', 'status', 'load_progress'])
+		return {
+			name: values.name,
+			status: parseInt(values.status, 10),
+			loadProgress: parseFloat(values.load_progress),
+		}
+	}
+
 	// TRANSLIB
 	// 	TRANSFX
 	// 		MIX_FX
