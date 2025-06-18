@@ -179,8 +179,118 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		Shaped
 	// 		Rays
 	// 		Starfield
+
 	// RAMRECORDERS
 	// 	RR<1-8>
+	async getRamRecorder(ramRecorderId: number): Promise<ClipPlayerObject> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+
+		const values = await this.getAttributes(`RR${ramRecorderId}`, [
+			'color_overwrite',
+			'color',
+			'timecode',
+			'remaining_time',
+			'position',
+			'repeat',
+			'tms',
+			'clip',
+			'tally',
+			'autoplay',
+		])
+		return {
+			colorOverwrite: parseBoolean(values.color_overwrite),
+			color: values.color,
+			timecode: values.timecode,
+			remainingTime: values.remaining_time,
+			position: parseInt(values.position, 10),
+			repeat: parseBoolean(values.repeat),
+			tms: parseInt(values.tms, 10),
+			clip: values.clip,
+			tally: parseInt(values.tally, 10),
+			autoplay: parseBoolean(values.autoplay),
+		}
+	}
+	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		await this.setAttributes(`RR${ramRecorderId}`, [
+			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
+			{ attribute: 'color', value: props.color },
+			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'timecode', value: props.timecode },
+			{ attribute: 'remaining_time', value: props.remainingTime },
+			{ attribute: 'position', value: stringifyInt(props.position) },
+			{ attribute: 'repeat', value: stringifyBoolean(props.repeat) },
+			{ attribute: 'tms', value: stringifyInt(props.tms) },
+			{ attribute: 'autoplay', value: stringifyBoolean(props.autoplay) },
+			// 'tally' is read-only, so can't be set
+		])
+	}
+	async ramRecorderBegin(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.begin`)
+	}
+	async ramRecorderRewind(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.rewind`)
+	}
+	async ramRecorderStepBack(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.step_back`)
+	}
+	async ramRecorderReverse(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.reverse`)
+	}
+	async ramRecorderPlay(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.play`)
+	}
+	async ramRecorderPlayLoop(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.play_loop`)
+	}
+	async ramRecorderPause(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.pause`)
+	}
+	async ramRecorderStop(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.stop`)
+	}
+	async ramRecorderStepForward(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.step_forward`)
+	}
+	async ramRecorderFastForward(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.fast_forward`)
+	}
+	async ramRecorderEnd(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.end`)
+	}
+	async ramRecorderPlaylistBegin(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.playlist_begin`)
+	}
+	async ramRecorderPlaylistBack(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.playlist_back`)
+	}
+	async ramRecorderPlaylistNext(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.playlist_next`)
+	}
+	async ramRecorderPlaylistEnd(ramRecorderId: number): Promise<void> {
+		this._assertRamRecorderIdIsValid(ramRecorderId)
+		return this.executeFunction(`RR${ramRecorderId}.playlist_end`)
+	}
+
+	private _assertRamRecorderIdIsValid(playerId: number): void {
+		if (typeof playerId !== 'number' || playerId < 1 || playerId > 8) {
+			throw new Error(`Invalid playerId: ${playerId}. Must be between 1 and 8.`)
+		}
+	}
 
 	// PLAYERS
 	// 	CP<1-2>
