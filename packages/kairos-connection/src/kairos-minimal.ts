@@ -305,6 +305,23 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		const commandStr = `${path}=${value}`
 		return this.executeCommand(commandStr)
 	}
+	/**
+	 * Set the values of multiple attributes at the same path on the KAIROS
+	 * Note: This does not try to serialize the values, as it does not have enough context to do so.
+	 * @param path The path to the object to update, e.g. `SCENES.Main.Layers.PGM`
+	 * @param attributes Array of the attributes on the path to set.
+	 * @returns void
+	 */
+	async setAttributes(
+		path: string,
+		attributes: Array<{ attribute: string; value: string | undefined }>
+	): Promise<void> {
+		await Promise.all(
+			attributes.map(
+				async (attr) => attr.value !== undefined && this.setAttribute(`${path}.${attr.attribute}`, attr.value)
+			)
+		)
+	}
 
 	/**
 	 * Get the value of an attribute from the KAIROS
@@ -340,6 +357,20 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	async getList(path: string): Promise<string[]> {
 		const commandStr = `list_ex:${path}`
 		return this.executeCommand(commandStr)
+	}
+
+	async executeFunction(path: string, ...args: string[]): Promise<void> {
+		// IP1.record=25,Output.rr\r\n
+		const escapedArgs: string[] = []
+		for (const arg of args) {
+			// Escape:
+			// , - &#44;
+			// \r - &#13;
+			// \n - &#10;
+
+			escapedArgs.push(arg.replaceAll(',', '&#44;').replaceAll('\r', '&#13;').replaceAll('\n', '&#10;'))
+		}
+		return this.executeCommand(`${path}=${escapedArgs.join(',')}`)
 	}
 
 	// TODO - implement this

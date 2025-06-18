@@ -1,5 +1,13 @@
+import {
+	parseBoolean,
+	parseCommaSeparated,
+	stringifyBoolean,
+	stringifyCommaSeparated,
+	stringifyFloat,
+	stringifyInt,
+} from './data-parsers.js'
 import { MinimalKairosConnection } from './kairos-minimal.js'
-import { MediaObject } from './kairos-types.js'
+import { MediaObject, UpdateSceneObject, SceneObject } from './kairos-types.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	// async updateLayer(params: UpdateLayerCommandParameters): Promise<APIRequest<Commands.UpdateLayer>> {
@@ -63,6 +71,82 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 					TransitionEffect
 	// 			Snapshots
 	// 				SNP
+	async listScenes(): Promise<string[]> {
+		return this.getList('SCENES')
+	}
+	async getScene(sceneName: string): Promise<SceneObject> {
+		const values = await this.getAttributes(`SCENES.${sceneName}`, [
+			'advanced_resolution_control',
+			'resolution_x',
+			'resolution_y',
+			'tally',
+			'color',
+			'resolution',
+			'next_transition',
+			'all_duration',
+			'all_fader',
+			'next_transition_type',
+			'fader_reverse',
+			'fader_sync',
+			'limit_off_action',
+			'limit_return_time',
+			'key_preview',
+		])
+		return {
+			advancedResolutionControl: parseBoolean(values.advanced_resolution_control),
+			resolutionX: parseInt(values.resolution_x, 10),
+			resolutionY: parseInt(values.resolution_y, 10),
+			tally: parseInt(values.tally, 10),
+			color: values.color,
+			resolution: parseInt(values.resolution, 10),
+			nextTransition: parseCommaSeparated(values.next_transition),
+			allDuration: parseInt(values.all_duration, 10),
+			allFader: parseFloat(values.all_fader),
+			nextTransitionType: values.next_transition_type,
+			faderReverse: parseBoolean(values.fader_reverse),
+			faderSync: parseBoolean(values.fader_sync),
+			limitOffAction: parseInt(values.limit_off_action, 10),
+			limitReturnTime: parseInt(values.limit_return_time),
+			keyPreview: values.key_preview,
+		}
+	}
+	async updateScene(sceneName: string, props: Partial<UpdateSceneObject>): Promise<void> {
+		await this.setAttributes(`SCENES.${sceneName}`, [
+			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
+			// { attribute: 'resolution_x', value: props.resolutionX,
+			// { attribute: 'resolution_y', value: props.resolutionY,
+			// { attribute: 'tally', value: props.tally,
+			{ attribute: 'color', value: props.color },
+			{ attribute: 'resolution', value: stringifyInt(props.resolution) },
+			{ attribute: 'next_transition', value: stringifyCommaSeparated(props.nextTransition) },
+			{ attribute: 'all_duration', value: stringifyInt(props.allDuration) },
+			{ attribute: 'all_fader', value: stringifyFloat(props.allFader) },
+			{ attribute: 'next_transition_type', value: props.nextTransitionType },
+			{ attribute: 'fader_reverse', value: stringifyBoolean(props.faderReverse) },
+			{ attribute: 'fader_sync', value: stringifyBoolean(props.faderSync) },
+			{ attribute: 'limit_off_action', value: stringifyInt(props.limitOffAction) },
+			{ attribute: 'limit_return_time', value: stringifyInt(props.limitReturnTime) },
+			{ attribute: 'key_preview', value: props.keyPreview },
+		])
+	}
+	async sceneAuto(sceneName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.auto`)
+	}
+	async sceneCut(sceneName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.cut`)
+	}
+	async sceneAllSelectedAuto(sceneName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.all_selected_auto`)
+	}
+	async sceneAllSelectedCut(sceneName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.all_selected_cut`)
+	}
+	// omitting, strore_snapshot, it must be a typo, right?
+	async sceneStoreSnapshot(sceneName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.store_snapshot`)
+	}
+
+	// Scene.Layers
 	// SOURCES
 	// 	FXINPUTS
 	// 		Fx
