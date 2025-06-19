@@ -5,8 +5,8 @@ import {
 	stringifyCommaSeparated,
 	stringifyFloat,
 	stringifyInt,
-} from './data-parsers.js'
-import { MinimalKairosConnection } from './kairos-minimal.js'
+} from './lib/data-parsers.js'
+import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
 import type {
 	MediaObject,
 	UpdateSceneObject,

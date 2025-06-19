@@ -40,8 +40,8 @@ export type KairosConnectionEvents = {
 }
 
 /**
- * The bare minimum class that just handles the basic connection and raw logic.
- *
+ * The `MinimalKairosConnection` class handles the basic connection to the Kairos server.
+ * It provides the basic methods to send and receive messages over the SPKCP protocol, manage the connection state, and handle errors.
  */
 export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents> {
 	private _connection: Connection
