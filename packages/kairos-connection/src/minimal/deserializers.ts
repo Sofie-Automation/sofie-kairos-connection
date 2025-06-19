@@ -12,7 +12,7 @@ export function okOrErrorDeserializer(lineBuffer: readonly string[]): Deserializ
 			response: undefined,
 		}
 	} else {
-		throw new Error(`Error response received: ${firstLine}`)
+		throw new Error(`okOrErrorDeserializer: Error response received: ${firstLine}`)
 	}
 }
 export function queryAttributeDeserializer(
@@ -28,7 +28,7 @@ export function queryAttributeDeserializer(
 			response: value,
 		}
 	} else {
-		throw new Error(`Error response received: ${firstLine}`)
+		throw new Error(`queryAttributeDeserializer: Error response received: ${firstLine} for path: ${path}`)
 	}
 }
 export function listDeserializer(lineBuffer: readonly string[], path: string): DeserializeResult<string[]> | null {
@@ -48,7 +48,7 @@ export function listDeserializer(lineBuffer: readonly string[], path: string): D
 			return null
 		}
 	} else {
-		throw new Error(`Error response received: ${firstLine}`)
+		throw new Error(`listDeserializer: Error response received: ${firstLine}`)
 	}
 }
 export function subscribeValueDeserializer(_lineBuffer: readonly string[]): DeserializeResult<undefined> | null {

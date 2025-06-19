@@ -6,6 +6,7 @@ import {
 	listDeserializer,
 	type DeserializeResult,
 } from './deserializers.js'
+import { ResponseError } from './errors.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -108,7 +109,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 				// If an error was received, reject the command
 				if (firstLine.startsWith('Error')) {
-					nextCommand.reject(new Error(`Error response received: ${firstLine}`))
+					nextCommand.reject(new ResponseError(nextCommand.serializedCommand, firstLine))
 
 					this._unprocessedLines.shift()
 					continue
@@ -183,8 +184,10 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @return { request: Promise<Response> } a Promise that resolves when the KAIROS replies after a command has been sent.
 	 * If this throws, there's something seriously wrong :)
 	 */
-	protected async executeCommand<TRes>(commandStr: string, deserializer: Deserializer<TRes>): Promise<TRes> {
+	async executeCommand<TRes>(commandStr: string, deserializer: Deserializer<TRes>): Promise<TRes> {
 		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
+
+		const orgError = new Error() // To be used later in case of an Error
 
 		const internalRequest: InternalRequest = {
 			serializedCommand: commandStr,
@@ -204,7 +207,19 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		this._requestQueue.push(internalRequest)
 		this._processQueue().catch((e) => this.emit('error', e))
 
-		return request
+		return request.catch((e) => {
+			if (e instanceof Error) {
+				// Append original call stack to the error:
+				const orgStack = `${orgError.stack}`.replace('Error: \n', '')
+
+				if (e.stack) {
+					e.stack = `${e.stack}\n--- Original stack: -------------------\n${orgStack}`
+				} else {
+					e.stack = orgStack
+				}
+			}
+			throw e
+		})
 	}
 
 	private async _processQueue(): Promise<void> {

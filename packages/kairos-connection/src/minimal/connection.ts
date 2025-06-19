@@ -19,6 +19,8 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 	private _keepaliveTimer?: NodeJS.Timeout
 	private _lastMessageSentTime = 0
 
+	private _debug = false
+
 	constructor(
 		private host: string,
 		private port = 3005,
@@ -51,12 +53,14 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 	async sendCommand(payload: string): Promise<Error | undefined> {
 		this._lastMessageSentTime = Date.now()
 
+		if (this._debug) console.debug(`Sending command: ${payload}`)
 		return new Promise<Error | undefined>((r) => {
 			this._socket?.write(payload + '\r\n', (e) => (e ? r(e) : r(undefined)))
 		})
 	}
 
 	private _processIncomingData(data: Buffer) {
+		if (this._debug) console.debug(`Received data: ${data.toString('utf-8')}`)
 		/**
 		 * This is a simple strategy to handle receiving newline separated data, factoring in arbitrary TCP fragmentation.
 		 * It is common for a long response to be split across multiple packets, most likely with the split happening in the middle of a line.
