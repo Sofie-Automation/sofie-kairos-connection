@@ -14,6 +14,7 @@ import type {
 	ClipPlayerObject,
 	UpdateClipPlayerObject,
 } from './kairos-types.js'
+import { ResponseError } from './minimal/errors.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	// async updateLayer(params: UpdateLayerCommandParameters): Promise<APIRequest<Commands.UpdateLayer>> {
@@ -416,7 +417,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this.getList('MEDIA.clips')
 	}
 	async getMediaClip(name: string): Promise<MediaObject | undefined> {
-		return await this._getMediaObject(`MEDIA.clips`, name)
+		return this._getMediaObject(`MEDIA.clips`, name)
 	}
 	async listMediaStills(): Promise<string[]> {
 		return this.getList('MEDIA.stills')
@@ -452,11 +453,13 @@ export class KairosConnection extends MinimalKairosConnection {
 				loadProgress: parseFloat(values.load_progress),
 			}
 		} catch (error) {
-			// Check if the clip exists, or there actually was an error:
-			const objectList = await this.getList(basePath)
-			if (!objectList.includes(mediaName)) {
-				// The object does not exist, so we return undefined
-				return undefined
+			if (error instanceof ResponseError) {
+				// Check if the clip exists, or there actually was an error:
+				const objectList = await this.getList(basePath)
+				if (!objectList.includes(mediaName)) {
+					// The object does not exist, so we return undefined
+					return undefined
+				}
 			}
 			throw error
 		}
