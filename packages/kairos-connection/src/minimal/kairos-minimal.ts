@@ -112,6 +112,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 					nextCommand.reject(new ResponseError(nextCommand.serializedCommand, firstLine))
 
 					this._unprocessedLines.shift()
+					this._requestQueue.shift() // Remove the command from the queue after processing
 					continue
 				}
 
