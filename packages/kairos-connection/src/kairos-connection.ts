@@ -238,6 +238,19 @@ export class KairosConnection extends MinimalKairosConnection {
 		])
 	}
 
+	async sceneLayerSwapAB(sceneName: string, layerName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.Layers.${layerName}.swap_A_B`)
+	}
+	async sceneLayerShowLayer(sceneName: string, layerName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.Layers.${layerName}.show_layer`)
+	}
+	async sceneLayerHideLayer(sceneName: string, layerName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.Layers.${layerName}.hide_layer`)
+	}
+	async sceneLayerToggleLayer(sceneName: string, layerName: string): Promise<void> {
+		return this.executeFunction(`SCENES.${sceneName}.Layers.${layerName}.toggle_layer`)
+	}
+
 	// Scene.Layers
 	// SOURCES
 	// 	FXINPUTS

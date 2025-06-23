@@ -181,7 +181,7 @@ describe('KairosConnection', () => {
 		// SCENES
 		// 	Scene
 
-		test('SCENES commands', async () => {
+		test('SCENES', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
 					'list_ex:SCENES': ['list_ex:SCENES=', 'SCENES.Main', 'SCENES.Templates', ''],
@@ -213,47 +213,6 @@ describe('KairosConnection', () => {
 					'SCENES.Main.all_selected_auto=': ['OK'],
 					'SCENES.Main.all_selected_cut=': ['OK'],
 					'SCENES.Main.store_snapshot=': ['OK'],
-					// Layers:
-					'list_ex:SCENES.Main.Layers': [
-						'list_ex:SCENES.Main.Layers=',
-						'SCENES.Main.Layers.Background',
-						'SCENES.Main.Layers.Layer-1',
-						'SCENES.Main.Layers.Layer-2',
-						'',
-					],
-					'SCENES.Main.Layers.Background.color=rgb(255,0,0)': ['OK'],
-					'SCENES.Main.Layers.Background.opacity': ['SCENES.Main.Layers.Background.opacity=1'],
-					'SCENES.Main.Layers.Background.sourceA': ['SCENES.Main.Layers.Background.sourceA=BLACK'],
-					'SCENES.Main.Layers.Background.sourceB': ['SCENES.Main.Layers.Background.sourceB=BLACK'],
-					'SCENES.Main.Layers.Background.source_pgm': ['SCENES.Main.Layers.Background.source_pgm=BLACK'],
-					'SCENES.Main.Layers.Background.source_pst': ['SCENES.Main.Layers.Background.source_pst=BLACK'],
-					'SCENES.Main.Layers.Background.active_bus': ['SCENES.Main.Layers.Background.active_bus=A-Bus'],
-					'SCENES.Main.Layers.Background.pgm_pst_mode': ['SCENES.Main.Layers.Background.pgm_pst_mode=Swap'],
-					'SCENES.Main.Layers.Background.sourceOptions': [
-						'SCENES.Main.Layers.Background.sourceOptions=BLACK,CP1,CP2,RR1,RR2,RR3,RR4,RR5,RR6,RR7,RR8,IS1,IS2,IS3,IS4,IS5,IS6,IS7,IS8,SCENES.Templates.2Box,SCENES.Templates.4Box,SCENES.Templates.OTS Left,SCENES.Templates.OTS Right,SCENES.Templates.Title,SCENES.Templates.Sidecar,',
-					],
-					'SCENES.Main.Layers.Background.state': ['SCENES.Main.Layers.Background.state=On'],
-					'SCENES.Main.Layers.Background.mode': ['SCENES.Main.Layers.Background.mode=Auto'],
-					'SCENES.Main.Layers.Background.fxEnabled': ['SCENES.Main.Layers.Background.fxEnabled=0'],
-					'SCENES.Main.Layers.Background.preset_enabled': ['SCENES.Main.Layers.Background.preset_enabled=1'],
-					'SCENES.Main.Layers.Background.color': ['SCENES.Main.Layers.Background.color=rgb(255,0,0)'],
-					'SCENES.Main.Layers.Background.clean_mask': ['SCENES.Main.Layers.Background.clean_mask=0'],
-					'SCENES.Main.Layers.Background.dissolve_enabled': ['SCENES.Main.Layers.Background.dissolve_enabled=0'],
-					'SCENES.Main.Layers.Background.dissolve_time': ['SCENES.Main.Layers.Background.dissolve_time=50'],
-					'SCENES.Main.Layers.Background.source_clean_mask': ['SCENES.Main.Layers.Background.source_clean_mask=0'],
-					'SCENES.Main.Layers.Background.dissolve_mode': ['SCENES.Main.Layers.Background.dissolve_mode=Normal'],
-					'SCENES.Main.Layers.Background.blend_mode': ['SCENES.Main.Layers.Background.blend_mode=Default'],
-					'SCENES.Main.Layers.Background.opacity=1': ['OK'],
-					'SCENES.Main.Layers.Background.sourceA=BLACK': ['OK'],
-					'SCENES.Main.Layers.Background.source_pgm=BLACK': ['OK'],
-					'SCENES.Main.Layers.Background.source_pst=BLACK': ['OK'],
-					'SCENES.Main.Layers.Background.sourceOptions=BLACK,CP1,CP2,RR1,RR2,RR3,RR4,RR5,RR6,RR7,RR8,IS1,IS2,IS3,IS4,IS5,IS6,IS7,IS8,SCENES.Templates.2Box,SCENES.Templates.4Box,SCENES.Templates.OTS Left,SCENES.Templates.OTS Right,SCENES.Templates.Title,SCENES.Templates.Sidecar':
-						['OK'],
-					'SCENES.Main.Layers.Background.preset_enabled=1': ['OK'],
-					'SCENES.Main.Layers.Background.clean_mask=0': ['OK'],
-					'SCENES.Main.Layers.Background.source_clean_mask=0': ['OK'],
-					'SCENES.Main.Layers.Background.dissolve_enabled=0': ['OK'],
-					'SCENES.Main.Layers.Background.dissolve_time=50': ['OK'],
 				}[message]
 				if (reply) return reply
 
@@ -302,6 +261,91 @@ describe('KairosConnection', () => {
 			expect(await connection.sceneAllSelectedAuto('Main')).toBeUndefined()
 			expect(await connection.sceneAllSelectedCut('Main')).toBeUndefined()
 			expect(await connection.sceneStoreSnapshot('Main')).toBeUndefined()
+		})
+		// SCENES.Scene.Layers
+		// 		Layers
+		// 			Layer
+		// 				Effects
+		// 					Crop
+		// 					Transform2D
+		// 					LuminanceKey
+		// 					ChromaKey
+		// 					YUVCorrection
+		// 					RGBCorrection
+		// 					LUTCorrection
+		// 					VirtualPTZ
+		// 					ToneCurveCorrection
+		// 					MatrixCorrection
+		// 					TemperatureCorrection
+		// 					LinearKey
+		// 					Position
+		// 					PCrop
+		// 					FilmLook
+		// 					GlowEffect
+		// 			Transitions
+		// 				Transition
+		// 				BgdMix
+		// 					TransitionEffect
+		// 			Snapshots
+		// 				SNP
+		test('SCENES.Layers', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SCENES.Main.Layers': [
+						'list_ex:SCENES.Main.Layers=',
+						'SCENES.Main.Layers.Background',
+						'SCENES.Main.Layers.Layer-1',
+						'SCENES.Main.Layers.Layer-2',
+						'',
+					],
+					'SCENES.Main.Layers.Background.color=rgb(255,0,0)': ['OK'],
+					'SCENES.Main.Layers.Background.opacity': ['SCENES.Main.Layers.Background.opacity=1'],
+					'SCENES.Main.Layers.Background.sourceA': ['SCENES.Main.Layers.Background.sourceA=BLACK'],
+					'SCENES.Main.Layers.Background.sourceB': ['SCENES.Main.Layers.Background.sourceB=BLACK'],
+					'SCENES.Main.Layers.Background.source_pgm': ['SCENES.Main.Layers.Background.source_pgm=BLACK'],
+					'SCENES.Main.Layers.Background.source_pst': ['SCENES.Main.Layers.Background.source_pst=BLACK'],
+					'SCENES.Main.Layers.Background.active_bus': ['SCENES.Main.Layers.Background.active_bus=A-Bus'],
+					'SCENES.Main.Layers.Background.pgm_pst_mode': ['SCENES.Main.Layers.Background.pgm_pst_mode=Swap'],
+					'SCENES.Main.Layers.Background.sourceOptions': [
+						'SCENES.Main.Layers.Background.sourceOptions=BLACK,CP1,CP2,RR1,RR2,RR3,RR4,RR5,RR6,RR7,RR8,IS1,IS2,IS3,IS4,IS5,IS6,IS7,IS8,SCENES.Templates.2Box,SCENES.Templates.4Box,SCENES.Templates.OTS Left,SCENES.Templates.OTS Right,SCENES.Templates.Title,SCENES.Templates.Sidecar,',
+					],
+					'SCENES.Main.Layers.Background.state': ['SCENES.Main.Layers.Background.state=On'],
+					'SCENES.Main.Layers.Background.mode': ['SCENES.Main.Layers.Background.mode=Auto'],
+					'SCENES.Main.Layers.Background.fxEnabled': ['SCENES.Main.Layers.Background.fxEnabled=0'],
+					'SCENES.Main.Layers.Background.preset_enabled': ['SCENES.Main.Layers.Background.preset_enabled=1'],
+					'SCENES.Main.Layers.Background.color': ['SCENES.Main.Layers.Background.color=rgb(255,0,0)'],
+					'SCENES.Main.Layers.Background.clean_mask': ['SCENES.Main.Layers.Background.clean_mask=0'],
+					'SCENES.Main.Layers.Background.dissolve_enabled': ['SCENES.Main.Layers.Background.dissolve_enabled=0'],
+					'SCENES.Main.Layers.Background.dissolve_time': ['SCENES.Main.Layers.Background.dissolve_time=50'],
+					'SCENES.Main.Layers.Background.source_clean_mask': ['SCENES.Main.Layers.Background.source_clean_mask=0'],
+					'SCENES.Main.Layers.Background.dissolve_mode': ['SCENES.Main.Layers.Background.dissolve_mode=Normal'],
+					'SCENES.Main.Layers.Background.blend_mode': ['SCENES.Main.Layers.Background.blend_mode=Default'],
+					'SCENES.Main.Layers.Background.opacity=1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=BLACK': ['OK'],
+					'SCENES.Main.Layers.Background.source_pgm=BLACK': ['OK'],
+					'SCENES.Main.Layers.Background.source_pst=BLACK': ['OK'],
+					'SCENES.Main.Layers.Background.sourceOptions=BLACK,CP1,CP2,RR1,RR2,RR3,RR4,RR5,RR6,RR7,RR8,IS1,IS2,IS3,IS4,IS5,IS6,IS7,IS8,SCENES.Templates.2Box,SCENES.Templates.4Box,SCENES.Templates.OTS Left,SCENES.Templates.OTS Right,SCENES.Templates.Title,SCENES.Templates.Sidecar':
+						['OK'],
+					'SCENES.Main.Layers.Background.preset_enabled=1': ['OK'],
+					'SCENES.Main.Layers.Background.clean_mask=0': ['OK'],
+					'SCENES.Main.Layers.Background.source_clean_mask=0': ['OK'],
+					'SCENES.Main.Layers.Background.dissolve_enabled=0': ['OK'],
+					'SCENES.Main.Layers.Background.dissolve_time=50': ['OK'],
+					'SCENES.Main.Layers.Background.swap_A_B=': ['OK'],
+					'SCENES.Main.Layers.Background.show_layer=': ['OK'],
+					'SCENES.Main.Layers.Background.hide_layer=': ['OK'],
+					'SCENES.Main.Layers.Background.toggle_layer=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				// if (emulatorConnection) {
+				// 	// If there is an emulatorConnection, use it to handle the command:
+				// 	const reply = await emulatorConnection.doCommand(message)
+				// 	if (reply !== null) return reply
+				// }
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
 
 			expect(await connection.listSceneLayers('Main')).toStrictEqual(['Background', 'Layer-1', 'Layer-2'])
 
@@ -398,33 +442,13 @@ describe('KairosConnection', () => {
 				sourcePst: 'BLACK',
 				state: SceneLayerState.On,
 			} satisfies SceneLayerObject)
+
+			expect(await connection.sceneLayerSwapAB('Main', 'Background')).toBeUndefined()
+			expect(await connection.sceneLayerShowLayer('Main', 'Background')).toBeUndefined()
+			expect(await connection.sceneLayerHideLayer('Main', 'Background')).toBeUndefined()
+			expect(await connection.sceneLayerToggleLayer('Main', 'Background')).toBeUndefined()
 		})
-		// SCENES.Scene.Layers
-		// 		Layers
-		// 			Layer
-		// 				Effects
-		// 					Crop
-		// 					Transform2D
-		// 					LuminanceKey
-		// 					ChromaKey
-		// 					YUVCorrection
-		// 					RGBCorrection
-		// 					LUTCorrection
-		// 					VirtualPTZ
-		// 					ToneCurveCorrection
-		// 					MatrixCorrection
-		// 					TemperatureCorrection
-		// 					LinearKey
-		// 					Position
-		// 					PCrop
-		// 					FilmLook
-		// 					GlowEffect
-		// 			Transitions
-		// 				Transition
-		// 				BgdMix
-		// 					TransitionEffect
-		// 			Snapshots
-		// 				SNP
+
 		// SOURCES
 		// 	FXINPUTS
 		// 		Fx
