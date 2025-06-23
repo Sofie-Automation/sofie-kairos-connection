@@ -1,4 +1,4 @@
-import { OmitReadonly } from './lib/omit-readonly'
+import { OmitReadonly } from './lib/omit-readonly.js'
 
 export interface MediaObject {
 	name: string
