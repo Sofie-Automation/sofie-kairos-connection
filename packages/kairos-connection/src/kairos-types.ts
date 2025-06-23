@@ -23,7 +23,7 @@ export interface SceneObject {
 	 * sources within the Scene -internal sources as well as external sources, and from
 	 * the designated outputs. In order to adjust the individual X/Y settings, the according
 	 * slider, the numeric entry box or the arrow up/down icons can be used.
-	 * int: [ min: 16 | max: 3840 ]
+	 * [ integer, min: 16, max: 3840 ]
 	 */
 	readonly resolutionX: number
 
@@ -34,7 +34,7 @@ export interface SceneObject {
 	 * sources within the Scene -internal sources as well as external sources, and from
 	 * the designated outputs. In order to adjust the individual X/Y settings, the according
 	 * slider, the numeric entry box or the arrow up/down icons can be used.
-	 * int: [ min: 10 | max: 2160 ]
+	 * [ integer, min: 10, max: 2160 ]
 	 */
 	readonly resolutionY: number
 
@@ -51,7 +51,7 @@ export interface SceneObject {
 	 * tray and configure the individual Aux outputs 1-16 to the desired Tally
 	 * color/functionality. “Red” is default for “On Air” Tally and “Yellow” is default for
 	 * Preview (PVW) Tally.
-	 * [integer]
+	 * [ integer ]
 	 */
 	readonly tally: number
 
@@ -75,18 +75,18 @@ export interface SceneObject {
 	/** list[ObjectID] */
 	nextTransition: string[]
 
-	/** int: [ min: 0 | max: 9999 ] */
+	/** [ integer ,min: 0, max: 9999 ] */
 	allDuration: number
 	/** float  */
 	allFader: number
-	/** ObjectID */
+	/** [ ObjectID ] */
 	nextTransitionType: string
 	faderReverse: boolean
 	faderSync: boolean
 
 	/**  */
 	limitOffAction: SceneLimitOffAction
-	/** int: [ min: 0 | max: 9999 ] */
+	/** [ integer, min: 0, max: 9999 ] */
 	limitReturnTime: number
 	/** ObjectID  */
 	keyPreview: string
