@@ -14,12 +14,13 @@ export class KairosRecorder {
 	private _onlineOnly = false
 
 	connection: any
-	constructor() {
+	constructor(emulatorIp: string) {
 		let MinimalKairosConnection = MinimalImport.MinimalKairosConnection
 		// This is a hack to access the original, unmocked class:
 		MinimalKairosConnection = (MinimalImport as any).OriginalMinimalKairosConnection
 
 		this.connection = new MinimalKairosConnection({
+			host: emulatorIp,
 			// port: 4000,
 		})
 	}

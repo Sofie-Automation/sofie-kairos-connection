@@ -94,13 +94,11 @@ type MockedKairosConnection = IMockMinimalKairosConnection & InstanceType<typeof
 describe('KairosConnection', () => {
 	let connection: MockedKairosConnection
 
-	const useEmulator =
-		process.env.KAIROS_CONNECTION_USE_EMULATOR === 'true' || process.env.KAIROS_CONNECTION_USE_EMULATOR === '1'
 	let emulatorConnection: KairosRecorder | null
 
 	beforeAll(async () => {
-		if (useEmulator) {
-			emulatorConnection = new KairosRecorder()
+		if (process.env.KAIROS_EMULATOR_IP) {
+			emulatorConnection = new KairosRecorder(process.env.KAIROS_EMULATOR_IP)
 			await emulatorConnection.init()
 		}
 	})
