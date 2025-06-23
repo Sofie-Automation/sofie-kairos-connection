@@ -1,18 +1,31 @@
 import {
 	parseBoolean,
 	parseCommaSeparated,
+	parseEnum,
 	stringifyBoolean,
 	stringifyCommaSeparated,
+	stringifyEnum,
 	stringifyFloat,
 	stringifyInt,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
-import type {
-	MediaObject,
-	UpdateSceneObject,
-	SceneObject,
-	ClipPlayerObject,
-	UpdateClipPlayerObject,
+import {
+	type MediaObject,
+	type UpdateSceneObject,
+	type SceneObject,
+	type ClipPlayerObject,
+	type UpdateClipPlayerObject,
+	type SceneLayerObject,
+	type UpdateSceneLayerObject,
+	SceneLayerActiveBus,
+	SceneResolution,
+	SceneLimitOffAction,
+	ClipPlayerTMS,
+	SceneLayerPgmPstMode,
+	SceneLayerState,
+	SceneLayerMode,
+	SceneLayerDissolveMode,
+	SceneLayerBlendMode,
 } from './kairos-types.js'
 import { ResponseError } from './minimal/errors.js'
 
@@ -53,33 +66,8 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		OUT_AUDIO<1-8>
 	// SCENES
 	// 	Scene
-	// 		Layers
-	// 			Layer
-	// 				Effects
-	// 					Crop
-	// 					Transform2D
-	// 					LuminanceKey
-	// 					ChromaKey
-	// 					YUVCorrection
-	// 					RGBCorrection
-	// 					LUTCorrection
-	// 					VirtualPTZ
-	// 					ToneCurveCorrection
-	// 					MatrixCorrection
-	// 					TemperatureCorrection
-	// 					LinearKey
-	// 					Position
-	// 					PCrop
-	// 					FilmLook
-	// 					GlowEffect
-	// 			Transitions
-	// 				Transition
-	// 				BgdMix
-	// 					TransitionEffect
-	// 			Snapshots
-	// 				SNP
 	async listScenes(): Promise<string[]> {
-		return this.getList('SCENES')
+		return (await this.getList('SCENES')).map((sceneName) => sceneName.replace('SCENES.', ''))
 	}
 	async getScene(sceneName: string): Promise<SceneObject> {
 		const values = await this.getAttributes(`SCENES.${sceneName}`, [
@@ -105,14 +93,14 @@ export class KairosConnection extends MinimalKairosConnection {
 			resolutionY: parseInt(values.resolution_y, 10),
 			tally: parseInt(values.tally, 10),
 			color: values.color,
-			resolution: parseInt(values.resolution, 10),
+			resolution: parseEnum<SceneResolution>(values.resolution, SceneResolution),
 			nextTransition: parseCommaSeparated(values.next_transition),
 			allDuration: parseInt(values.all_duration, 10),
 			allFader: parseFloat(values.all_fader),
 			nextTransitionType: values.next_transition_type,
 			faderReverse: parseBoolean(values.fader_reverse),
 			faderSync: parseBoolean(values.fader_sync),
-			limitOffAction: parseInt(values.limit_off_action, 10),
+			limitOffAction: parseEnum<SceneLimitOffAction>(values.limit_off_action, SceneLimitOffAction),
 			limitReturnTime: parseInt(values.limit_return_time),
 			keyPreview: values.key_preview,
 		}
@@ -124,14 +112,14 @@ export class KairosConnection extends MinimalKairosConnection {
 			// { attribute: 'resolution_y', value: props.resolutionY,
 			// { attribute: 'tally', value: props.tally,
 			{ attribute: 'color', value: props.color },
-			{ attribute: 'resolution', value: stringifyInt(props.resolution) },
+			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
 			{ attribute: 'next_transition', value: stringifyCommaSeparated(props.nextTransition) },
 			{ attribute: 'all_duration', value: stringifyInt(props.allDuration) },
 			{ attribute: 'all_fader', value: stringifyFloat(props.allFader) },
 			{ attribute: 'next_transition_type', value: props.nextTransitionType },
 			{ attribute: 'fader_reverse', value: stringifyBoolean(props.faderReverse) },
 			{ attribute: 'fader_sync', value: stringifyBoolean(props.faderSync) },
-			{ attribute: 'limit_off_action', value: stringifyInt(props.limitOffAction) },
+			{ attribute: 'limit_off_action', value: stringifyEnum(props.limitOffAction, SceneLimitOffAction) },
 			{ attribute: 'limit_return_time', value: stringifyInt(props.limitReturnTime) },
 			{ attribute: 'key_preview', value: props.keyPreview },
 		])
@@ -151,6 +139,103 @@ export class KairosConnection extends MinimalKairosConnection {
 	// omitting, strore_snapshot, it must be a typo, right?
 	async sceneStoreSnapshot(sceneName: string): Promise<void> {
 		return this.executeFunction(`SCENES.${sceneName}.store_snapshot`)
+	}
+	// 		Layers
+	// 			Layer
+	// 				Effects
+	// 					Crop
+	// 					Transform2D
+	// 					LuminanceKey
+	// 					ChromaKey
+	// 					YUVCorrection
+	// 					RGBCorrection
+	// 					LUTCorrection
+	// 					VirtualPTZ
+	// 					ToneCurveCorrection
+	// 					MatrixCorrection
+	// 					TemperatureCorrection
+	// 					LinearKey
+	// 					Position
+	// 					PCrop
+	// 					FilmLook
+	// 					GlowEffect
+	// 			Transitions
+	// 				Transition
+	// 				BgdMix
+	// 					TransitionEffect
+	// 			Snapshots
+	// 				SNP
+	async listSceneLayers(sceneName: string): Promise<string[]> {
+		return (await this.getList(`SCENES.${sceneName}.Layers`)).map((layerName) =>
+			layerName.replace(`SCENES.${sceneName}.Layers.`, '')
+		)
+	}
+	async getSceneLayer(sceneName: string, layerName: string): Promise<SceneLayerObject> {
+		const values = await this.getAttributes(`SCENES.${sceneName}.Layers.${layerName}`, [
+			'opacity',
+			'sourceA',
+			'sourceB',
+			'source_pgm',
+			'source_pst',
+			'active_bus',
+			'pgm_pst_mode',
+			'sourceOptions',
+			'state',
+			'mode',
+			'fxEnabled',
+			'preset_enabled',
+			'color',
+			'clean_mask',
+			'dissolve_enabled',
+			'dissolve_time',
+			'source_clean_mask',
+			'dissolve_mode',
+			'blend_mode',
+		])
+
+		return {
+			opacity: parseFloat(values.opacity),
+			sourceA: values.sourceA,
+			sourceB: values.sourceB,
+			sourcePgm: values.source_pgm,
+			sourcePst: values.source_pst,
+			activeBus: parseEnum<SceneLayerActiveBus>(values.active_bus, SceneLayerActiveBus),
+			pgmPstMode: parseEnum<SceneLayerPgmPstMode>(values.pgm_pst_mode, SceneLayerPgmPstMode),
+			sourceOptions: parseCommaSeparated(values.sourceOptions),
+			state: parseEnum<SceneLayerState>(values.state, SceneLayerState),
+			mode: parseEnum<SceneLayerMode>(values.mode, SceneLayerMode),
+			fxEnabled: parseBoolean(values.fxEnabled),
+			presetEnabled: parseBoolean(values.preset_enabled),
+			color: values.color,
+			cleanMask: parseInt(values.clean_mask, 10),
+			sourceCleanMask: parseInt(values.source_clean_mask, 10),
+			dissolveEnabled: parseBoolean(values.dissolve_enabled),
+			dissolveTime: parseInt(values.dissolve_time, 10),
+			dissolveMode: parseEnum<SceneLayerDissolveMode>(values.dissolve_mode, SceneLayerDissolveMode),
+			blendMode: parseEnum<SceneLayerBlendMode>(values.blend_mode, SceneLayerBlendMode),
+		}
+	}
+	async updateSceneLayer(sceneName: string, layerName: string, props: Partial<UpdateSceneLayerObject>): Promise<void> {
+		await this.setAttributes(`SCENES.${sceneName}.Layers.${layerName}`, [
+			{ attribute: 'opacity', value: stringifyFloat(props.opacity) },
+			{ attribute: 'sourceA', value: props.sourceA },
+			{ attribute: 'source_pgm', value: props.sourcePgm },
+			{ attribute: 'source_pst', value: props.sourcePst },
+			{ attribute: 'pgm_pst_mode', value: stringifyEnum<SceneLayerPgmPstMode>(props.pgmPstMode, SceneLayerPgmPstMode) },
+			{ attribute: 'sourceOptions', value: stringifyCommaSeparated(props.sourceOptions) },
+			{ attribute: 'mode', value: stringifyEnum<SceneLayerMode>(props.mode, SceneLayerMode) },
+			{ attribute: 'preset_enabled', value: stringifyBoolean(props.presetEnabled) },
+			{ attribute: 'color', value: props.color },
+			{ attribute: 'clean_mask', value: stringifyInt(props.cleanMask) },
+			{ attribute: 'source_clean_mask', value: stringifyInt(props.sourceCleanMask) },
+			{ attribute: 'dissolve_enabled', value: stringifyBoolean(props.dissolveEnabled) },
+			{ attribute: 'dissolve_time', value: stringifyInt(props.dissolveTime) },
+			{
+				attribute: 'dissolve_mode',
+				value: stringifyEnum<SceneLayerDissolveMode>(props.dissolveMode, SceneLayerDissolveMode),
+			},
+			{ attribute: 'blend_mode', value: stringifyEnum<SceneLayerBlendMode>(props.blendMode, SceneLayerBlendMode) },
+		])
 	}
 
 	// Scene.Layers
@@ -205,7 +290,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			remainingTime: values.remaining_time,
 			position: parseInt(values.position, 10),
 			repeat: parseBoolean(values.repeat),
-			tms: parseInt(values.tms, 10),
+			tms: parseEnum(values.tms, ClipPlayerTMS),
 			clip: values.clip,
 			tally: parseInt(values.tally, 10),
 			autoplay: parseBoolean(values.autoplay),
@@ -221,7 +306,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'remaining_time', value: props.remainingTime },
 			{ attribute: 'position', value: stringifyInt(props.position) },
 			{ attribute: 'repeat', value: stringifyBoolean(props.repeat) },
-			{ attribute: 'tms', value: stringifyInt(props.tms) },
+			{ attribute: 'tms', value: stringifyEnum<ClipPlayerTMS>(props.tms, ClipPlayerTMS) },
 			{ attribute: 'autoplay', value: stringifyBoolean(props.autoplay) },
 			// 'tally' is read-only, so can't be set
 		])
@@ -317,7 +402,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			remainingTime: values.remaining_time,
 			position: parseInt(values.position, 10),
 			repeat: parseBoolean(values.repeat),
-			tms: parseInt(values.tms, 10),
+			tms: parseEnum<ClipPlayerTMS>(values.tms, ClipPlayerTMS),
 			clip: values.clip,
 			tally: parseInt(values.tally, 10),
 			autoplay: parseBoolean(values.autoplay),
@@ -333,7 +418,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'remaining_time', value: props.remainingTime },
 			{ attribute: 'position', value: stringifyInt(props.position) },
 			{ attribute: 'repeat', value: stringifyBoolean(props.repeat) },
-			{ attribute: 'tms', value: stringifyInt(props.tms) },
+			{ attribute: 'tms', value: stringifyEnum<ClipPlayerTMS>(props.tms, ClipPlayerTMS) },
 			{ attribute: 'autoplay', value: stringifyBoolean(props.autoplay) },
 			// 'tally' is read-only, so can't be set
 		])

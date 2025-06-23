@@ -1,5 +1,20 @@
 import { expect, test, describe, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest'
-import { KairosConnection, MinimalKairosConnection } from '../main.js'
+import {
+	ClipPlayerObject,
+	ClipPlayerTMS,
+	KairosConnection,
+	MinimalKairosConnection,
+	SceneLayerActiveBus,
+	SceneLayerBlendMode,
+	SceneLayerDissolveMode,
+	SceneLayerMode,
+	SceneLayerObject,
+	SceneLayerPgmPstMode,
+	SceneLayerState,
+	SceneLimitOffAction,
+	SceneObject,
+	SceneResolution,
+} from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 
 // Mock the MinimalKairosConnection class
@@ -174,7 +189,7 @@ describe('KairosConnection', () => {
 			// 	throw new Error(`Unexpected message: ${message}`)
 			// })
 
-			expect(await connection.listScenes()).toStrictEqual(['SCENES.Main', 'SCENES.Templates'])
+			expect(await connection.listScenes()).toStrictEqual(['Main', 'Templates'])
 
 			expect(
 				await connection.updateScene('Main', {
@@ -200,15 +215,15 @@ describe('KairosConnection', () => {
 				faderReverse: false,
 				faderSync: false,
 				keyPreview: '<unknown>',
-				limitOffAction: NaN,
+				limitOffAction: SceneLimitOffAction.None,
 				limitReturnTime: 20,
 				nextTransition: ['SCENES.Main.Transitions.BgdMix'],
 				nextTransitionType: '<unknown>',
-				resolution: 1920,
+				resolution: SceneResolution.Resolution1920x1080,
 				resolutionX: 1920,
 				resolutionY: 1080,
 				tally: 3,
-			})
+			} satisfies SceneObject)
 
 			expect(await connection.sceneAuto('Main')).toBeUndefined()
 
@@ -216,6 +231,102 @@ describe('KairosConnection', () => {
 			expect(await connection.sceneAllSelectedAuto('Main')).toBeUndefined()
 			expect(await connection.sceneAllSelectedCut('Main')).toBeUndefined()
 			expect(await connection.sceneStoreSnapshot('Main')).toBeUndefined()
+
+			expect(await connection.listSceneLayers('Main')).toStrictEqual(['Background', 'Layer-1', 'Layer-2'])
+
+			expect(
+				await connection.updateSceneLayer('Main', 'Background', {
+					// blendMode: NaN,
+					cleanMask: 0,
+					color: 'rgb(255,0,0)',
+					dissolveEnabled: false,
+					// dissolveMode: NaN,
+					dissolveTime: 50,
+					// mode: NaN,
+					opacity: 1,
+					// pgmPstMode: NaN,
+					presetEnabled: true,
+					sourceA: 'BLACK',
+					sourceCleanMask: 0,
+					sourceOptions: [
+						'BLACK',
+						'CP1',
+						'CP2',
+						'RR1',
+						'RR2',
+						'RR3',
+						'RR4',
+						'RR5',
+						'RR6',
+						'RR7',
+						'RR8',
+						'IS1',
+						'IS2',
+						'IS3',
+						'IS4',
+						'IS5',
+						'IS6',
+						'IS7',
+						'IS8',
+						'SCENES.Templates.2Box',
+						'SCENES.Templates.4Box',
+						'SCENES.Templates.OTS Left',
+						'SCENES.Templates.OTS Right',
+						'SCENES.Templates.Title',
+						'SCENES.Templates.Sidecar',
+					],
+					sourcePgm: 'BLACK',
+					sourcePst: 'BLACK',
+				})
+			).toBeUndefined()
+
+			expect(await connection.getSceneLayer('Main', 'Background')).toStrictEqual({
+				activeBus: SceneLayerActiveBus.ABus,
+				blendMode: SceneLayerBlendMode.Default,
+				cleanMask: 0,
+				color: 'rgb(255,0,0)',
+				dissolveEnabled: false,
+				dissolveMode: SceneLayerDissolveMode.Normal,
+				dissolveTime: 50,
+				fxEnabled: false,
+				mode: SceneLayerMode.Auto,
+				opacity: 1,
+				pgmPstMode: SceneLayerPgmPstMode.Swap,
+				presetEnabled: true,
+				sourceA: 'BLACK',
+				sourceB: 'BLACK',
+				sourceCleanMask: 0,
+				sourceOptions: [
+					'BLACK',
+					'CP1',
+					'CP2',
+					'RR1',
+					'RR2',
+					'RR3',
+					'RR4',
+					'RR5',
+					'RR6',
+					'RR7',
+					'RR8',
+					'IS1',
+					'IS2',
+					'IS3',
+					'IS4',
+					'IS5',
+					'IS6',
+					'IS7',
+					'IS8',
+					'SCENES.Templates.2Box',
+					'SCENES.Templates.4Box',
+					'SCENES.Templates.OTS Left',
+					'SCENES.Templates.OTS Right',
+					'SCENES.Templates.Title',
+					'SCENES.Templates.Sidecar',
+				],
+				sourcePgm: 'BLACK',
+				sourcePst: 'BLACK',
+				state: SceneLayerState.On,
+			} satisfies SceneLayerObject)
 		})
 		// SCENES.Scene.Layers
 		// 		Layers
@@ -301,8 +412,8 @@ describe('KairosConnection', () => {
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: NaN,
-			})
+				tms: ClipPlayerTMS.Pause,
+			} satisfies ClipPlayerObject)
 
 			expect(await connection.ramRecorderBegin(1)).toBeUndefined()
 			expect(await connection.ramRecorderRewind(1)).toBeUndefined()
@@ -354,7 +465,7 @@ describe('KairosConnection', () => {
 				tally: 0,
 				timecode: '00:00:00:00',
 				tms: NaN,
-			})
+			} satisfies ClipPlayerObject)
 
 			expect(await connection.clipPlayerBegin(1)).toBeUndefined()
 			expect(await connection.clipPlayerRewind(1)).toBeUndefined()
