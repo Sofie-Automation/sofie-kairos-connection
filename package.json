@@ -47,6 +47,7 @@
     "typescript": "~5.7.3",
     "vitest": "^3.2.0"
   },
+  "type": "module",
   "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
   "lint-staged": {
     "*.{css,json,md,scss}": [
