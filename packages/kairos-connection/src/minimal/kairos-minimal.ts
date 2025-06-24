@@ -417,14 +417,19 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	// 	abort.abort() // Unsubscribe
 	// }
 
-	subscribeValue(path: string, abort: AbortSignal, rawCallback: SubscriptionCallback): void {
+	subscribeValue(
+		path: string,
+		abort: AbortSignal,
+		rawCallback: SubscriptionCallback<string>,
+		fetchCurrentValue = true
+	): void {
 		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
 		if (abort.aborted) throw new Error('Cannot subscribe, abort signal is already aborted')
 
 		const subscriberId = randomUUID()
 
 		let callbackHasErrored = false
-		const wrappedCallback: SubscriptionCallback = (path, error, value) => {
+		const wrappedCallback: SubscriptionCallback<string> = (path, error, value) => {
 			if (abort.aborted) return // If the abort signal is already aborted, do not call the callback
 			if (callbackHasErrored) return // If the callback has already errored, do not call it again
 
@@ -444,7 +449,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		if (subscription) {
 			subscription.subscribers.set(subscriberId, wrappedCallback)
 
-			if (subscription.latestValue !== null) {
+			if (subscription.latestValue !== null && fetchCurrentValue) {
 				const latestValue = subscription.latestValue
 				// If we already have a value, call the callback immediately
 				process.nextTick(() => {
@@ -471,7 +476,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 			})
 		}
 
-		if (queryValue) {
+		if (queryValue && fetchCurrentValue) {
 			const commandStr = `${path}`
 			this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path), true)
 				.then((res) => {
@@ -510,7 +515,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 	#terminateSubscription(path: string, subscription: SubscriptionState, error: Error): void {
 		// Inform the subscribers of the failure
-		this.#emitToAllSubscribers(subscription.subscribers, path, error, '')
+		this.#emitToAllSubscribers(subscription.subscribers, path, error, null)
 
 		// Terminate the subscription
 		const currentSubscription = this.#subscriptions.get(path)
@@ -519,10 +524,10 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	}
 
 	#emitToAllSubscribers(
-		subscribers: Map<string, SubscriptionCallback>,
+		subscribers: Map<string, SubscriptionCallback<string>>,
 		path: string,
 		error: Error | null,
-		value: string
+		value: string | null
 	) {
 		for (const callback of subscribers.values()) {
 			// Call the callback with the path and the value
@@ -541,7 +546,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 			// Defer to ensure the subscription map is empty before the callbacks execute
 			process.nextTick(() => {
 				// Inform the subscribers of the failure
-				this.#emitToAllSubscribers(subscription.subscribers, path, error, '')
+				this.#emitToAllSubscribers(subscription.subscribers, path, error, null)
 			})
 		}
 
@@ -551,10 +556,10 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 interface SubscriptionState {
 	readonly id: string // Unique ID for the subscription, to identify if it has been restarted
-	readonly subscribers: Map<string, SubscriptionCallback>
+	readonly subscribers: Map<string, SubscriptionCallback<string>>
 	latestValue: string | null
 }
 
 export type UnsubscribeFn = () => void
-export type SubscriptionCallback = (path: string, error: Error | null, value: string) => void
+export type SubscriptionCallback<TValue> = (path: string, error: Error | null, value: TValue | null) => void
 // export type TerminateCallback = (path: string, error: Error | null) => void
