@@ -9,6 +9,8 @@ import {
 	stringifyEnum,
 	stringifyFloat,
 	stringifyInteger,
+	parsePos3Df,
+	stringifyPos3Df,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
 import {
@@ -28,9 +30,20 @@ import {
 	SceneLayerMode,
 	SceneLayerDissolveMode,
 	SceneLayerBlendMode,
+	SceneLayerEffectCropObject,
+	UpdateSceneLayerEffectCropObject,
+	SceneLayerEffectTransform2DObject,
+	UpdateSceneLayerEffectTransform2DObject,
+	SceneLayerEffectTransform2DType,
+	SceneLayerEffectLuminanceKeyObject,
+	UpdateSceneLayerEffectLuminanceKeyObject,
+	SceneLayerEffectLuminanceKeyBlendMode,
+	SceneLayerEffectChromaKeyObject,
+	UpdateSceneLayerEffectChromaKeyObject,
+	SceneLayerEffectChromaKeyEdgeSmoothingSize,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
-import { refToPath, SceneLayerRef, SceneRef, splitPath } from './lib/reference.js'
+import { refToPath, SceneLayerEffectRef, SceneLayerRef, SceneRef, splitPath } from './lib/reference.js'
 import { protocolDecodePath } from './lib/encode-decode.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -322,6 +335,273 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 					PCrop
 	// 					FilmLook
 	// 					GlowEffect
+	async listSceneLayerEffects(layerRef: SceneLayerRef): Promise<(SceneLayerEffectRef & { name: string })[]> {
+		return (await this.getList(`${refToPath(layerRef)}.Effects`)).map<SceneLayerEffectRef & { name: string }>(
+			(effectPath) => {
+				const paths = splitPath(protocolDecodePath(effectPath), 'Layers', 'Effects')
+				if (paths.length !== 3)
+					throw new Error(
+						`Invalid layer path: "${effectPath}" ("Layers", "Effects" missing) (${JSON.stringify(paths)}, ${JSON.stringify(effectPath)})`
+					)
+
+				return {
+					realm: 'scene-layer-effect',
+					name: paths[2][paths[2].length - 1],
+					scenePath: paths[0].slice(1), // remove the "SCENES" part
+					layerPath: paths[1],
+					effectPath: paths[2],
+				}
+			}
+		)
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectCrop(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectCropObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'top',
+			'left',
+			'right',
+			'bottom',
+			'softness',
+			'rounded_corners',
+			'global_softness',
+			'softness_top',
+			'softness_left',
+			'softness_right',
+			'softness_bottom',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			top: parseFloatValue(values.top),
+			left: parseFloatValue(values.left),
+			right: parseFloatValue(values.right),
+			bottom: parseFloatValue(values.bottom),
+			softness: parseFloatValue(values.softness),
+			roundedCorners: parseFloatValue(values.rounded_corners),
+			globalSoftness: parseBoolean(values.global_softness),
+			softnessTop: parseFloatValue(values.softness_top),
+			softnessLeft: parseFloatValue(values.softness_left),
+			softnessRight: parseFloatValue(values.softness_right),
+			softnessBottom: parseFloatValue(values.softness_bottom),
+		}
+	}
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectCrop(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectCropObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'top', value: stringifyFloat(props.top) },
+			{ attribute: 'left', value: stringifyFloat(props.left) },
+			{ attribute: 'right', value: stringifyFloat(props.right) },
+			{ attribute: 'bottom', value: stringifyFloat(props.bottom) },
+			{ attribute: 'softness', value: stringifyFloat(props.softness) },
+			{ attribute: 'rounded_corners', value: stringifyFloat(props.roundedCorners) },
+			{ attribute: 'global_softness', value: stringifyBoolean(props.globalSoftness) },
+			// softness_top, softness_left, softness_right, softness_bottom are read-only
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectTransform2D(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectTransform2DObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'type',
+			'scale',
+			'rotation_x',
+			'rotation_y',
+			'rotation_z',
+			'rotation_origin',
+			'position',
+			'cubic_interpolation',
+			'hide_backside',
+			'stretch_h',
+			'stretch_v',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			type: parseEnum<SceneLayerEffectTransform2DType>(values.type, SceneLayerEffectTransform2DType),
+			scale: parseFloatValue(values.scale),
+			rotationX: parseFloatValue(values.rotation_x),
+			rotationY: parseFloatValue(values.rotation_y),
+			rotationZ: parseFloatValue(values.rotation_z),
+			rotationOrigin: parsePos3Df(values.rotation_origin),
+			position: parsePos3Df(values.position),
+			cubicInterpolation: parseBoolean(values.cubic_interpolation),
+			hideBackside: parseBoolean(values.hide_backside),
+			stretchH: parseFloatValue(values.stretch_h),
+			stretchV: parseFloatValue(values.stretch_v),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectTransform2D(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectTransform2DObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{
+				attribute: 'type',
+				value: stringifyEnum<SceneLayerEffectTransform2DType>(props.type, SceneLayerEffectTransform2DType),
+			},
+			{ attribute: 'scale', value: stringifyFloat(props.scale) },
+			{ attribute: 'rotation_x', value: stringifyFloat(props.rotationX) },
+			{ attribute: 'rotation_y', value: stringifyFloat(props.rotationY) },
+			{ attribute: 'rotation_z', value: stringifyFloat(props.rotationZ) },
+			{ attribute: 'rotation_origin', value: stringifyPos3Df(props.rotationOrigin) },
+			{ attribute: 'position', value: stringifyPos3Df(props.position) },
+			{ attribute: 'cubic_interpolation', value: stringifyBoolean(props.cubicInterpolation) },
+			{ attribute: 'hide_backside', value: stringifyBoolean(props.hideBackside) },
+			{ attribute: 'stretch_h', value: stringifyFloat(props.stretchH) },
+			{ attribute: 'stretch_v', value: stringifyFloat(props.stretchV) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectLuminanceKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLuminanceKeyObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'clip',
+			'gain',
+			'cleanup',
+			'density',
+			'invert',
+			'blend_mode',
+			'sourceKey',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			clip: parseFloatValue(values.clip),
+			gain: parseFloatValue(values.gain),
+			cleanup: parseFloatValue(values.cleanup),
+			density: parseFloatValue(values.density),
+			invert: parseBoolean(values.invert),
+			blendMode: parseEnum<SceneLayerEffectLuminanceKeyBlendMode>(
+				values.blend_mode,
+				SceneLayerEffectLuminanceKeyBlendMode
+			),
+			sourceKey: values.sourceKey,
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectLuminanceKey(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectLuminanceKeyObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'clip', value: stringifyFloat(props.clip) },
+			{ attribute: 'gain', value: stringifyFloat(props.gain) },
+			{ attribute: 'cleanup', value: stringifyFloat(props.cleanup) },
+			{ attribute: 'density', value: stringifyFloat(props.density) },
+			{ attribute: 'invert', value: stringifyBoolean(props.invert) },
+			{
+				attribute: 'blend_mode',
+				value: stringifyEnum<SceneLayerEffectLuminanceKeyBlendMode>(
+					props.blendMode,
+					SceneLayerEffectLuminanceKeyBlendMode
+				),
+			},
+			{ attribute: 'sourceKey', value: props.sourceKey },
+		])
+	}
+	async sceneLayerEffectLuminanceKeyAutoAdjust(effectRef: SceneLayerEffectRef): Promise<void> {
+		return this.executeFunction(`${refToPath(effectRef)}.auto_adjust`)
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectChromaKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectChromaKeyObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'clip',
+			'gain',
+			'cleanup',
+			'density',
+			'hue',
+			'selectivity_left',
+			'selectivity_right',
+			'luminance',
+			'chroma',
+			'a_chroma',
+			'spill_supression',
+			'spill_supression_left',
+			'spill_supression_right',
+			'noise_removal',
+			'invert',
+			'fgd_fade',
+			'auto_state',
+			'edge_smoothing_size',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			clip: parseFloatValue(values.clip),
+			gain: parseFloatValue(values.gain),
+			cleanup: parseFloatValue(values.cleanup),
+			density: parseFloatValue(values.density),
+			hue: parseFloatValue(values.hue),
+			selectivityLeft: parseFloatValue(values.selectivity_left),
+			selectivityRight: parseFloatValue(values.selectivity_right),
+			luminance: parseFloatValue(values.luminance),
+			chroma: parseFloatValue(values.chroma),
+			aChroma: parseFloatValue(values.a_chroma),
+			spillSupression: parseFloatValue(values.spill_supression),
+			spillSupressionLeft: parseFloatValue(values.spill_supression_left),
+			spillSupressionRight: parseFloatValue(values.spill_supression_right),
+			noiseRemoval: parseFloatValue(values.noise_removal),
+			invert: parseBoolean(values.invert),
+			fgdFade: parseBoolean(values.fgd_fade),
+			autoState: parseInteger(values.auto_state),
+			edgeSmoothingSize: parseEnum<SceneLayerEffectChromaKeyEdgeSmoothingSize>(
+				values.edge_smoothing_size,
+				SceneLayerEffectChromaKeyEdgeSmoothingSize
+			),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectChromaKey(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectChromaKeyObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'clip', value: stringifyFloat(props.clip) },
+			{ attribute: 'gain', value: stringifyFloat(props.gain) },
+			{ attribute: 'cleanup', value: stringifyFloat(props.cleanup) },
+			{ attribute: 'density', value: stringifyFloat(props.density) },
+			{ attribute: 'hue', value: stringifyFloat(props.hue) },
+			{ attribute: 'selectivity_left', value: stringifyFloat(props.selectivityLeft) },
+			{ attribute: 'selectivity_right', value: stringifyFloat(props.selectivityRight) },
+			{ attribute: 'luminance', value: stringifyFloat(props.luminance) },
+			{ attribute: 'chroma', value: stringifyFloat(props.chroma) },
+			{ attribute: 'a_chroma', value: stringifyFloat(props.aChroma) },
+			{ attribute: 'spill_supression', value: stringifyFloat(props.spillSupression) },
+			{ attribute: 'spill_supression_left', value: stringifyFloat(props.spillSupressionLeft) },
+			{ attribute: 'spill_supression_right', value: stringifyFloat(props.spillSupressionRight) },
+			{ attribute: 'noise_removal', value: stringifyFloat(props.noiseRemoval) },
+			{ attribute: 'invert', value: stringifyBoolean(props.invert) },
+			{ attribute: 'fgd_fade', value: stringifyBoolean(props.fgdFade) },
+			{ attribute: 'auto_state', value: stringifyInteger(props.autoState) },
+			{
+				attribute: 'edge_smoothing_size',
+				value: stringifyEnum<SceneLayerEffectChromaKeyEdgeSmoothingSize>(
+					props.edgeSmoothingSize,
+					SceneLayerEffectChromaKeyEdgeSmoothingSize
+				),
+			},
+		])
+	}
+	async sceneLayerEffectChromaKeyAutoAdjust(effectRef: SceneLayerEffectRef): Promise<void> {
+		return this.executeFunction(`${refToPath(effectRef)}.auto_adjust`)
+	}
 
 	// Scene.Layers.Layer
 	//             Transitions

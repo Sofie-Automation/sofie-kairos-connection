@@ -8,6 +8,13 @@ import {
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
 	SceneLayerDissolveMode,
+	SceneLayerEffectChromaKeyEdgeSmoothingSize,
+	SceneLayerEffectChromaKeyObject,
+	SceneLayerEffectCropObject,
+	SceneLayerEffectLuminanceKeyBlendMode,
+	SceneLayerEffectLuminanceKeyObject,
+	SceneLayerEffectTransform2DObject,
+	SceneLayerEffectTransform2DType,
 	SceneLayerMode,
 	SceneLayerObject,
 	SceneLayerPgmPstMode,
@@ -17,7 +24,7 @@ import {
 	SceneResolution,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
-import { refScene, refSceneLayer, SceneRef } from '../lib/reference.js'
+import { refScene, refSceneLayer, refSceneLayerEffect, SceneRef } from '../lib/reference.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -67,16 +74,34 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 					commandStr: string,
 					deserializer: Parameters<InstanceType<typeof KairosConnection>['executeCommand']>[1]
 				): Promise<TRes> {
-					const replyLines = await this._replyHandler(commandStr)
+					const orgError = new Error()
+					try {
+						const replyLines = await this._replyHandler(commandStr)
 
-					if (replyLines.length === 1 && replyLines[0] === 'Error') {
-						throw new ResponseError(commandStr, replyLines[0])
+						if (replyLines.length === 1 && replyLines[0] === 'Error') {
+							throw new ResponseError(commandStr, replyLines[0])
+						}
+
+						const reply = deserializer(replyLines)
+						if (reply === null) throw new Error(`No reply received for command: ${commandStr}`)
+
+						return reply.response as TRes
+					} catch (e) {
+						if (e instanceof Error) {
+							// Append context to error message:
+							e.message += ` (in response to ${commandStr} )`
+
+							// Append original call stack to the error:
+							const orgStack = `${orgError.stack}`.replace('Error: \n', '')
+
+							if (e.stack) {
+								e.stack = `${e.stack}\n--- Original stack: -------------------\n${orgStack}`
+							} else {
+								e.stack = orgStack
+							}
+						}
+						throw e
 					}
-
-					const reply = deserializer(replyLines)
-					if (reply === null) throw new Error(`No reply received for command: ${commandStr}`)
-
-					return reply.response as TRes
 				}
 
 				// ------------ Mock methods --------------------------------------------------------------------------
@@ -333,7 +358,7 @@ describe('KairosConnection', () => {
 		// SCENES.Scene.Layers
 		// 		Layers
 		// 			Layer
-		test.only('SCENES.Layers', async () => {
+		test('SCENES.Layers', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
 					'list_ex:SCENES.Main.Layers': [
@@ -420,7 +445,8 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			expect(await connection.listSceneLayers(refSceneLayer(['Main'], []), true)).toStrictEqual([
+			const refMain = refScene(['Main'])
+			expect(await connection.listSceneLayers(refSceneLayer(refMain, []), true)).toStrictEqual([
 				{
 					realm: 'scene-layer',
 					name: 'Background',
@@ -454,7 +480,7 @@ describe('KairosConnection', () => {
 			])
 
 			expect(
-				await connection.updateSceneLayer(refSceneLayer(['Main'], ['Background']), {
+				await connection.updateSceneLayer(refSceneLayer(refMain, ['Background']), {
 					// blendMode: NaN,
 					cleanMask: 0,
 					color: 'rgb(255,0,0)',
@@ -499,7 +525,7 @@ describe('KairosConnection', () => {
 				})
 			).toBeUndefined()
 
-			expect(await connection.getSceneLayer(refSceneLayer(['Main'], ['Background']))).toStrictEqual({
+			expect(await connection.getSceneLayer(refSceneLayer(refMain, ['Background']))).toStrictEqual({
 				activeBus: SceneLayerActiveBus.ABus,
 				blendMode: SceneLayerBlendMode.Default,
 				cleanMask: 0,
@@ -547,10 +573,10 @@ describe('KairosConnection', () => {
 				state: SceneLayerState.On,
 			} satisfies SceneLayerObject)
 
-			expect(await connection.sceneLayerSwapAB(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
-			expect(await connection.sceneLayerShowLayer(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
-			expect(await connection.sceneLayerHideLayer(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
-			expect(await connection.sceneLayerToggleLayer(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerSwapAB(refSceneLayer(refMain, ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerShowLayer(refSceneLayer(refMain, ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerHideLayer(refSceneLayer(refMain, ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerToggleLayer(refSceneLayer(refMain, ['Background']))).toBeUndefined()
 		})
 		// SCENES.Scene.Layers.Layer
 		// 				Effects
@@ -570,7 +596,504 @@ describe('KairosConnection', () => {
 		// 					PCrop
 		// 					FilmLook
 		// 					GlowEffect
+		test.only('SCENES.Layers.Effects', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SCENES.Main.Layers.Group-1.Effects': [
+						'list_ex:SCENES.Main.Layers.Group-1.Effects=',
+						'SCENES.Main.Layers.Group-1.Effects.Crop',
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D',
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey',
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey',
+						'SCENES.Main.Layers.Group-1.Effects.YUVCorrection-1',
+						'SCENES.Main.Layers.Group-1.Effects.RGBCorrection-1',
+						'SCENES.Main.Layers.Group-1.Effects.LUTCorrection-1',
+						'SCENES.Main.Layers.Group-1.Effects.VirtualPTZ-1',
+						'SCENES.Main.Layers.Group-1.Effects.ToneCurveCorrection-1',
+						'SCENES.Main.Layers.Group-1.Effects.MatrixCorrection-1',
+						'SCENES.Main.Layers.Group-1.Effects.TemperatureCorrection-1',
+						'SCENES.Main.Layers.Group-1.Effects.LinearKey-1',
+						'SCENES.Main.Layers.Group-1.Effects.Position-1',
+						'SCENES.Main.Layers.Group-1.Effects.PCrop-1',
+						'SCENES.Main.Layers.Group-1.Effects.FilmLook-1',
+						'SCENES.Main.Layers.Group-1.Effects.GlowEffect-1',
+						'',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.enabled=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.top=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.left=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.right=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.bottom=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.softness=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.rounded_corners=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.global_softness=1': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.enabled': ['SCENES.Main.Layers.Group-1.Effects.Crop.enabled=0'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.top': ['SCENES.Main.Layers.Group-1.Effects.Crop.top=0'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.left': ['SCENES.Main.Layers.Group-1.Effects.Crop.left=0'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.right': ['SCENES.Main.Layers.Group-1.Effects.Crop.right=0'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.bottom': ['SCENES.Main.Layers.Group-1.Effects.Crop.bottom=0'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.softness': ['SCENES.Main.Layers.Group-1.Effects.Crop.softness=0'],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.rounded_corners': [
+						'SCENES.Main.Layers.Group-1.Effects.Crop.rounded_corners=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.global_softness': [
+						'SCENES.Main.Layers.Group-1.Effects.Crop.global_softness=1',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.softness_top': [
+						'SCENES.Main.Layers.Group-1.Effects.Crop.softness_top=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.softness_left': [
+						'SCENES.Main.Layers.Group-1.Effects.Crop.softness_left=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.softness_right': [
+						'SCENES.Main.Layers.Group-1.Effects.Crop.softness_right=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Crop.softness_bottom': [
+						'SCENES.Main.Layers.Group-1.Effects.Crop.softness_bottom=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.enabled=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.type=2D': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.scale=1': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_z=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_origin=0/0/0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.position=0/0/0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.cubic_interpolation=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.hide_backside=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.stretch_h=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.stretch_v=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.enabled': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.enabled=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.type': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.type=2D',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.scale': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.scale=1',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_x': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_x=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_y': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_y=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_z': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_z=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_origin': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.rotation_origin=0/0/0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.position': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.position=0/0/0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.cubic_interpolation': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.cubic_interpolation=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.hide_backside': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.hide_backside=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.stretch_h': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.stretch_h=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.Transform2D.stretch_v': [
+						'SCENES.Main.Layers.Group-1.Effects.Transform2D.stretch_v=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.enabled=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.clip=0.5': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.gain=1': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.cleanup=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.density=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.invert=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.blend_mode=Auto': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.enabled': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.enabled=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.clip': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.clip=0.5',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.gain': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.gain=1',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.cleanup': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.cleanup=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.density': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.density=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.invert': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.invert=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.blend_mode': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.blend_mode=Auto',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.sourceKey': [
+						'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.sourceKey=<unknown>',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.LuminanceKey.auto_adjust=': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.enabled=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.clip=0.5': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.gain=1': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.cleanup=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.density=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.hue=2.25': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.selectivity_left=0.3': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.selectivity_right=0.3': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.luminance=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.chroma=0.2': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.a_chroma=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression=0.3': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression_left=1': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression_right=1': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.noise_removal=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.invert=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.fgd_fade=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.auto_state=0': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.edge_smoothing_size=Off': ['OK'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.enabled': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.enabled=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.clip': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.clip=0.5',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.gain': ['SCENES.Main.Layers.Group-1.Effects.ChromaKey.gain=1'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.cleanup': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.cleanup=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.density': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.density=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.hue': ['SCENES.Main.Layers.Group-1.Effects.ChromaKey.hue=2.25'],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.selectivity_left': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.selectivity_left=0.3',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.selectivity_right': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.selectivity_right=0.3',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.luminance': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.luminance=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.chroma': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.chroma=0.2',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.a_chroma': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.a_chroma=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression=0.3',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression_left': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression_left=1',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression_right': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.spill_supression_right=1',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.noise_removal': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.noise_removal=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.invert': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.invert=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.fgd_fade': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.fgd_fade=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.auto_state': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.auto_state=0',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.edge_smoothing_size': [
+						'SCENES.Main.Layers.Group-1.Effects.ChromaKey.edge_smoothing_size=Off',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.ChromaKey.auto_adjust=': ['OK'],
+				}[message]
+				if (reply) return reply
 
+				if (emulatorConnection) {
+					// If there is an emulatorConnection, use it to handle the command:
+					const reply = await emulatorConnection.doCommand(message)
+					if (reply !== null) return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const refMain = refScene(['Main'])
+			const refBackground = refSceneLayer(refMain, ['Group-1'])
+
+			expect(await connection.listSceneLayerEffects(refBackground)).toStrictEqual([
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['Crop'],
+					name: 'Crop',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['Transform2D'],
+					name: 'Transform2D',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['LuminanceKey'],
+					name: 'LuminanceKey',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['ChromaKey'],
+					name: 'ChromaKey',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['YUVCorrection-1'],
+					name: 'YUVCorrection-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['RGBCorrection-1'],
+					name: 'RGBCorrection-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['LUTCorrection-1'],
+					name: 'LUTCorrection-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['VirtualPTZ-1'],
+					name: 'VirtualPTZ-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['ToneCurveCorrection-1'],
+					name: 'ToneCurveCorrection-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['MatrixCorrection-1'],
+					name: 'MatrixCorrection-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['TemperatureCorrection-1'],
+					name: 'TemperatureCorrection-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['LinearKey-1'],
+					name: 'LinearKey-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['Position-1'],
+					name: 'Position-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['PCrop-1'],
+					name: 'PCrop-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['FilmLook-1'],
+					name: 'FilmLook-1',
+				},
+				{
+					realm: 'scene-layer-effect',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+					effectPath: ['GlowEffect-1'],
+					name: 'GlowEffect-1',
+				},
+			])
+
+			expect(
+				await connection.updateSceneLayerEffectCrop(refSceneLayerEffect(refBackground, ['Crop']), {
+					bottom: 0,
+					enabled: false,
+					globalSoftness: true,
+					left: 0,
+					right: 0,
+					roundedCorners: 0,
+					softness: 0,
+					top: 0,
+					// softnessBottom, softnessLeft, softnessRight, softnessTop are read-only
+				})
+			).toBeUndefined()
+			expect(await connection.getSceneLayerEffectCrop(refSceneLayerEffect(refBackground, ['Crop']))).toStrictEqual({
+				bottom: 0,
+				enabled: false,
+				globalSoftness: true,
+				left: 0,
+				right: 0,
+				roundedCorners: 0,
+				softness: 0,
+				softnessBottom: 0,
+				softnessLeft: 0,
+				softnessRight: 0,
+				softnessTop: 0,
+				top: 0,
+			} satisfies SceneLayerEffectCropObject)
+
+			expect(
+				await connection.updateSceneLayerEffectTransform2D(refSceneLayerEffect(refBackground, ['Transform2D']), {
+					cubicInterpolation: false,
+					enabled: false,
+					hideBackside: false,
+					position: {
+						x: 0,
+						y: 0,
+						z: 0,
+					},
+					rotationOrigin: {
+						x: 0,
+						y: 0,
+						z: 0,
+					},
+					// rotationX: 0, // can only be set if type=2.5D
+					// rotationY: 0, // can only be set if type=2.5D
+					rotationZ: 0,
+					scale: 1,
+					stretchH: 0,
+					stretchV: 0,
+					type: SceneLayerEffectTransform2DType.TwoD,
+				})
+			).toBeUndefined()
+			expect(
+				await connection.getSceneLayerEffectTransform2D(refSceneLayerEffect(refBackground, ['Transform2D']))
+			).toStrictEqual({
+				cubicInterpolation: false,
+				enabled: false,
+				hideBackside: false,
+				position: {
+					x: 0,
+					y: 0,
+					z: 0,
+				},
+				rotationOrigin: {
+					x: 0,
+					y: 0,
+					z: 0,
+				},
+				rotationX: 0,
+				rotationY: 0,
+				rotationZ: 0,
+				scale: 1,
+				stretchH: 0,
+				stretchV: 0,
+				type: SceneLayerEffectTransform2DType.TwoD,
+			} satisfies SceneLayerEffectTransform2DObject)
+
+			expect(
+				await connection.updateSceneLayerEffectLuminanceKey(refSceneLayerEffect(refBackground, ['LuminanceKey']), {
+					blendMode: SceneLayerEffectLuminanceKeyBlendMode.Auto,
+					cleanup: 0,
+					clip: 0.5,
+					density: 0,
+					enabled: false,
+					gain: 1,
+					invert: false,
+					// sourceKey: '<unknown>',
+				})
+			).toBeUndefined()
+			expect(
+				await connection.getSceneLayerEffectLuminanceKey(refSceneLayerEffect(refBackground, ['LuminanceKey']))
+			).toStrictEqual({
+				blendMode: SceneLayerEffectLuminanceKeyBlendMode.Auto,
+				cleanup: 0,
+				clip: 0.5,
+				density: 0,
+				enabled: false,
+				gain: 1,
+				invert: false,
+				sourceKey: '<unknown>',
+			} satisfies SceneLayerEffectLuminanceKeyObject)
+
+			expect(
+				await connection.sceneLayerEffectLuminanceKeyAutoAdjust(refSceneLayerEffect(refBackground, ['LuminanceKey']))
+			).toBeUndefined()
+
+			expect(
+				await connection.updateSceneLayerEffectChromaKey(refSceneLayerEffect(refBackground, ['ChromaKey']), {
+					aChroma: 0,
+					autoState: 0,
+					chroma: 0.2,
+					cleanup: 0,
+					clip: 0.5,
+					density: 0,
+					edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize.Off,
+					enabled: false,
+					fgdFade: false,
+					gain: 1,
+					hue: 2.25,
+					invert: false,
+					luminance: 0,
+					noiseRemoval: 0,
+					selectivityLeft: 0.3,
+					selectivityRight: 0.3,
+					spillSupression: 0.3,
+					spillSupressionLeft: 1,
+					spillSupressionRight: 1,
+				})
+			).toBeUndefined()
+			expect(
+				await connection.getSceneLayerEffectChromaKey(refSceneLayerEffect(refBackground, ['ChromaKey']))
+			).toStrictEqual({
+				aChroma: 0,
+				autoState: 0,
+				chroma: 0.2,
+				cleanup: 0,
+				clip: 0.5,
+				density: 0,
+				edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize.Off,
+				enabled: false,
+				fgdFade: false,
+				gain: 1,
+				hue: 2.25,
+				invert: false,
+				luminance: 0,
+				noiseRemoval: 0,
+				selectivityLeft: 0.3,
+				selectivityRight: 0.3,
+				spillSupression: 0.3,
+				spillSupressionLeft: 1,
+				spillSupressionRight: 1,
+			} satisfies SceneLayerEffectChromaKeyObject)
+
+			expect(
+				await connection.sceneLayerEffectChromaKeyAutoAdjust(refSceneLayerEffect(refBackground, ['ChromaKey']))
+			).toBeUndefined()
+
+			// expect(await connection.sceneLayerSwapAB('Main', 'Background')).toBeUndefined()
+			// expect(await connection.sceneLayerShowLayer('Main', 'Background')).toBeUndefined()
+			// expect(await connection.sceneLayerHideLayer('Main', 'Background')).toBeUndefined()
+			// expect(await connection.sceneLayerToggleLayer('Main', 'Background')).toBeUndefined()
+		})
 		// SCENES.Scene.Layers.Layer
 		// 			Transitions
 		// 				Transition

@@ -208,8 +208,13 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		this._requestQueue.push(internalRequest)
 		this._processQueue().catch((e) => this.emit('error', e))
 
-		return request.catch((e) => {
+		try {
+			return await request
+		} catch (e) {
 			if (e instanceof Error) {
+				// Append context to error message:
+				e.message += ` (in response to ${commandStr} )`
+
 				// Append original call stack to the error:
 				const orgStack = `${orgError.stack}`.replace('Error: \n', '')
 
@@ -220,7 +225,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				}
 			}
 			throw e
-		})
+		}
 	}
 
 	private async _processQueue(): Promise<void> {

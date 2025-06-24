@@ -81,24 +81,22 @@ export type SceneRef = {
 	realm: 'scene'
 	scenePath: RefPath
 }
+export function refScene(scenePath: RefPath): SceneRef {
+	return { realm: 'scene', scenePath }
+}
 export type SceneLayerRef = {
 	realm: 'scene-layer'
 	scenePath: RefPath
 	layerPath: RefPath
+}
+export function refSceneLayer(sceneRef: SceneRef, layerPath: RefPath): SceneLayerRef {
+	return { realm: 'scene-layer', scenePath: sceneRef.scenePath, layerPath }
 }
 export type SceneLayerEffectRef = {
 	realm: 'scene-layer-effect'
 	scenePath: RefPath
 	layerPath: RefPath
 	effectPath: RefPath
-}
-export function refScene(scenePath: RefPath): SceneRef {
-	return { realm: 'scene', scenePath }
-}
-export function refSceneLayer(sceneRef: SceneRef | string[], layerPath: RefPath): SceneLayerRef {
-	if (Array.isArray(sceneRef)) sceneRef = refScene(sceneRef)
-
-	return { realm: 'scene-layer', scenePath: sceneRef.scenePath, layerPath }
 }
 export function refSceneLayerEffect(layerRef: SceneLayerRef, effectPath: RefPath): SceneLayerEffectRef {
 	return { realm: 'scene-layer-effect', scenePath: layerRef.scenePath, layerPath: layerRef.layerPath, effectPath }

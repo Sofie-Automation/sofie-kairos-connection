@@ -289,6 +289,400 @@ export interface SceneLayerObject {
 	 */
 	blendMode: SceneLayerBlendMode
 }
+export interface SceneLayerEffectCropObject {
+	enabled: boolean
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated Crop
+	 * value, the according slider, the numeric entry box or the arrow up/down icons can
+	 * be used.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	top: number
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated Crop
+	 * value, the according slider, the numeric entry box or the arrow up/down icons can
+	 * be used.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	left: number
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated Crop
+	 * value, the according slider, the numeric entry box or the arrow up/down icons can
+	 * be used.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	right: number
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated Crop
+	 * value, the according slider, the numeric entry box or the arrow up/down icons can
+	 * be used.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	bottom: number
+
+	/**
+	 * Softness will be applied for all edges equally. The control range is from 0.00% to
+	 * 100.00%. To adjust the "Softness" value, the according slider, the numeric entry box
+	 * or the arrow up/down icons can be used.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	softness: number
+
+	/**
+	 * With the slider "Rounded corners" the radius on the Top-Left, Top-Right, Bottom-
+	 * Left and Bottom-Right corner of a selected Layer source can be adjusted, once
+	 * "Crop" for this Layer is enabled. The control range is from 0.00% to 100.00%,
+	 * default = 0.00%.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	roundedCorners: number
+
+	/**
+	 * "Global Softness" is enabled by default. In this case the check box appears ticked.
+	 * Apart from overall "Softness", all other Softness controls underneath are disabled.
+	 */
+	globalSoftness: boolean
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated
+	 * Softness value, the according slider, the numeric entry box or the arrow up/down
+	 * icons can be used.
+	 * [ float, read_only, min: 0, max: 1 ]
+	 */
+	readonly softnessTop: number
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated
+	 * Softness value, the according slider, the numeric entry box or the arrow up/down
+	 * icons can be used.
+	 * [ float, read_only, min: 0, max: 1 ]
+	 */
+	readonly softnessLeft: number
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated
+	 * Softness value, the according slider, the numeric entry box or the arrow up/down
+	 * icons can be used.
+	 * [ float, read_only, min: 0, max: 1 ]
+	 */
+	readonly softnessRight: number
+
+	/**
+	 * The control range is from 0.00% to 100.00%. In order to adjust the designated
+	 * Softness value, the according slider, the numeric entry box or the arrow up/down
+	 * icons can be used.
+	 * [ float, read_only, min: 0, max: 1 ]
+	 */
+	readonly softnessBottom: number
+}
+export interface SceneLayerEffectLuminanceKeyObject {
+	enabled: boolean
+
+	/**
+	 * In order to adjust the level for Clip, the according slider, the numeric entry box or the
+	 * arrow up/down icons can be used. The "Clip" control range is from 0.00% to
+	 * 100.00%. Default is at 50.00%.
+	 * Clip control acts like an attenuator or amplifier to the processed Key signal.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	clip: number
+
+	/**
+	 * In order to adjust the level for Clip, the according slider, the numeric entry box or the
+	 * arrow up/down icons can be used. The "Clip" control range is from 1.00% to
+	 * 1000.00%. Default is at 100.00%.
+	 * Gain control acts like a Contrast or Focus control to the processed Key signal.
+	 * [ float, min: 0.01, max: 10 ]
+	 */
+	gain: number
+
+	/**
+	 * In order to adjust the level for Cleanup, the according slider, the numeric entry box
+	 * or the arrow up/down icons can be used. The "Clip" control range is from 0.00% to
+	 * 100.00%. Default is at 0.00%.
+	 * Cleanup control is affecting the processed Key signal on the dark areas, resulting in
+	 * making the Black even more Black, avoiding unwanted shaddows for example.
+	 * [ float, min: -2, max: 2 ]
+	 */
+	cleanup: number
+
+	/**
+	 * In order to adjust the level for Density, the according slider, the numeric entry box or
+	 * the arrow up/down icons can be used. The "Clip" control range is from 0.00% to
+	 * 100.00%. Default is at 0.00%.
+	 * Density control is affecting the processed Key signal on the light areas, resulting in
+	 * making the White even more White, avoiding unwanted transparency.
+	 * [ float, min: -2, max: 2 ]
+	 */
+	density: number
+
+	/**
+	 * When inverting the Key signal regardless of mode "Selfkey" or "Splitkey", the entire
+	 * Black and White values of the Key signal will be inverted in luminance. When Invert
+	 * is enabled the check box appears ticked.
+	 */
+	invert: boolean
+
+	/**
+	 * When a "Luminance Key" operation is in progress the "Blend mode" drop down
+	 * menu can be used to change from "Auto" mode direct into "Additive" or
+	 * "Multiplicative" mode. Default mode is "Auto", in which the most common mode in
+	 * respect to the actual selected Luminance Key source is used.
+	 * In Additive mode the Key Signal is multiplied with the Background signal. The
+	 * according Foreground Fill signal which mandatory has to be on a Black background,
+	 * will be added on top, which means all Luminance and Chrominance levels higher
+	 * than 0% Black. "Multiplicative" mode instead is multiplying the Foreground Fill
+	 * signal.
+	 */
+	blendMode: SceneLayerEffectLuminanceKeyBlendMode
+
+	/**
+	 * Enabling a "Source Key" apart from Default=none, will change the so called
+	 * "Selfkey" mode into a "Split Key" mode.
+	 * "Source Key" source selection allows the User to select a different source to be
+	 * used as Key signal than the Layer source. Next to the Source Key source selection
+	 * items, the actual selected source (Default=None)is displayed. Clicking on the
+	 * symbol (Pen) right next to the setting, will open the according Source selection
+	 * menu to select from all available listed external as well as internal sources.
+	 * [ ObjectID ]
+	 */
+	sourceKey: string
+}
+export interface SceneLayerEffectTransform2DObject {
+	enabled: boolean
+
+	/**
+	 * Transform type selection
+	 * 0 = 2D, 1 = 2.5D
+	 */
+	type: SceneLayerEffectTransform2DType
+
+	/**
+	 * Default for "Scale" is 100.00% which is fullscreen size for selected Layer or
+	 * Background Layer. So a "Scale" of e.g. 50.00% will result in a quarter sized Layer.
+	 * The control range for "Scale" is from 0,00% to 1000,00% and adjustments can be
+	 * done using the according slider, the numeric entry box or the arrow up/down icons.
+	 * [ float, min: 0, max: 10 ]
+	 */
+	scale: number
+
+	/**
+	 * ( can only be set if type=2.5D )
+	 * [ float, min: -3.6, max: 3.6 ]
+	 */
+	rotationX: number
+
+	/**
+	 * ( can only be set if type=2.5D )
+	 * [ float, min: -3.6, max: 3.6 ]
+	 */
+	rotationY: number
+
+	/**
+	 * The "Rotation" control range is from 0,00% to 999900,00% whereby a value of
+	 * 25,00% and it's multiples is equivelant to angles of 90 degrees (and their multiples).
+	 * Rotation adjustments can be applied using the according slider, the numeric entry
+	 * box or the arrow up/down icons.
+	 * [ float, min: -3.6, max: 3.6 ]
+	 */
+	rotationZ: number
+
+	/**
+	 * The control range for "Rotation origin" is +/- 5.0000 in X/Y position and can be
+	 * modified using the numeric entry box, the arrow up/down icons or the "drag-pad"
+	 * located to the far right side at the "Rotation origin" item.
+	 */
+	rotationOrigin: Pos3Df
+
+	/**
+	 * Default Layer "Position" is at X=0.0000/Y=0.0000 which is at center position. The
+	 * "Position" control range in respect to the picture dimension is +/- 5.0000 in X/Y
+	 * position and can be modified using the numeric entry box, the arrow up/down icons
+	 * or the "drag-pad" located to the far right side at the "Position" item.
+	 */
+	position: Pos3Df
+
+	/**
+	 * While the "Cubic interpolition" mode is disabled, the check box appears unticked
+	 * and the linear interpolation method is used.
+	 * The "Linear interpolation" is using a smaller amount of pixels in the
+	 * Scaling/Positioning process and is mainly used when the target size of the image is
+	 * smaller than the original image size. The "Cubic interpolation" mode is
+	 * recommended when the target image size is enlarged compared to the original
+	 * image size.
+	 */
+	cubicInterpolation: boolean
+
+	hideBackside: boolean
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	stretchH: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	stretchV: number
+}
+export interface SceneLayerEffectChromaKeyObject {
+	enabled: boolean
+
+	/**
+	 * In order to adjust the level for Clip, the according slider, the numeric entry box or the
+	 * arrow up/down icons can be used. The "Clip" control range is from 0.00% to
+	 * 100.00%. Default is at 50.00%.
+	 * Clip control acts like an attenuator or amplifier to the processed Key signal.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	clip: number
+
+	/**
+	 * In order to adjust the level for Clip, the according slider, the numeric entry box or the
+	 * arrow up/down icons can be used. The "Gain" control range is from 0.00% to
+	 * 100.00%. Default is at 50.00%.
+	 * Gain control acts like a Contrast or Focus control to the processed Key signal.
+	 * [ float, min: 0.01, max: 10 ]
+	 */
+	gain: number
+
+	/**
+	 * In order to adjust the level for Cleanup, the according slider, the numeric entry box
+	 * or the arrow up/down icons can be used. The "Cleanup" control range is from 0.00%
+	 * to 100.00%. Default is at 0.00%.
+	 * Cleanup control is affecting the processed Key signal on the dark areas, resulting in
+	 * making the Black even more Black, avoiding unwanted shaddows for example.
+	 * [ float, min: -2, max: 2 ]
+	 */
+	cleanup: number
+
+	/**
+	 * In order to adjust the level for Density, the according slider, the numeric entry box or
+	 * the arrow up/down icons can be used. The "Density" control range is from 0.00% to
+	 * 100.00%. Default is at 0.00%.
+	 * Density control is affecting the processed Key signal on the light areas, resulting in
+	 * making the White even more White, avoiding unwanted transparency.
+	 * [ float, min: -2, max: 2 ]
+	 */
+	density: number
+
+	/**
+	 * In order to adjust the level for Hue, the according slider, the numeric entry box or
+	 * the arrow up/down icons can be used. The "Hue" control range is from 0.00 degree
+	 * to 36000.00 degree. Default is at 22500.00 degree.
+	 * Hue control is defining the Chroma angle inside a 360 degree color circle. Refering
+	 * to a test pattern called "Hue" or also known as "Color Circle".
+	 * [ float, min: 0, max: 3.60 ]
+	 */
+	hue: number
+
+	/**
+	 * In order to adjust the level for Selectivity Left, the according slider, the numeric entry
+	 * box or the arrow up/down icons can be used. The "Selectivity Left" control range is
+	 * from 0.00 degree to 90.00 degree. Default is at 30.00 degree.
+	 * When chroma key source is using a so called "Hue" test pattern, also known as
+	 * "Color Circle", the Selectivity Left control is opening or closing the left shoulder of
+	 * the used chroma key color. Maximum open is at 90.00 degree. In total Selectivity
+	 * Left and Selectivity Right is 180.00 degree.
+	 * [ float, min: 0, max: 0.9 ]
+	 */
+	selectivityLeft: number
+
+	/**
+	 * In order to adjust the level for Selectivity Right, the according slider, the numeric
+	 * entry box or the arrow up/down icons can be used. The "Selectivity Right" control
+	 * range is from 0.00 degree to 90.00 degree. Default is at 30.00 degree.
+	 * When chroma key source is using a so called "Hue" test pattern, also known as
+	 * "Color Circle", the Selectivity Right control is opening or closing the right shoulder of
+	 * the used chroma key color. Maximum open is at 90.00 degree. In total Selectivity
+	 * Left and Selectivity Right is 180.00 degree.
+	 * [ float, min: 0, max: 0.9 ]
+	 */
+	selectivityRight: number
+
+	/**
+	 * In order to adjust the level for Luminance, the according slider, the numeric entry
+	 * box or the arrow up/down icons can be used. The "Luminance" control range is from
+	 * 0.00% to 100.00%. Default is at 50.00%.
+	 * Luminance control is used to setup the level of luminance for the selected color and
+	 * adjusted saturation.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	luminance: number
+
+	/**
+	 * In order to adjust the level for Chroma, the according slider, the numeric entry box
+	 * or the arrow up/down icons can be used. The "Chroma" control range is from 0.00%
+	 * to 100.00%. Default is at 20.00%.
+	 * Chroma control is used to setup the level of saturation for the selected color angle.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	chroma: number
+
+	/**
+	 * In order to adjust the level for Achroma, the according slider, the numeric entry box
+	 * or the arrow up/down icons can be used. The "Achroma" control range is from
+	 * 0.00% to 100.00%. Default is at 0.00%.
+	 * Achroma control can be used to limit the level of saturation formerly defined in
+	 * "Chroma" control.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	aChroma: number
+
+	/**
+	 * In order to adjust the level for Spill Supression, the according slider, the numeric
+	 * entry box or the arrow up/down icons can be used. The "Spill Supression" control
+	 * range is from 0.00% to 100.00%. Default is at 0.00%.
+	 * Spill Supression is using the defined Chroma Key color area and opens the
+	 * processed key whole in concentric direction and added to the main Key signal.
+	 * [ float, min: 0, max: 1 ]
+	 */
+	spillSupression: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	spillSupressionLeft: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	spillSupressionRight: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	noiseRemoval: number
+
+	/**
+	 * When inverting the Key signal regardless of mode "Selfkey" or "Splitkey", the entire
+	 * Black and White values of the Key signal will be inverted such as the White areas
+	 * will become transparent and the Black areas will becomes Opac. When Invert is
+	 * enabled the check box appears ticked.
+	 */
+	invert: boolean
+
+	/**
+	 * When FGD-Fade is enabled the key result is forced to be represented in "Additive
+	 * Key" mode. Disabling FGD-Fade will cause that "Multiplicative Key" mode is
+	 * enforced.
+	 */
+	fgdFade: boolean
+
+	/**
+	 * Starting the Auto adjust task/procedure will ensure that all Chroma Key settings
+	 * based on the most represented single color in the selected source will be optimized
+	 * while running the auto setup procedure.
+	 * [ int ]
+	 */
+	autoState: number
+
+	edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize
+}
 
 // ------------------------- enums -----------------------------
 export enum SceneResolution {
@@ -356,11 +750,42 @@ export enum SceneLayerBlendMode {
 	Glow = 'Glow',
 	Phoenix = 'Phoenix',
 }
-
+export enum SceneLayerEffectLuminanceKeyBlendMode {
+	Auto = 'Auto',
+	Additive = 'Additive',
+	Multiplicative = 'Multiplicative',
+}
+export enum SceneLayerEffectTransform2DType {
+	TwoD = '2D',
+	TwoPointFiveD = '2.5D',
+}
+export enum SceneLayerEffectChromaKeyEdgeSmoothingSize {
+	Off = 'Off',
+	Small = 'Small',
+}
 // ------------------------- types -----------------------------
+export interface Pos3Df {
+	x: number
+	y: number
+	z: number
+}
+
+export interface Pos2Df {
+	x: number
+	y: number
+}
+
+export interface Pos2D {
+	x: number
+	y: number
+}
 
 export type ColorRGB = string
 
 // ------------------------- Update* types, used in update* methods --------------------------
 export type UpdateSceneObject = OmitReadonly<SceneObject>
 export type UpdateSceneLayerObject = OmitReadonly<SceneLayerObject>
+export type UpdateSceneLayerEffectCropObject = OmitReadonly<SceneLayerEffectCropObject>
+export type UpdateSceneLayerEffectLuminanceKeyObject = OmitReadonly<SceneLayerEffectLuminanceKeyObject>
+export type UpdateSceneLayerEffectTransform2DObject = OmitReadonly<SceneLayerEffectTransform2DObject>
+export type UpdateSceneLayerEffectChromaKeyObject = OmitReadonly<SceneLayerEffectChromaKeyObject>

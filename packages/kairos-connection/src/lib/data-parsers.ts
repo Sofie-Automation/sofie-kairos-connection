@@ -1,3 +1,5 @@
+import { Pos3Df } from '../kairos-types/main.js'
+
 export function parseBoolean(value: string): boolean {
 	if (value === '1') return true
 	if (value === '0') return false
@@ -69,4 +71,20 @@ export function stringifyEnum<EnumType>(
 	if (values.includes(value)) return value as any
 
 	throw new Error(`Invalid enum value: ${JSON.stringify(value)}, valid values: ${values.join(', ')}`)
+}
+
+export function parsePos3Df(value: string): Pos3Df {
+	const parts = value.split('/')
+	if (parts.length !== 3) throw new Error(`Unable to parse Pos3Df from string: "${value}"`)
+
+	return {
+		x: parseFloatValue(parts[0]),
+		y: parseFloatValue(parts[1]),
+		z: parseFloatValue(parts[2]),
+	}
+}
+
+export function stringifyPos3Df(pos: Pos3Df | undefined): string | undefined {
+	if (pos === undefined) return undefined
+	return `${pos.x}/${pos.y}/${pos.z}`
 }
