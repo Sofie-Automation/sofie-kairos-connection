@@ -1,4 +1,5 @@
 import EventEmitter from 'node:events'
+import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
 import {
 	queryAttributeDeserializer,
@@ -23,6 +24,7 @@ type Deserializer<TRes> = (lineBuffer: readonly string[]) => DeserializeResult<T
 
 interface InternalRequest {
 	serializedCommand: string
+	isQuery: boolean
 	deserializer: Deserializer<any>
 
 	resolve: (response: any) => void
@@ -101,9 +103,33 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				continue
 			}
 
-			// TODO - handle values from subscriptions
+			// Special case to handle values from subscriptions
+			const equalsIndex = firstLine.indexOf('=') // TODO - this feels like a messy hack
+			if (equalsIndex !== -1) {
+				// This looks like a response to a subscription or a query
+				const path = firstLine.slice(0, equalsIndex)
+				const value = firstLine.slice(equalsIndex + 1)
+
+				const subscription = this.#subscriptions.get(path)
+				if (subscription) {
+					subscription.latestValue = value
+
+					this.#emitToAllSubscribers(subscription.subscribers, path, value)
+				}
+			}
 
 			const nextCommand = this._requestQueue[0]
+			if (
+				// TODO - this feels like a messy hack
+				equalsIndex !== -1 &&
+				!firstLine.endsWith('=') &&
+				(!nextCommand || (nextCommand && nextCommand.sentTime && !nextCommand.isQuery))
+			) {
+				// This looks like a value for a subcription, and does not match the queued command
+				this._unprocessedLines.shift()
+				continue
+			}
+
 			if (nextCommand && nextCommand.sentTime) {
 				// command has been sent, we can match the response to it
 
@@ -185,13 +211,18 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @return { request: Promise<Response> } a Promise that resolves when the KAIROS replies after a command has been sent.
 	 * If this throws, there's something seriously wrong :)
 	 */
-	async executeCommand<TRes>(commandStr: string, deserializer: Deserializer<TRes>): Promise<TRes> {
+	async executeCommand<TRes>(
+		commandStr: string,
+		deserializer: Deserializer<TRes>,
+		isQueryAttribute: boolean
+	): Promise<TRes> {
 		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
 
 		const orgError = new Error() // To be used later in case of an Error
 
 		const internalRequest: InternalRequest = {
 			serializedCommand: commandStr,
+			isQuery: isQueryAttribute,
 			deserializer,
 
 			// stubs to be replaced
@@ -273,7 +304,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async setAttribute(path: string, value: string): Promise<void> {
 		const commandStr = `${path}=${value}`
-		return this.executeCommand(commandStr, okOrErrorDeserializer)
+		return this.executeCommand(commandStr, okOrErrorDeserializer, false)
 	}
 	/**
 	 * Set the values of multiple attributes at the same path on the KAIROS
@@ -300,8 +331,12 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @returns The value of the attribute as a string, or an error if the attribute could not be found
 	 */
 	async getAttribute(path: string): Promise<string> {
+		// If a subscription is active for this path, return the cached value
+		const subscription = this.#subscriptions.get(path)
+		if (subscription && subscription.latestValue !== null) return subscription.latestValue
+
 		const commandStr = `${path}`
-		return this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path))
+		return this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path), true)
 	}
 	/**
 	 * Get the values of multiple attributes at the same path from the KAIROS
@@ -326,7 +361,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async getList(path: string): Promise<string[]> {
 		const commandStr = `list_ex:${path}`
-		return this.executeCommand(commandStr, (lineBuffer) => listDeserializer(lineBuffer, path))
+		return this.executeCommand(commandStr, (lineBuffer) => listDeserializer(lineBuffer, path), false)
 	}
 
 	async executeFunction(path: string, ...args: string[]): Promise<void> {
@@ -340,16 +375,101 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 			escapedArgs.push(arg.replaceAll(',', '&#44;').replaceAll('\r', '&#13;').replaceAll('\n', '&#10;'))
 		}
-		return this.executeCommand(`${path}=${escapedArgs.join(',')}`, okOrErrorDeserializer)
+		return this.executeCommand(`${path}=${escapedArgs.join(',')}`, okOrErrorDeserializer, false)
 	}
 
-	// TODO - implement this
-	// subscribeValue(path: string, callback: (path: string, value: string ) => void): UnsubscribeFn {
-	// 	// This should be issues a get for the value (if the value is not already known), and then subscribe to changes
-	// 	// Each change should fire the callback with the path and value
-	// 	// If the application changes, the callback should be called with null to indicate that the subscription is no longer valid
-	// 	// The returned function should stop the subscription
-	// }
+	#subscriptions: Map<string, SubscriptionState> = new Map()
+
+	subscribeValue(path: string, callback: SubscriptionCallback): UnsubscribeFn {
+		const subscriberId = randomUUID()
+
+		let queryValue = false
+
+		let subscription = this.#subscriptions.get(path)
+		if (subscription) {
+			subscription.subscribers.set(subscriberId, callback)
+
+			if (subscription.latestValue !== null) {
+				const latestValue = subscription.latestValue
+				// If we already have a value, call the callback immediately
+				process.nextTick(() => callback(path, latestValue))
+			} else {
+				// If we don't have a value, we need to query it
+				queryValue = true
+			}
+		} else {
+			// Create a new subscription state
+			subscription = {
+				subscribers: new Map([[subscriberId, callback]]),
+				latestValue: null,
+			}
+			this.#subscriptions.set(path, subscription)
+			queryValue = true
+
+			// start a subscription to the KAIROS for this path
+			this.executeCommand(`subscribe:${path}`, okOrErrorDeserializer, false).catch((e) => {
+				// TODO - wrap error?
+				// TODO - should this be propogated to the callback?
+				// TODO - should this abort the subscription?
+				this.emit('error', e)
+			})
+		}
+
+		if (queryValue) {
+			const commandStr = `${path}`
+			this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path), true)
+				.then((res) => {
+					// If the subscription already has a value, we don't need to update it
+					if (subscription.latestValue !== null) return
+
+					subscription.latestValue = res
+
+					this.#emitToAllSubscribers(subscription.subscribers, path, res)
+				})
+				.catch((e) => {
+					// TODO - wrap error?
+					// TODO - should this be propogated to the callback?
+					// TODO - should this abort the subscription?
+					this.emit('error', e)
+				})
+		}
+
+		// Return an unsubscribe function that will remove the subscriber from the subscription
+		return () => {
+			const subscription = this.#subscriptions.get(path)
+			if (!subscription) return // Should not happen, but just in case
+
+			subscription.subscribers.delete(subscriberId)
+
+			// If there are no subscribers left, remove the subscription
+			if (subscription.subscribers.size === 0) {
+				this.#subscriptions.delete(path)
+
+				// stop the subscription to the KAIROS for this path
+				this.executeCommand(`unsubscribe:${path}`, okOrErrorDeserializer, false).catch((e) => {
+					// TODO - wrap error?
+					this.emit('error', e)
+				})
+			}
+		}
+	}
+
+	#emitToAllSubscribers(subscribers: Map<string, SubscriptionCallback>, path: string, value: string) {
+		for (const callback of subscribers.values()) {
+			// Call the callback with the path and the value
+			try {
+				callback(path, value)
+			} catch (e) {
+				this.emit('error', e as Error)
+			}
+		}
+	}
 }
 
-// export type UnsubscribeFn = () => void
+interface SubscriptionState {
+	readonly subscribers: Map<string, SubscriptionCallback>
+	latestValue: string | null
+}
+
+export type UnsubscribeFn = () => void
+export type SubscriptionCallback = (path: string, value: string) => void
