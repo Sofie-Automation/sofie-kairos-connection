@@ -1,4 +1,4 @@
-import { Pos3Df } from '../kairos-types/main.js'
+import { Pos3Df, Pos2Df, Pos2D, ColorRGB } from '../kairos-types/main.js'
 
 export function parseBoolean(value: string): boolean {
 	if (value === '1') return true
@@ -87,4 +87,54 @@ export function parsePos3Df(value: string): Pos3Df {
 export function stringifyPos3Df(pos: Pos3Df | undefined): string | undefined {
 	if (pos === undefined) return undefined
 	return `${pos.x}/${pos.y}/${pos.z}`
+}
+
+export function parsePos2Df(value: string): Pos2Df {
+	const parts = value.split('/')
+	if (parts.length !== 2) throw new Error(`Unable to parse Pos2Df from string: "${value}"`)
+
+	return {
+		x: parseFloatValue(parts[0]),
+		y: parseFloatValue(parts[1]),
+	}
+}
+
+export function stringifyPos2Df(pos: Pos2Df | undefined): string | undefined {
+	if (pos === undefined) return undefined
+	return `${pos.x}/${pos.y}`
+}
+
+export function parsePos2D(value: string): Pos2D {
+	const parts = value.split('/')
+	if (parts.length !== 2) throw new Error(`Unable to parse Pos2D from string: "${value}"`)
+
+	return {
+		x: parseInteger(parts[0]),
+		y: parseInteger(parts[1]),
+	}
+}
+
+export function stringifyPos2D(pos: Pos2D | undefined): string | undefined {
+	if (pos === undefined) return undefined
+	return `${pos.x}/${pos.y}`
+}
+
+export function parseColorRGB(value: string): ColorRGB {
+	// value is rgb(255,255,255)
+
+	const match = value.match(/^rgb\((\d+),(\d+),(\d+)\)$/)
+	if (match) {
+		return {
+			red: parseInteger(match[1]),
+			green: parseInteger(match[2]),
+			blue: parseInteger(match[3]),
+		}
+	}
+	throw new Error(`Unable to parse ColorRGB from string: "${value}"`)
+}
+
+export function stringifyColorRGB(color: ColorRGB | undefined): string | undefined {
+	if (color === undefined) return undefined
+	// return `${color.red}/${color.green}/${color.blue}`
+	return `rgb(${color.red},${color.green},${color.blue})`
 }

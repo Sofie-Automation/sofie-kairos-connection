@@ -1,4 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
+import { ColorRGB } from './scene.js'
 
 export interface ClipPlayerObject {
 	colorOverwrite: boolean
@@ -6,7 +7,7 @@ export interface ClipPlayerObject {
 	 * RGB color value
 	 * @example rgb(255,0,0)
 	 */
-	color: string
+	color: ColorRGB
 	timecode: string
 	remainingTime: string
 	/** int */

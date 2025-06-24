@@ -11,6 +11,12 @@ import {
 	stringifyInteger,
 	parsePos3Df,
 	stringifyPos3Df,
+	parseColorRGB,
+	parsePos2D,
+	parsePos2Df,
+	stringifyColorRGB,
+	stringifyPos2D,
+	stringifyPos2Df,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
 import {
@@ -41,6 +47,36 @@ import {
 	SceneLayerEffectChromaKeyObject,
 	UpdateSceneLayerEffectChromaKeyObject,
 	SceneLayerEffectChromaKeyEdgeSmoothingSize,
+	SceneLayerEffectFilmLookColorMode,
+	SceneLayerEffectFilmLookObject,
+	SceneLayerEffectGlowEffectObject,
+	SceneLayerEffectLinearKeyBlendMode,
+	SceneLayerEffectLinearKeyObject,
+	SceneLayerEffectLUTCorrectionColorspace,
+	SceneLayerEffectLUTCorrectionIndex,
+	SceneLayerEffectLUTCorrectionObject,
+	SceneLayerEffectLUTCorrectionRange,
+	SceneLayerEffectMatrixCorrectionObject,
+	SceneLayerEffectPCropObject,
+	SceneLayerEffectPositionObject,
+	SceneLayerEffectPositionRotate,
+	SceneLayerEffectRGBCorrectionObject,
+	SceneLayerEffectTemperatureCorrectionObject,
+	SceneLayerEffectToneCurveCorrectionObject,
+	SceneLayerEffectVirtualPTZObject,
+	SceneLayerEffectYUVCorrectionObject,
+	UpdateSceneLayerEffectFilmLookObject,
+	UpdateSceneLayerEffectGlowEffectObject,
+	UpdateSceneLayerEffectLinearKeyObject,
+	UpdateSceneLayerEffectLUTCorrectionObject,
+	UpdateSceneLayerEffectMatrixCorrectionObject,
+	UpdateSceneLayerEffectPCropObject,
+	UpdateSceneLayerEffectPositionObject,
+	UpdateSceneLayerEffectRGBCorrectionObject,
+	UpdateSceneLayerEffectTemperatureCorrectionObject,
+	UpdateSceneLayerEffectToneCurveCorrectionObject,
+	UpdateSceneLayerEffectVirtualPTZObject,
+	UpdateSceneLayerEffectYUVCorrectionObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import { refToPath, SceneLayerEffectRef, SceneLayerRef, SceneRef, splitPath } from './lib/reference.js'
@@ -141,7 +177,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			resolutionX: parseInteger(values.resolution_x),
 			resolutionY: parseInteger(values.resolution_y),
 			tally: parseInteger(values.tally),
-			color: values.color,
+			color: parseColorRGB(values.color),
 			resolution: parseEnum<SceneResolution>(values.resolution, SceneResolution),
 			nextTransition: parseCommaSeparated(values.next_transition),
 			allDuration: parseInteger(values.all_duration),
@@ -157,7 +193,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async updateScene(sceneRef: SceneRef, props: Partial<UpdateSceneObject>): Promise<void> {
 		await this.setAttributes(refToPath(sceneRef), [
 			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
-			{ attribute: 'color', value: props.color },
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
 			{ attribute: 'next_transition', value: stringifyCommaSeparated(props.nextTransition) },
 			{ attribute: 'all_duration', value: stringifyInteger(props.allDuration) },
@@ -272,7 +308,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			mode: parseEnum<SceneLayerMode>(values.mode, SceneLayerMode),
 			fxEnabled: parseBoolean(values.fxEnabled),
 			presetEnabled: parseBoolean(values.preset_enabled),
-			color: values.color,
+			color: parseColorRGB(values.color),
 			cleanMask: parseInteger(values.clean_mask),
 			sourceCleanMask: parseInteger(values.source_clean_mask),
 			dissolveEnabled: parseBoolean(values.dissolve_enabled),
@@ -292,7 +328,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'sourceOptions', value: stringifyCommaSeparated(props.sourceOptions) },
 			{ attribute: 'mode', value: stringifyEnum<SceneLayerMode>(props.mode, SceneLayerMode) },
 			{ attribute: 'preset_enabled', value: stringifyBoolean(props.presetEnabled) },
-			{ attribute: 'color', value: props.color },
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'clean_mask', value: stringifyInteger(props.cleanMask) },
 			{ attribute: 'source_clean_mask', value: stringifyInteger(props.sourceCleanMask) },
 			{ attribute: 'dissolve_enabled', value: stringifyBoolean(props.dissolveEnabled) },
@@ -603,6 +639,556 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this.executeFunction(`${refToPath(effectRef)}.auto_adjust`)
 	}
 
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectYUVCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectYUVCorrectionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'pedestal',
+			'luminance_lift',
+			'luminance_gain',
+			'luminance_gamma',
+			'contrast',
+			'saturation',
+			'UV_rotation',
+			'cyan_red',
+			'magenta_green',
+			'yellow_blue',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			pedestal: parseFloatValue(values.pedestal),
+			luminanceLift: parseFloatValue(values.luminance_lift),
+			luminanceGain: parseFloatValue(values.luminance_gain),
+			luminanceGamma: parseFloatValue(values.luminance_gamma),
+			contrast: parseFloatValue(values.contrast),
+			saturation: parseFloatValue(values.saturation),
+			uvRotation: parseFloatValue(values.UV_rotation),
+			cyanRed: parseFloatValue(values.cyan_red),
+			magentaGreen: parseFloatValue(values.magenta_green),
+			yellowBlue: parseFloatValue(values.yellow_blue),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectYUVCorrection(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectYUVCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'pedestal', value: stringifyFloat(props.pedestal) },
+			{ attribute: 'luminance_lift', value: stringifyFloat(props.luminanceLift) },
+			{ attribute: 'luminance_gain', value: stringifyFloat(props.luminanceGain) },
+			{ attribute: 'luminance_gamma', value: stringifyFloat(props.luminanceGamma) },
+			{ attribute: 'contrast', value: stringifyFloat(props.contrast) },
+			{ attribute: 'saturation', value: stringifyFloat(props.saturation) },
+			{ attribute: 'UV_rotation', value: stringifyFloat(props.uvRotation) },
+			{ attribute: 'cyan_red', value: stringifyFloat(props.cyanRed) },
+			{ attribute: 'magenta_green', value: stringifyFloat(props.magentaGreen) },
+			{ attribute: 'yellow_blue', value: stringifyFloat(props.yellowBlue) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectRGBCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectRGBCorrectionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'pedestal_red',
+			'pedestal_green',
+			'pedestal_blue',
+			'lift_red',
+			'lift_green',
+			'lift_blue',
+			'gain_red',
+			'gain_green',
+			'gain_blue',
+			'gamma_red',
+			'gamma_green',
+			'gamma_blue',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			pedestalRed: parseFloatValue(values.pedestal_red),
+			pedestalGreen: parseFloatValue(values.pedestal_green),
+			pedestalBlue: parseFloatValue(values.pedestal_blue),
+			liftRed: parseFloatValue(values.lift_red),
+			liftGreen: parseFloatValue(values.lift_green),
+			liftBlue: parseFloatValue(values.lift_blue),
+			gainRed: parseFloatValue(values.gain_red),
+			gainGreen: parseFloatValue(values.gain_green),
+			gainBlue: parseFloatValue(values.gain_blue),
+			gammaRed: parseFloatValue(values.gamma_red),
+			gammaGreen: parseFloatValue(values.gamma_green),
+			gammaBlue: parseFloatValue(values.gamma_blue),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectRGBCorrection(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectRGBCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'pedestal_red', value: stringifyFloat(props.pedestalRed) },
+			{ attribute: 'pedestal_green', value: stringifyFloat(props.pedestalGreen) },
+			{ attribute: 'pedestal_blue', value: stringifyFloat(props.pedestalBlue) },
+			{ attribute: 'lift_red', value: stringifyFloat(props.liftRed) },
+			{ attribute: 'lift_green', value: stringifyFloat(props.liftGreen) },
+			{ attribute: 'lift_blue', value: stringifyFloat(props.liftBlue) },
+			{ attribute: 'gain_red', value: stringifyFloat(props.gainRed) },
+			{ attribute: 'gain_green', value: stringifyFloat(props.gainGreen) },
+			{ attribute: 'gain_blue', value: stringifyFloat(props.gainBlue) },
+			{ attribute: 'gamma_red', value: stringifyFloat(props.gammaRed) },
+			{ attribute: 'gamma_green', value: stringifyFloat(props.gammaGreen) },
+			{ attribute: 'gamma_blue', value: stringifyFloat(props.gammaBlue) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectLUTCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLUTCorrectionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'index',
+			'input_colorspace',
+			'output_colorspace',
+			'input_range',
+			'output_range',
+			'color_space_conversion',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			index: parseEnum<SceneLayerEffectLUTCorrectionIndex>(values.index, SceneLayerEffectLUTCorrectionIndex),
+			inputColorspace: parseEnum<SceneLayerEffectLUTCorrectionColorspace>(
+				values.input_colorspace,
+				SceneLayerEffectLUTCorrectionColorspace
+			),
+			outputColorspace: parseEnum<SceneLayerEffectLUTCorrectionColorspace>(
+				values.output_colorspace,
+				SceneLayerEffectLUTCorrectionColorspace
+			),
+			inputRange: parseEnum<SceneLayerEffectLUTCorrectionRange>(values.input_range, SceneLayerEffectLUTCorrectionRange),
+			outputRange: parseEnum<SceneLayerEffectLUTCorrectionRange>(
+				values.output_range,
+				SceneLayerEffectLUTCorrectionRange
+			),
+			colorSpaceConversion: parseBoolean(values.color_space_conversion),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectLUTCorrection(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectLUTCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{
+				attribute: 'index',
+				value: stringifyEnum<SceneLayerEffectLUTCorrectionIndex>(props.index, SceneLayerEffectLUTCorrectionIndex),
+			},
+			{
+				attribute: 'input_colorspace',
+				value: stringifyEnum<SceneLayerEffectLUTCorrectionColorspace>(
+					props.inputColorspace,
+					SceneLayerEffectLUTCorrectionColorspace
+				),
+			},
+			{
+				attribute: 'output_colorspace',
+				value: stringifyEnum<SceneLayerEffectLUTCorrectionColorspace>(
+					props.outputColorspace,
+					SceneLayerEffectLUTCorrectionColorspace
+				),
+			},
+			{
+				attribute: 'input_range',
+				value: stringifyEnum<SceneLayerEffectLUTCorrectionRange>(props.inputRange, SceneLayerEffectLUTCorrectionRange),
+			},
+			{
+				attribute: 'output_range',
+				value: stringifyEnum<SceneLayerEffectLUTCorrectionRange>(props.outputRange, SceneLayerEffectLUTCorrectionRange),
+			},
+			{ attribute: 'color_space_conversion', value: stringifyBoolean(props.colorSpaceConversion) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectVirtualPTZ(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectVirtualPTZObject> {
+		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'position', 'zoom'])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			position: parsePos2Df(values.position),
+			zoom: parseFloatValue(values.zoom),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectVirtualPTZ(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectVirtualPTZObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'position', value: stringifyPos2Df(props.position) },
+			{ attribute: 'zoom', value: stringifyFloat(props.zoom) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectToneCurveCorrection(
+		effectRef: SceneLayerEffectRef
+	): Promise<SceneLayerEffectToneCurveCorrectionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'black_red',
+			'black_green',
+			'black_blue',
+			'gray_low_red',
+			'gray_low_green',
+			'gray_low_blue',
+			'gray_high_red',
+			'gray_high_green',
+			'gray_high_blue',
+			'white_red',
+			'white_green',
+			'white_blue',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			blackRed: parseFloatValue(values.black_red),
+			blackGreen: parseFloatValue(values.black_green),
+			blackBlue: parseFloatValue(values.black_blue),
+			grayLowRed: parseFloatValue(values.gray_low_red),
+			grayLowGreen: parseFloatValue(values.gray_low_green),
+			grayLowBlue: parseFloatValue(values.gray_low_blue),
+			grayHighRed: parseFloatValue(values.gray_high_red),
+			grayHighGreen: parseFloatValue(values.gray_high_green),
+			grayHighBlue: parseFloatValue(values.gray_high_blue),
+			whiteRed: parseFloatValue(values.white_red),
+			whiteGreen: parseFloatValue(values.white_green),
+			whiteBlue: parseFloatValue(values.white_blue),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectToneCurveCorrection(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectToneCurveCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'black_red', value: stringifyFloat(props.blackRed) },
+			{ attribute: 'black_green', value: stringifyFloat(props.blackGreen) },
+			{ attribute: 'black_blue', value: stringifyFloat(props.blackBlue) },
+			{ attribute: 'gray_low_red', value: stringifyFloat(props.grayLowRed) },
+			{ attribute: 'gray_low_green', value: stringifyFloat(props.grayLowGreen) },
+			{ attribute: 'gray_low_blue', value: stringifyFloat(props.grayLowBlue) },
+			{ attribute: 'gray_high_red', value: stringifyFloat(props.grayHighRed) },
+			{ attribute: 'gray_high_green', value: stringifyFloat(props.grayHighGreen) },
+			{ attribute: 'gray_high_blue', value: stringifyFloat(props.grayHighBlue) },
+			{ attribute: 'white_red', value: stringifyFloat(props.whiteRed) },
+			{ attribute: 'white_green', value: stringifyFloat(props.whiteGreen) },
+			{ attribute: 'white_blue', value: stringifyFloat(props.whiteBlue) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectMatrixCorrection(
+		effectRef: SceneLayerEffectRef
+	): Promise<SceneLayerEffectMatrixCorrectionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'r-g_n',
+			'r-g_p',
+			'r-b_n',
+			'r-b_p',
+			'g-r_n',
+			'g-r_p',
+			'g-b_n',
+			'g-b_p',
+			'b-r_n',
+			'b-r_p',
+			'b-g_n',
+			'b-g_p',
+			'red_phase',
+			'red_level',
+			'yellow_phase',
+			'yellow_level',
+			'green_phase',
+			'green_level',
+			'cyan_phase',
+			'cyan_level',
+			'blue_phase',
+			'blue_level',
+			'magenta_phase',
+			'magenta_level',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			rgN: parseFloatValue(values['r-g_n']),
+			rgP: parseFloatValue(values['r-g_p']),
+			rbN: parseFloatValue(values['r-b_n']),
+			rbP: parseFloatValue(values['r-b_p']),
+			grN: parseFloatValue(values['g-r_n']),
+			grP: parseFloatValue(values['g-r_p']),
+			gbN: parseFloatValue(values['g-b_n']),
+			gbP: parseFloatValue(values['g-b_p']),
+			brN: parseFloatValue(values['b-r_n']),
+			brP: parseFloatValue(values['b-r_p']),
+			bgN: parseFloatValue(values['b-g_n']),
+			bgP: parseFloatValue(values['b-g_p']),
+			redPhase: parseFloatValue(values.red_phase),
+			redLevel: parseFloatValue(values.red_level),
+			yellowPhase: parseFloatValue(values.yellow_phase),
+			yellowLevel: parseFloatValue(values.yellow_level),
+			greenPhase: parseFloatValue(values.green_phase),
+			greenLevel: parseFloatValue(values.green_level),
+			cyanPhase: parseFloatValue(values.cyan_phase),
+			cyanLevel: parseFloatValue(values.cyan_level),
+			bluePhase: parseFloatValue(values.blue_phase),
+			blueLevel: parseFloatValue(values.blue_level),
+			magentaPhase: parseFloatValue(values.magenta_phase),
+			magentaLevel: parseFloatValue(values.magenta_level),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectMatrixCorrection(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectMatrixCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'r-g_n', value: stringifyFloat(props.rgN) },
+			{ attribute: 'r-g_p', value: stringifyFloat(props.rgP) },
+			{ attribute: 'r-b_n', value: stringifyFloat(props.rbN) },
+			{ attribute: 'r-b_p', value: stringifyFloat(props.rbP) },
+			{ attribute: 'g-r_n', value: stringifyFloat(props.grN) },
+			{ attribute: 'g-r_p', value: stringifyFloat(props.grP) },
+			{ attribute: 'g-b_n', value: stringifyFloat(props.gbN) },
+			{ attribute: 'g-b_p', value: stringifyFloat(props.gbP) },
+			{ attribute: 'b-r_n', value: stringifyFloat(props.brN) },
+			{ attribute: 'b-r_p', value: stringifyFloat(props.brP) },
+			{ attribute: 'b-g_n', value: stringifyFloat(props.bgN) },
+			{ attribute: 'b-g_p', value: stringifyFloat(props.bgP) },
+			{ attribute: 'red_phase', value: stringifyFloat(props.redPhase) },
+			{ attribute: 'red_level', value: stringifyFloat(props.redLevel) },
+			{ attribute: 'yellow_phase', value: stringifyFloat(props.yellowPhase) },
+			{ attribute: 'yellow_level', value: stringifyFloat(props.yellowLevel) },
+			{ attribute: 'green_phase', value: stringifyFloat(props.greenPhase) },
+			{ attribute: 'green_level', value: stringifyFloat(props.greenLevel) },
+			{ attribute: 'cyan_phase', value: stringifyFloat(props.cyanPhase) },
+			{ attribute: 'cyan_level', value: stringifyFloat(props.cyanLevel) },
+			{ attribute: 'blue_phase', value: stringifyFloat(props.bluePhase) },
+			{ attribute: 'blue_level', value: stringifyFloat(props.blueLevel) },
+			{ attribute: 'magenta_phase', value: stringifyFloat(props.magentaPhase) },
+			{ attribute: 'magenta_level', value: stringifyFloat(props.magentaLevel) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectTemperatureCorrection(
+		effectRef: SceneLayerEffectRef
+	): Promise<SceneLayerEffectTemperatureCorrectionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'temperature', 'tint', 'keep_luminance'])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			temperature: parseInteger(values.temperature),
+			tint: parseFloatValue(values.tint),
+			keepLuminance: parseBoolean(values.keep_luminance),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectTemperatureCorrection(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectTemperatureCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'temperature', value: stringifyInteger(props.temperature) },
+			{ attribute: 'tint', value: stringifyFloat(props.tint) },
+			{ attribute: 'keep_luminance', value: stringifyBoolean(props.keepLuminance) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectLinearKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLinearKeyObject> {
+		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'invert', 'key_source', 'blend_mode'])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			invert: parseBoolean(values.invert),
+			keySource: values.key_source,
+			blendMode: parseEnum<SceneLayerEffectLinearKeyBlendMode>(values.blend_mode, SceneLayerEffectLinearKeyBlendMode),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectLinearKey(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectLinearKeyObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'invert', value: stringifyBoolean(props.invert) },
+			{ attribute: 'key_source', value: props.keySource },
+			{
+				attribute: 'blend_mode',
+				value: stringifyEnum<SceneLayerEffectLinearKeyBlendMode>(props.blendMode, SceneLayerEffectLinearKeyBlendMode),
+			},
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectPosition(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectPositionObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			'enabled',
+			'position',
+			// 'size',
+			'height',
+			'rotate',
+		])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			position: parsePos2D(values.position),
+			// size: parseInteger(values.size), // wierd, we get an Error if we query for the size
+			height: parseInteger(values.height),
+			rotate: parseEnum<SceneLayerEffectPositionRotate>(values.rotate, SceneLayerEffectPositionRotate),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectPosition(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectPositionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'position', value: stringifyPos2D(props.position) },
+			// { attribute: 'size', value: stringifyInteger(props.size) },
+			{ attribute: 'height', value: stringifyInteger(props.height) },
+			{
+				attribute: 'rotate',
+				value: stringifyEnum<SceneLayerEffectPositionRotate>(props.rotate, SceneLayerEffectPositionRotate),
+			},
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectPCrop(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectPCropObject> {
+		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'left', 'right', 'top', 'bottom'])
+
+		return {
+			enabled: parseBoolean(values.enabled),
+			left: parseInteger(values.left),
+			right: parseInteger(values.right),
+			top: parseInteger(values.top),
+			bottom: parseInteger(values.bottom),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectPCrop(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectPCropObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'left', value: stringifyInteger(props.left) },
+			{ attribute: 'right', value: stringifyInteger(props.right) },
+			{ attribute: 'top', value: stringifyInteger(props.top) },
+			{ attribute: 'bottom', value: stringifyInteger(props.bottom) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectFilmLook(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectFilmLookObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			// 'enabled',
+			'crack',
+			'spots',
+			'grain',
+			'shake',
+			'shadow',
+			'color mode',
+			'color strength',
+		])
+
+		return {
+			// enabled: parseBoolean(values.enabled),// wierd, we get an Error if we query for "enabled"
+			crack: parseFloatValue(values.crack),
+			spots: parseFloatValue(values.spots),
+			grain: parseFloatValue(values.grain),
+			shake: parseFloatValue(values.shake),
+			shadow: parseFloatValue(values.shadow),
+			colorMode: parseEnum<SceneLayerEffectFilmLookColorMode>(values['color mode'], SceneLayerEffectFilmLookColorMode),
+			colorStrength: parseFloatValue(values['color strength']),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectFilmLook(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectFilmLookObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			// { attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'crack', value: stringifyFloat(props.crack) },
+			{ attribute: 'spots', value: stringifyFloat(props.spots) },
+			{ attribute: 'grain', value: stringifyFloat(props.grain) },
+			{ attribute: 'shake', value: stringifyFloat(props.shake) },
+			{ attribute: 'shadow', value: stringifyFloat(props.shadow) },
+			{
+				attribute: 'color mode',
+				value: stringifyEnum<SceneLayerEffectFilmLookColorMode>(props.colorMode, SceneLayerEffectFilmLookColorMode),
+			},
+			{ attribute: 'color strength', value: stringifyFloat(props.colorStrength) },
+		])
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async getSceneLayerEffectGlowEffect(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectGlowEffectObject> {
+		const values = await this.getAttributes(refToPath(effectRef), [
+			// 'enabled',
+			'clip',
+			'gain',
+			'softness',
+			'glow color',
+		])
+
+		return {
+			// enabled: parseBoolean(values.enabled),
+			clip: parseFloatValue(values.clip),
+			gain: parseFloatValue(values.gain),
+			softness: parseFloatValue(values.softness),
+			glowColor: parseColorRGB(values['glow color']),
+		}
+	}
+
+	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
+	async updateSceneLayerEffectGlowEffect(
+		effectRef: SceneLayerEffectRef,
+		props: Partial<UpdateSceneLayerEffectGlowEffectObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), [
+			// { attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+			{ attribute: 'clip', value: stringifyFloat(props.clip) },
+			{ attribute: 'gain', value: stringifyFloat(props.gain) },
+			{ attribute: 'softness', value: stringifyFloat(props.softness) },
+			{ attribute: 'glow color', value: stringifyColorRGB(props.glowColor) },
+		])
+	}
+
 	// Scene.Layers.Layer
 	//             Transitions
 	//                 Transition
@@ -658,7 +1244,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		])
 		return {
 			colorOverwrite: parseBoolean(values.color_overwrite),
-			color: values.color,
+			color: parseColorRGB(values.color),
 			timecode: values.timecode,
 			remainingTime: values.remaining_time,
 			position: parseInteger(values.position),
@@ -673,7 +1259,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
 		await this.setAttributes(`RR${ramRecorderId}`, [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
-			{ attribute: 'color', value: props.color },
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
 			{ attribute: 'remaining_time', value: props.remainingTime },
@@ -770,7 +1356,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		])
 		return {
 			colorOverwrite: parseBoolean(values.color_overwrite),
-			color: values.color,
+			color: parseColorRGB(values.color),
 			timecode: values.timecode,
 			remainingTime: values.remaining_time,
 			position: parseInteger(values.position),
@@ -785,7 +1371,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		this._assertPlayerIdIsValid(playerId)
 		await this.setAttributes(`CP${playerId}`, [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
-			{ attribute: 'color', value: props.color },
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
 			{ attribute: 'remaining_time', value: props.remainingTime },

@@ -683,6 +683,529 @@ export interface SceneLayerEffectChromaKeyObject {
 
 	edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize
 }
+export interface SceneLayerEffectYUVCorrectionObject {
+	enabled: boolean
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	pedestal: number
+
+	/**
+	 * Increasing or decreasing the Luminance Lift value in "YUV Correction Settings" is
+	 * adding/subtracting luminance from selected source. The "Luminance Lift" control
+	 * range is +/-100.00%. Default is at 0.00%. Adjustments can be applied using the
+	 * according slider, the numeric entry box or the arrow up/down icons.
+	 * [ float, min: -1, max: 1 ]
+	 */
+	luminanceLift: number
+
+	/**
+	 * Increasing or decreasing the Luminance Gain value in "YUV Correction Settings" is
+	 * multiplying luminance into selected source. Pure "Black" remains unaffected. The
+	 * "Luminance gain" control range is from 0.00% to 600.00%. Default is at 100.00%.
+	 * Adjustments can be applied using the according slider, the numeric entry box or the
+	 * arrow up/down icons.
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	luminanceGain: number
+
+	/**
+	 * Increasing or decreasing the Luminance Gamma value in "YUV Correction Settings"
+	 * is multiplying luminance only into the midtones on selected source. Pure "Black"
+	 * and 100% "White" remains unaffected. The "Luminance gamma" control range is
+	 * from 0.00% to 800.00%. Default is at 100.00%. Adjustments can be applied using
+	 * the according slider, the numeric entry box or the arrow up/down icons.
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	luminanceGamma: number
+
+	/**
+	 * Increasing or decreasing the Contrast value in "YUV Correction Settings" is
+	 * affecting the separation(positive range) or the morphing (negative range) of
+	 * luminance values over the selected source. Pure "Black" and 100% "White" remains
+	 * unaffected. The "Contrast" control range is +/-100.00%. Default is at 0.00%.
+	 * Adjustments can be applied using the according slider, the numeric entry box or the
+	 * arrow up/down icons.
+	 * [ float, min: -1, max: 1 ]
+	 */
+	contrast: number
+
+	/**
+	 * Increasing or decreasing the Saturation value in "YUV Correction Settings" is
+	 * adding (positive range) or subtracting (negative range) Saturation into/from the
+	 * selected source. Bringing the Saturation value down to "0"% will cause a true
+	 * "Black/White" image as a result. The "Saturation" control range is from 0.00% to
+	 * 500.00%. Default is at 100.00%. Adjustments can be applied using the according
+	 * slider, the numeric entry box or the arrow up/down icons.
+	 * [ float, min: 0, max: 2 ]
+	 */
+	saturation: number
+
+	/**
+	 * Changing the UV-Rotation value in "YUV Correction Settings" is rotating/shifting the
+	 * Color space on the selected source.The "Saturation" control range is +/-36000.00
+	 * degree. Default is at 0.00%. Adjustments can be applied using the according slider,
+	 * the numeric entry box or the arrow up/down icons.
+	 * [ float, min: -3.6, max: 3.6 ]
+	 */
+	uvRotation: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	cyanRed: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	magentaGreen: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	yellowBlue: number
+}
+export interface SceneLayerEffectRGBCorrectionObject {
+	enabled: boolean
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	pedestalRed: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	pedestalGreen: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	pedestalBlue: number
+
+	/**
+	 * Increasing or decreasing the Lift Red value in "RGB Correction Settings" is
+	 * adding/subtracting Red into/from selected source. The "Lift Red" control range is +/-
+	 * 100.00%. Default is at 0.00%. Adjustments can be applied using the according
+	 * slider, the numeric entry box or the arrow up/down icons.
+	 * [ float, min: -1, max: 1 ]
+	 */
+	liftRed: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	liftGreen: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	liftBlue: number
+
+	/**
+	 * Increasing or decreasing the Gain Red value in "RGB Correction Settings" is
+	 * multiplying Red into selected source. Pure "Black" and 100% "White" remains
+	 * unaffected. The "Gain Red" control range is from 0.00% to 600.00%. Default is at
+	 * 100.00%. Adjustments can be applied using the according slider, the numeric entry
+	 * box or the arrow up/down icons.
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	gainRed: number
+
+	/**
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	gainGreen: number
+
+	/**
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	gainBlue: number
+
+	/**
+	 * Increasing or decreasing the Gamma Red value in "RGB Correction Settings" is
+	 * multiplying Red only into the midtones on selected source. Pure "Black" and 100%
+	 * "White" remains unaffected when the default value gets increased. The "Gamma
+	 * Red" control range is from 0.00% to 800.00%. Default is at 100.00%. Adjustments
+	 * can be applied using the according slider, the numeric entry box or the arrow
+	 * up/down icons.
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	gammaRed: number
+
+	/**
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	gammaGreen: number
+
+	/**
+	 * [ float, min: 0.1, max: 10 ]
+	 */
+	gammaBlue: number
+}
+export interface SceneLayerEffectLUTCorrectionObject {
+	enabled: boolean
+
+	/**
+	 * The "Index" drop down menu contains 16 presets to choose from, such as
+	 * "Cinema", "Cinema (Bright)", "Cinema (Cold)", "Cinema (Warm)", "Cinema (Drama)",
+	 * "Artistic 1", "Artistic 2", "Artistic 3", "Artistic 4", "Artistic 5", "Artistic 6", "Artistic 7",
+	 * "Artistic 8", "Artistic 9", "B and W 1" and "B and W 2".
+	 * [ enum, min: 0, max: 15 ]
+	 */
+	index: SceneLayerEffectLUTCorrectionIndex
+
+	/**
+	 * [ enum, min: 0, max: 1 ]
+	 */
+	inputColorspace: SceneLayerEffectLUTCorrectionColorspace
+
+	/**
+	 * [ enum, min: 0, max: 1 ]
+	 */
+	outputColorspace: SceneLayerEffectLUTCorrectionColorspace
+
+	/**
+	 * [ enum, min: 0, max: 1 ]
+	 */
+	inputRange: SceneLayerEffectLUTCorrectionRange
+
+	/**
+	 * [ enum, min: 0, max: 1 ]
+	 */
+	outputRange: SceneLayerEffectLUTCorrectionRange
+
+	colorSpaceConversion: boolean
+}
+export interface SceneLayerEffectVirtualPTZObject {
+	enabled: boolean
+
+	/**
+	 * The "Position" control range in respect to the picture dimension is +/- 5.0000 in X/Y
+	 * position and can be modified using the numeric entry box, the arrow up/down icons
+	 * or the "drag-pad" located to the far right side at the "Position" item. Default Layer
+	 * "Position" is at X=0.0000/Y=0.0000
+	 */
+	position: Pos2Df
+
+	/**
+	 * The control range for "Zoom" is from 100,00% to 500,00% and adjustments can be
+	 * done using the according slider, the numeric entry box or the arrow up/down icons.
+	 * Default for "Zoom" is 100.00%.
+	 * [ float, min: 1, max: 15 ]
+	 */
+	zoom: number
+}
+export interface SceneLayerEffectToneCurveCorrectionObject {
+	enabled: boolean
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	blackRed: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	blackGreen: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	blackBlue: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	grayLowRed: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	grayLowGreen: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	grayLowBlue: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	grayHighRed: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	grayHighGreen: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	grayHighBlue: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	whiteRed: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	whiteGreen: number
+
+	/**
+	 * [ float, min: -0.1, max: 1.08 ]
+	 */
+	whiteBlue: number
+}
+export interface SceneLayerEffectMatrixCorrectionObject {
+	enabled: boolean
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	rgN: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	rgP: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	rbN: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	rbP: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	grN: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	grP: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	gbN: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	gbP: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	brN: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	brP: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	bgN: number
+
+	/**
+	 * [ float, min: -0.6, max: 0.6 ]
+	 */
+	bgP: number
+
+	/**
+	 * [ float, min: -0.3, max: 0.3 ]
+	 */
+	redPhase: number
+
+	/**
+	 * [ float, min: 0.0, max: 2.0 ]
+	 */
+	redLevel: number
+
+	/**
+	 * [ float, min: -0.3, max: 0.3 ]
+	 */
+	yellowPhase: number
+
+	/**
+	 * [ float, min: 0.0, max: 2.0 ]
+	 */
+	yellowLevel: number
+
+	/**
+	 * [ float, min: -0.3, max: 0.3 ]
+	 */
+	greenPhase: number
+
+	/**
+	 * [ float, min: 0.0, max: 2.0 ]
+	 */
+	greenLevel: number
+
+	/**
+	 * [ float, min: -0.3, max: 0.3 ]
+	 */
+	cyanPhase: number
+
+	/**
+	 * [ float, min: 0.0, max: 2.0 ]
+	 */
+	cyanLevel: number
+
+	/**
+	 * [ float, min: -0.3, max: 0.3 ]
+	 */
+	bluePhase: number
+
+	/**
+	 * [ float, min: 0.0, max: 2.0 ]
+	 */
+	blueLevel: number
+
+	/**
+	 * [ float, min: -0.3, max: 0.3 ]
+	 */
+	magentaPhase: number
+
+	/**
+	 * [ float, min: 0.0, max: 2.0 ]
+	 */
+	magentaLevel: number
+}
+export interface SceneLayerEffectTemperatureCorrectionObject {
+	enabled: boolean
+
+	/**
+	 * [ int, min: 1000, max: 40000 ]
+	 */
+	temperature: number
+
+	/**
+	 * [ float, min: -0.5, max: 0.5 ]
+	 */
+	tint: number
+
+	keepLuminance: boolean
+}
+export interface SceneLayerEffectLinearKeyObject {
+	enabled: boolean
+	invert: boolean
+
+	/**
+	 * [ ObjectID ]
+	 */
+	keySource: string
+
+	blendMode: SceneLayerEffectLinearKeyBlendMode
+}
+export interface SceneLayerEffectPositionObject {
+	enabled: boolean
+	position: Pos2D
+
+	/**
+	 * [ int, min: 1, max: 4096 ]
+	 */
+	// size: number // wierd, we get an Error if we query for the size
+
+	/**
+	 * [ int, min: 1, max: 4096 ]
+	 */
+	height: number
+
+	/**
+	 * [ enum, min: 0, max: 3 ]
+	 */
+	rotate: SceneLayerEffectPositionRotate
+}
+export interface SceneLayerEffectPCropObject {
+	enabled: boolean
+
+	/**
+	 * [ int, min: 0, max: 1024 ]
+	 */
+	left: number
+
+	/**
+	 * [ int, min: 0, max: 1024 ]
+	 */
+	right: number
+
+	/**
+	 * [ int, min: 0, max: 1024 ]
+	 */
+	top: number
+
+	/**
+	 * [ int, min: 0, max: 1024 ]
+	 */
+	bottom: number
+}
+export interface SceneLayerEffectFilmLookObject {
+	// enabled: boolean // wierd, we get an Error if we query for "enabled"
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	crack: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	spots: number
+
+	/**
+	 * [ float, min: -1, max: 1 ]
+	 */
+	grain: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	shake: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	shadow: number
+
+	colorMode: SceneLayerEffectFilmLookColorMode
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	colorStrength: number
+}
+export interface SceneLayerEffectGlowEffectObject {
+	// enabled: boolean  // wierd, we get an Error if we query for "enabled"
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	clip: number
+
+	/**
+	 * [ float, min: 0.01, max: 10 ]
+	 */
+	gain: number
+
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	softness: number
+
+	glowColor: ColorRGB
+}
 
 // ------------------------- enums -----------------------------
 export enum SceneResolution {
@@ -763,6 +1286,49 @@ export enum SceneLayerEffectChromaKeyEdgeSmoothingSize {
 	Off = 'Off',
 	Small = 'Small',
 }
+export enum SceneLayerEffectLUTCorrectionIndex {
+	Cinema = 'Cinema',
+	CinemaBright = 'Cinema (Bright)',
+	CinemaCold = 'Cinema (Cold)',
+	CinemaWarm = 'Cinema (Warm)',
+	CinemaDrama = 'Cinema (Drama)',
+	Artistic1 = 'Artistic 1',
+	Artistic2 = 'Artistic 2',
+	Artistic3 = 'Artistic 3',
+	Artistic4 = 'Artistic 4',
+	Artistic5 = 'Artistic 5',
+	BWOne = 'B&W 1',
+	BWTwo = 'B&W 2',
+	User1 = 'User 1',
+	User2 = 'User 2',
+	User3 = 'User 3',
+	User4 = 'User 4',
+}
+export enum SceneLayerEffectLUTCorrectionColorspace {
+	BT709 = 'BT709',
+	BT2020BT2100 = 'BT2020-BT2100',
+}
+export enum SceneLayerEffectLUTCorrectionRange {
+	Normal = 'Normal',
+	Full = 'Full',
+}
+export enum SceneLayerEffectLinearKeyBlendMode {
+	Auto = 'Auto',
+	Additive = 'Additive',
+	Multiplicative = 'Multiplicative',
+}
+export enum SceneLayerEffectPositionRotate {
+	Rotate0 = '0°',
+	Rotate90 = '90°',
+	Rotate180 = '180°',
+	Rotate270 = '270°',
+}
+export enum SceneLayerEffectFilmLookColorMode {
+	NotChanged = 'Not changed',
+	Monocrome = 'Monocrome',
+	Sepia = 'Sepia',
+	Film = 'Film',
+}
 // ------------------------- types -----------------------------
 export interface Pos3Df {
 	x: number
@@ -780,7 +1346,11 @@ export interface Pos2D {
 	y: number
 }
 
-export type ColorRGB = string
+export type ColorRGB = {
+	red: number
+	green: number
+	blue: number
+}
 
 // ------------------------- Update* types, used in update* methods --------------------------
 export type UpdateSceneObject = OmitReadonly<SceneObject>
@@ -789,3 +1359,16 @@ export type UpdateSceneLayerEffectCropObject = OmitReadonly<SceneLayerEffectCrop
 export type UpdateSceneLayerEffectLuminanceKeyObject = OmitReadonly<SceneLayerEffectLuminanceKeyObject>
 export type UpdateSceneLayerEffectTransform2DObject = OmitReadonly<SceneLayerEffectTransform2DObject>
 export type UpdateSceneLayerEffectChromaKeyObject = OmitReadonly<SceneLayerEffectChromaKeyObject>
+export type UpdateSceneLayerEffectYUVCorrectionObject = OmitReadonly<SceneLayerEffectYUVCorrectionObject>
+export type UpdateSceneLayerEffectRGBCorrectionObject = OmitReadonly<SceneLayerEffectRGBCorrectionObject>
+export type UpdateSceneLayerEffectLUTCorrectionObject = OmitReadonly<SceneLayerEffectLUTCorrectionObject>
+export type UpdateSceneLayerEffectVirtualPTZObject = OmitReadonly<SceneLayerEffectVirtualPTZObject>
+export type UpdateSceneLayerEffectToneCurveCorrectionObject = OmitReadonly<SceneLayerEffectToneCurveCorrectionObject>
+export type UpdateSceneLayerEffectMatrixCorrectionObject = OmitReadonly<SceneLayerEffectMatrixCorrectionObject>
+export type UpdateSceneLayerEffectTemperatureCorrectionObject =
+	OmitReadonly<SceneLayerEffectTemperatureCorrectionObject>
+export type UpdateSceneLayerEffectLinearKeyObject = OmitReadonly<SceneLayerEffectLinearKeyObject>
+export type UpdateSceneLayerEffectPositionObject = OmitReadonly<SceneLayerEffectPositionObject>
+export type UpdateSceneLayerEffectPCropObject = OmitReadonly<SceneLayerEffectPCropObject>
+export type UpdateSceneLayerEffectFilmLookObject = OmitReadonly<SceneLayerEffectFilmLookObject>
+export type UpdateSceneLayerEffectGlowEffectObject = OmitReadonly<SceneLayerEffectGlowEffectObject>
