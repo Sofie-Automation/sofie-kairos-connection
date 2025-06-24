@@ -1,12 +1,4 @@
-import { OmitReadonly } from './lib/omit-readonly.js'
-
-export interface MediaObject {
-	name: string
-	/** int */
-	status: number
-	/** float */
-	loadProgress: number
-}
+import { OmitReadonly } from '../lib/omit-readonly.js'
 
 export interface SceneObject {
 	/**
@@ -64,7 +56,7 @@ export interface SceneObject {
 	 * the pop-up dialog.
 	 * @example rgb(255,0,0)
 	 */
-	color: string
+	color: ColorRGB
 
 	/**
 	 * The drop down menu next to “Resolution” allows to determine the designated
@@ -91,18 +83,6 @@ export interface SceneObject {
 	/** ObjectID  */
 	keyPreview: string
 }
-export type UpdateSceneObject = OmitReadonly<SceneObject>
-export enum SceneLimitOffAction {
-	None = 'None',
-	ToBegin = 'ToBegin',
-	ToEnd = 'ToEnd',
-}
-export enum SceneResolution {
-	Resolution1280x720 = '1280x720',
-	Resolution1920x1080 = '1920x1080',
-	Resolution3840x2160 = '3840x2160',
-}
-
 export interface SceneLayerObject {
 	/**
 	 * The Opacity setting allows the User to adjust the Transparency level (opposite of
@@ -250,7 +230,7 @@ export interface SceneLayerObject {
 	 * colors” can be saved within the pop-up dialog.
 	 * @example rgb(255,0,0)
 	 */
-	color: string
+	color: ColorRGB
 
 	/**
 	 * The “Clean mask” selection allows to configure up to 8 different Clean Feed circuits
@@ -309,7 +289,18 @@ export interface SceneLayerObject {
 	 */
 	blendMode: SceneLayerBlendMode
 }
-export type UpdateSceneLayerObject = OmitReadonly<SceneLayerObject>
+
+// ------------------------- enums -----------------------------
+export enum SceneResolution {
+	Resolution1280x720 = '1280x720',
+	Resolution1920x1080 = '1920x1080',
+	Resolution3840x2160 = '3840x2160',
+}
+export enum SceneLimitOffAction {
+	None = 'None',
+	ToBegin = 'ToBegin',
+	ToEnd = 'ToEnd',
+}
 export enum SceneLayerActiveBus {
 	ABus = 'A-Bus',
 	BBus = 'B-Bus',
@@ -326,7 +317,6 @@ export enum SceneLayerState {
 	FadeIn = 'FadeIn',
 	FadeOut = 'FadeOut',
 }
-
 export enum SceneLayerMode {
 	FitScene = 'FitScene',
 	FitSceneKeepAspect = 'FitSceneKeepAspect',
@@ -367,38 +357,10 @@ export enum SceneLayerBlendMode {
 	Phoenix = 'Phoenix',
 }
 
-export interface ClipPlayerObject {
-	colorOverwrite: boolean
-	/**
-	 * RGB color value
-	 * @example rgb(255,0,0)
-	 */
-	color: string
-	timecode: string
-	remainingTime: string
-	/** int */
-	position: number
-	repeat: boolean
-	tms: ClipPlayerTMS
+// ------------------------- types -----------------------------
 
-	/** [ ObjectID ] */
-	clip: string
+export type ColorRGB = string
 
-	/** int */
-	readonly tally: number
-
-	autoplay: boolean
-}
-export type UpdateClipPlayerObject = OmitReadonly<ClipPlayerObject>
-
-export enum ClipPlayerTMS {
-	Pause = 'Pause',
-	Reverse = 'Reverse',
-	Rewind = 'Rewind',
-	Play = 'Play',
-	LoopPlay = 'LoopPlay',
-	FastForward = 'FastForward',
-	Stop = 'Stop',
-	Begin = 'Begin',
-	End = 'End',
-}
+// ------------------------- Update* types, used in update* methods --------------------------
+export type UpdateSceneObject = OmitReadonly<SceneObject>
+export type UpdateSceneLayerObject = OmitReadonly<SceneLayerObject>
