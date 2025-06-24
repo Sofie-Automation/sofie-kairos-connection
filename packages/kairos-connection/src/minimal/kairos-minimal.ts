@@ -1,4 +1,4 @@
-import EventEmitter from 'node:events'
+import EventEmitter, { addAbortListener } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
 import {
@@ -7,7 +7,7 @@ import {
 	listDeserializer,
 	type DeserializeResult,
 } from './deserializers.js'
-import { ResponseError } from './errors.js'
+import { ResponseError, TerminateSubscriptionError } from './errors.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -39,6 +39,7 @@ export type KairosConnectionEvents = {
 	connect: []
 	disconnect: []
 	error: [error: Error]
+	warn: [error: Error]
 	reset: []
 }
 
@@ -74,6 +75,13 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		})
 		this._connection.on('disconnect', () => {
 			this._unprocessedLines = []
+			this.#terminateAllSubscriptions('Disconnected from KAIROS')
+
+			this._requestQueue.forEach((r) => {
+				r.reject(new Error('Disconnected before response was received'))
+			})
+			this._requestQueue = []
+
 			this.emit('disconnect')
 		})
 		this._connection.on('error', (e) => this.emit('error', e))
@@ -95,9 +103,11 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 			if (firstLine.startsWith('APPLICATION:')) {
 				this._unprocessedLines.shift()
 
-				// TODO - invalidate any active subscriptions
 				// TODO - will any in flight commands be ignored?
 				// TODO - should unsent commands be rejected?
+
+				// Invalidate all subscriptions
+				this.#terminateAllSubscriptions('Application reset')
 
 				this.emit('reset')
 				continue
@@ -114,7 +124,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				if (subscription) {
 					subscription.latestValue = value
 
-					this.#emitToAllSubscribers(subscription.subscribers, path, value)
+					this.#emitToAllSubscribers(subscription.subscribers, path, null, value)
 				}
 			}
 
@@ -191,6 +201,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	}
 
 	disconnect(): void {
+		this.#terminateAllSubscriptions('Disconnected by user')
 		this._canSendCommands = false
 		this._connection.disconnect()
 		this._requestQueue.forEach((r) => {
@@ -380,19 +391,65 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 	#subscriptions: Map<string, SubscriptionState> = new Map()
 
-	subscribeValue(path: string, callback: SubscriptionCallback): UnsubscribeFn {
+	// subscribeSceneLayer() {
+	// 	const abort = new AbortController()
+
+	// 	this.subscribeValue(path, abort.signal, (path, error, value) => {
+	// 		if (error) {
+	// 			// the sub has failed, and need to be set up again
+	// 			// This can happen upon an sub Error, Application NEW, or disconnect event
+	// 			// error should be a TerminateSubscriptionError when something___
+	// 			// If the error is sent, the callback will never be called again.
+	// 		}
+	// 		//
+	// 	})
+
+	// 	this.subscribeValue(path, abort.signal, (path, value) => {
+	// 		//
+	// 	})
+	// 	this.subscribeValue(path, abort.signal, (path, value) => {
+	// 		//
+	// 	})
+	// 	this.subscribeValue(path, abort.signal, (path, value) => {
+	// 		//
+	// 	})
+
+	// 	abort.abort() // Unsubscribe
+	// }
+
+	subscribeValue(path: string, abort: AbortSignal, rawCallback: SubscriptionCallback): void {
+		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
+		if (abort.aborted) throw new Error('Cannot subscribe, abort signal is already aborted')
+
 		const subscriberId = randomUUID()
+
+		let callbackHasErrored = false
+		const wrappedCallback: SubscriptionCallback = (path, error, value) => {
+			if (abort.aborted) return // If the abort signal is already aborted, do not call the callback
+			if (callbackHasErrored) return // If the callback has already errored, do not call it again
+
+			// If an error is received, we should not call the callback again
+			if (error) {
+				callbackHasErrored = true
+				diposeAbortListener[Symbol.dispose]()
+			}
+
+			// Call the original callback with the path and value
+			rawCallback(path, error, value)
+		}
 
 		let queryValue = false
 
 		let subscription = this.#subscriptions.get(path)
 		if (subscription) {
-			subscription.subscribers.set(subscriberId, callback)
+			subscription.subscribers.set(subscriberId, wrappedCallback)
 
 			if (subscription.latestValue !== null) {
 				const latestValue = subscription.latestValue
 				// If we already have a value, call the callback immediately
-				process.nextTick(() => callback(path, latestValue))
+				process.nextTick(() => {
+					wrappedCallback(path, null, latestValue)
+				})
 			} else {
 				// If we don't have a value, we need to query it
 				queryValue = true
@@ -400,18 +457,17 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		} else {
 			// Create a new subscription state
 			subscription = {
-				subscribers: new Map([[subscriberId, callback]]),
+				id: randomUUID(),
+				subscribers: new Map([[subscriberId, wrappedCallback]]),
 				latestValue: null,
 			}
 			this.#subscriptions.set(path, subscription)
 			queryValue = true
 
 			// start a subscription to the KAIROS for this path
+			const newSubcription = subscription
 			this.executeCommand(`subscribe:${path}`, okOrErrorDeserializer, false).catch((e) => {
-				// TODO - wrap error?
-				// TODO - should this be propogated to the callback?
-				// TODO - should this abort the subscription?
-				this.emit('error', e)
+				this.#terminateSubscription(path, newSubcription, e as Error)
 			})
 		}
 
@@ -424,18 +480,16 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 					subscription.latestValue = res
 
-					this.#emitToAllSubscribers(subscription.subscribers, path, res)
+					this.#emitToAllSubscribers(subscription.subscribers, path, null, res)
 				})
 				.catch((e) => {
-					// TODO - wrap error?
-					// TODO - should this be propogated to the callback?
-					// TODO - should this abort the subscription?
-					this.emit('error', e)
+					this.#terminateSubscription(path, subscription, e as Error)
 				})
 		}
 
-		// Return an unsubscribe function that will remove the subscriber from the subscription
-		return () => {
+		// TODO - does this dispose itself when fired?
+		// TODO - this should be removed when the subscription errors
+		const diposeAbortListener = addAbortListener(abort, () => {
 			const subscription = this.#subscriptions.get(path)
 			if (!subscription) return // Should not happen, but just in case
 
@@ -448,28 +502,59 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				// stop the subscription to the KAIROS for this path
 				this.executeCommand(`unsubscribe:${path}`, okOrErrorDeserializer, false).catch((e) => {
 					// TODO - wrap error?
-					this.emit('error', e)
+					this.emit('warn', e)
 				})
 			}
-		}
+		})
 	}
 
-	#emitToAllSubscribers(subscribers: Map<string, SubscriptionCallback>, path: string, value: string) {
+	#terminateSubscription(path: string, subscription: SubscriptionState, error: Error): void {
+		// Inform the subscribers of the failure
+		this.#emitToAllSubscribers(subscription.subscribers, path, error, '')
+
+		// Terminate the subscription
+		const currentSubscription = this.#subscriptions.get(path)
+		if (!currentSubscription || currentSubscription.id !== subscription.id) return // Make sure the same subscription is still active
+		this.#subscriptions.delete(path)
+	}
+
+	#emitToAllSubscribers(
+		subscribers: Map<string, SubscriptionCallback>,
+		path: string,
+		error: Error | null,
+		value: string
+	) {
 		for (const callback of subscribers.values()) {
 			// Call the callback with the path and the value
 			try {
-				callback(path, value)
+				callback(path, error, value)
 			} catch (e) {
 				this.emit('error', e as Error)
 			}
 		}
 	}
+
+	#terminateAllSubscriptions(reason: string) {
+		const error = new TerminateSubscriptionError(reason)
+
+		for (const [path, subscription] of this.#subscriptions.entries()) {
+			// Defer to ensure the subscription map is empty before the callbacks execute
+			process.nextTick(() => {
+				// Inform the subscribers of the failure
+				this.#emitToAllSubscribers(subscription.subscribers, path, error, '')
+			})
+		}
+
+		this.#subscriptions.clear()
+	}
 }
 
 interface SubscriptionState {
+	readonly id: string // Unique ID for the subscription, to identify if it has been restarted
 	readonly subscribers: Map<string, SubscriptionCallback>
 	latestValue: string | null
 }
 
 export type UnsubscribeFn = () => void
-export type SubscriptionCallback = (path: string, value: string) => void
+export type SubscriptionCallback = (path: string, error: Error | null, value: string) => void
+// export type TerminateCallback = (path: string, error: Error | null) => void

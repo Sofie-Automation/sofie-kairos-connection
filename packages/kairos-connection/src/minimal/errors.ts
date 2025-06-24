@@ -7,3 +7,10 @@ export class ResponseError extends Error {
 		this.name = 'ResponseError'
 	}
 }
+
+export class TerminateSubscriptionError extends Error {
+	constructor(reason: string) {
+		super(`Subscription has been terminated: ${reason}`)
+		this.name = 'TerminateSubscriptionError'
+	}
+}
