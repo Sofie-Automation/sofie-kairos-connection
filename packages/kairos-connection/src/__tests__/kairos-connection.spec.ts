@@ -17,6 +17,7 @@ import {
 	SceneResolution,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
+import { refScene, refSceneLayer, SceneRef } from '../lib/reference.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -188,6 +189,54 @@ describe('KairosConnection', () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
 					'list_ex:SCENES': ['list_ex:SCENES=', 'SCENES.Main', 'SCENES.Templates', ''],
+					'list_ex:SCENES.Main': ['list_ex:SCENES.Main=', 'SCENES.Main.Layers', 'SCENES.Main.Transitions', ''],
+					'list_ex:SCENES.Templates': [
+						'list_ex:SCENES.Templates=',
+						'SCENES.Templates.2Box',
+						'SCENES.Templates.4Box',
+						'SCENES.Templates.OTS Left',
+						'SCENES.Templates.OTS Right',
+						'SCENES.Templates.Title',
+						'SCENES.Templates.Sidecar',
+						'',
+					],
+					'list_ex:SCENES.Templates.2Box': [
+						'list_ex:SCENES.Templates.2Box=',
+						'SCENES.Templates.2Box.Layers',
+						'SCENES.Templates.2Box.Transitions',
+						'',
+					],
+					'list_ex:SCENES.Templates.4Box': [
+						'list_ex:SCENES.Templates.4Box=',
+						'SCENES.Templates.4Box.Layers',
+						'SCENES.Templates.4Box.Transitions',
+						'',
+					],
+					'list_ex:SCENES.Templates.OTS Left': [
+						'list_ex:SCENES.Templates.OTS Left=',
+						'SCENES.Templates.OTS Left.Layers',
+						'SCENES.Templates.OTS Left.Transitions',
+						'',
+					],
+					'list_ex:SCENES.Templates.OTS Right': [
+						'list_ex:SCENES.Templates.OTS Right=',
+						'SCENES.Templates.OTS Right.Layers',
+						'SCENES.Templates.OTS Right.Transitions',
+						'',
+					],
+					'list_ex:SCENES.Templates.Title': [
+						'list_ex:SCENES.Templates.Title=',
+						'SCENES.Templates.Title.Layers',
+						'SCENES.Templates.Title.Transitions',
+						'',
+					],
+					'list_ex:SCENES.Templates.Sidecar': [
+						'list_ex:SCENES.Templates.Sidecar=',
+						'SCENES.Templates.Sidecar.Layers',
+						'SCENES.Templates.Sidecar.Transitions',
+						'',
+					],
+
 					'SCENES.Main.advanced_resolution_control=0': ['OK'],
 					'SCENES.Main.color=rgb(255,0,0)': ['OK'],
 					'SCENES.Main.next_transition=SCENES.Main.Transitions.BgdMix': ['OK'],
@@ -217,15 +266,31 @@ describe('KairosConnection', () => {
 					'SCENES.Main.all_selected_cut=': ['OK'],
 					'SCENES.Main.store_snapshot=': ['OK'],
 				}[message]
-				if (reply) return reply
+				if (reply) {
+					return reply
+				}
+				if (emulatorConnection) {
+					// If there is an emulatorConnection, use it to handle the command:
+					const reply = await emulatorConnection.doCommand(message)
+					if (reply !== null) return reply
+				}
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			expect(await connection.listScenes()).toStrictEqual(['Main', 'Templates'])
+			expect(await connection.listScenes(undefined, true)).toStrictEqual([
+				{ realm: 'scene', scenePath: ['Main'], name: 'Main' },
+				{ realm: 'scene', scenePath: ['Templates'], name: 'Templates' },
+				{ realm: 'scene', scenePath: ['Templates', '2Box'], name: '2Box' },
+				{ realm: 'scene', scenePath: ['Templates', '4Box'], name: '4Box' },
+				{ realm: 'scene', scenePath: ['Templates', 'OTS Left'], name: 'OTS Left' },
+				{ realm: 'scene', scenePath: ['Templates', 'OTS Right'], name: 'OTS Right' },
+				{ realm: 'scene', scenePath: ['Templates', 'Title'], name: 'Title' },
+				{ realm: 'scene', scenePath: ['Templates', 'Sidecar'], name: 'Sidecar' },
+			] satisfies (SceneRef & { name: string })[])
 
 			expect(
-				await connection.updateScene('Main', {
+				await connection.updateScene(refScene(['Main']), {
 					advancedResolutionControl: false,
 					allDuration: 20,
 					allFader: 0,
@@ -240,7 +305,7 @@ describe('KairosConnection', () => {
 				})
 			).toBeUndefined()
 
-			expect(await connection.getScene('Main')).toStrictEqual({
+			expect(await connection.getScene(refScene(['Main']))).toStrictEqual({
 				advancedResolutionControl: false,
 				allDuration: 20,
 				allFader: 0,
@@ -258,40 +323,17 @@ describe('KairosConnection', () => {
 				tally: 3,
 			} satisfies SceneObject)
 
-			expect(await connection.sceneAuto('Main')).toBeUndefined()
+			expect(await connection.sceneAuto(refScene(['Main']))).toBeUndefined()
 
-			expect(await connection.sceneCut('Main')).toBeUndefined()
-			expect(await connection.sceneAllSelectedAuto('Main')).toBeUndefined()
-			expect(await connection.sceneAllSelectedCut('Main')).toBeUndefined()
-			expect(await connection.sceneStoreSnapshot('Main')).toBeUndefined()
+			expect(await connection.sceneCut(refScene(['Main']))).toBeUndefined()
+			expect(await connection.sceneAllSelectedAuto(refScene(['Main']))).toBeUndefined()
+			expect(await connection.sceneAllSelectedCut(refScene(['Main']))).toBeUndefined()
+			expect(await connection.sceneStoreSnapshot(refScene(['Main']))).toBeUndefined()
 		})
 		// SCENES.Scene.Layers
 		// 		Layers
 		// 			Layer
-		// 				Effects
-		// 					Crop
-		// 					Transform2D
-		// 					LuminanceKey
-		// 					ChromaKey
-		// 					YUVCorrection
-		// 					RGBCorrection
-		// 					LUTCorrection
-		// 					VirtualPTZ
-		// 					ToneCurveCorrection
-		// 					MatrixCorrection
-		// 					TemperatureCorrection
-		// 					LinearKey
-		// 					Position
-		// 					PCrop
-		// 					FilmLook
-		// 					GlowEffect
-		// 			Transitions
-		// 				Transition
-		// 				BgdMix
-		// 					TransitionEffect
-		// 			Snapshots
-		// 				SNP
-		test('SCENES.Layers', async () => {
+		test.only('SCENES.Layers', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
 					'list_ex:SCENES.Main.Layers': [
@@ -299,8 +341,36 @@ describe('KairosConnection', () => {
 						'SCENES.Main.Layers.Background',
 						'SCENES.Main.Layers.Layer-1',
 						'SCENES.Main.Layers.Layer-2',
+						'SCENES.Main.Layers.Group-1',
 						'',
 					],
+					'list_ex:SCENES.Main.Layers.Background': [
+						'list_ex:SCENES.Main.Layers.Background=',
+						'SCENES.Main.Layers.Background.Effects',
+						'',
+					],
+					'list_ex:SCENES.Main.Layers.Layer-1': [
+						'list_ex:SCENES.Main.Layers.Layer-1=',
+						'SCENES.Main.Layers.Layer-1.Effects',
+						'',
+					],
+					'list_ex:SCENES.Main.Layers.Layer-2': [
+						'list_ex:SCENES.Main.Layers.Layer-2=',
+						'SCENES.Main.Layers.Layer-2.Effects',
+						'',
+					],
+					'list_ex:SCENES.Main.Layers.Group-1': [
+						'list_ex:SCENES.Main.Layers.Group-1=',
+						'SCENES.Main.Layers.Group-1.Effects',
+						'SCENES.Main.Layers.Group-1.InnerLayer',
+						'',
+					],
+					'list_ex:SCENES.Main.Layers.Group-1.InnerLayer': [
+						'list_ex:SCENES.Main.Layers.Group-1.InnerLayer=',
+						'SCENES.Main.Layers.Group-1.InnerLayer.Effects',
+						'',
+					],
+
 					'SCENES.Main.Layers.Background.color=rgb(255,0,0)': ['OK'],
 					'SCENES.Main.Layers.Background.opacity': ['SCENES.Main.Layers.Background.opacity=1'],
 					'SCENES.Main.Layers.Background.sourceA': ['SCENES.Main.Layers.Background.sourceA=BLACK'],
@@ -341,19 +411,50 @@ describe('KairosConnection', () => {
 				}[message]
 				if (reply) return reply
 
-				// if (emulatorConnection) {
-				// 	// If there is an emulatorConnection, use it to handle the command:
-				// 	const reply = await emulatorConnection.doCommand(message)
-				// 	if (reply !== null) return reply
-				// }
+				if (emulatorConnection) {
+					// If there is an emulatorConnection, use it to handle the command:
+					const reply = await emulatorConnection.doCommand(message)
+					if (reply !== null) return reply
+				}
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			expect(await connection.listSceneLayers('Main')).toStrictEqual(['Background', 'Layer-1', 'Layer-2'])
+			expect(await connection.listSceneLayers(refSceneLayer(['Main'], []), true)).toStrictEqual([
+				{
+					realm: 'scene-layer',
+					name: 'Background',
+					scenePath: ['Main'],
+					layerPath: ['Background'],
+				},
+				{
+					realm: 'scene-layer',
+					name: 'Layer-1',
+					scenePath: ['Main'],
+					layerPath: ['Layer-1'],
+				},
+				{
+					realm: 'scene-layer',
+					name: 'Layer-2',
+					scenePath: ['Main'],
+					layerPath: ['Layer-2'],
+				},
+				{
+					realm: 'scene-layer',
+					name: 'Group-1',
+					scenePath: ['Main'],
+					layerPath: ['Group-1'],
+				},
+				{
+					realm: 'scene-layer',
+					name: 'InnerLayer',
+					scenePath: ['Main'],
+					layerPath: ['Group-1', 'InnerLayer'],
+				},
+			])
 
 			expect(
-				await connection.updateSceneLayer('Main', 'Background', {
+				await connection.updateSceneLayer(refSceneLayer(['Main'], ['Background']), {
 					// blendMode: NaN,
 					cleanMask: 0,
 					color: 'rgb(255,0,0)',
@@ -398,7 +499,7 @@ describe('KairosConnection', () => {
 				})
 			).toBeUndefined()
 
-			expect(await connection.getSceneLayer('Main', 'Background')).toStrictEqual({
+			expect(await connection.getSceneLayer(refSceneLayer(['Main'], ['Background']))).toStrictEqual({
 				activeBus: SceneLayerActiveBus.ABus,
 				blendMode: SceneLayerBlendMode.Default,
 				cleanMask: 0,
@@ -446,11 +547,38 @@ describe('KairosConnection', () => {
 				state: SceneLayerState.On,
 			} satisfies SceneLayerObject)
 
-			expect(await connection.sceneLayerSwapAB('Main', 'Background')).toBeUndefined()
-			expect(await connection.sceneLayerShowLayer('Main', 'Background')).toBeUndefined()
-			expect(await connection.sceneLayerHideLayer('Main', 'Background')).toBeUndefined()
-			expect(await connection.sceneLayerToggleLayer('Main', 'Background')).toBeUndefined()
+			expect(await connection.sceneLayerSwapAB(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerShowLayer(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerHideLayer(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
+			expect(await connection.sceneLayerToggleLayer(refSceneLayer(['Main'], ['Background']))).toBeUndefined()
 		})
+		// SCENES.Scene.Layers.Layer
+		// 				Effects
+		// 					Crop
+		// 					Transform2D
+		// 					LuminanceKey
+		// 					ChromaKey
+		// 					YUVCorrection
+		// 					RGBCorrection
+		// 					LUTCorrection
+		// 					VirtualPTZ
+		// 					ToneCurveCorrection
+		// 					MatrixCorrection
+		// 					TemperatureCorrection
+		// 					LinearKey
+		// 					Position
+		// 					PCrop
+		// 					FilmLook
+		// 					GlowEffect
+
+		// SCENES.Scene.Layers.Layer
+		// 			Transitions
+		// 				Transition
+		// 				BgdMix
+		// 					TransitionEffect
+		// SCENES.Scene.Layers.Layer
+		// 			Snapshots
+		// 				SNP
 
 		// SOURCES
 		// 	FXINPUTS
