@@ -19,7 +19,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 	private _keepaliveTimer?: NodeJS.Timeout
 	private _lastMessageSentTime = 0
 
-	private _debug = true
+	private _debug = false
 
 	constructor(
 		private host: string,

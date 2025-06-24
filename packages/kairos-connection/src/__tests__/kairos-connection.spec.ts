@@ -4,6 +4,7 @@ import {
 	ClipPlayerTMS,
 	KairosConnection,
 	MinimalKairosConnection,
+	ResponseError,
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
 	SceneLayerDissolveMode,
@@ -65,9 +66,13 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 					commandStr: string,
 					deserializer: Parameters<InstanceType<typeof KairosConnection>['executeCommand']>[1]
 				): Promise<TRes> {
-					const lines = await this._replyHandler(commandStr)
+					const replyLines = await this._replyHandler(commandStr)
 
-					const reply = deserializer(lines)
+					if (replyLines.length === 1 && replyLines[0] === 'Error') {
+						throw new ResponseError(commandStr, replyLines[0])
+					}
+
+					const reply = deserializer(replyLines)
 					if (reply === null) throw new Error(`No reply received for command: ${commandStr}`)
 
 					return reply.response as TRes
@@ -672,21 +677,23 @@ describe('KairosConnection', () => {
 					'MEDIA.images.nonexistent.load_progress': ['Error'],
 					'MEDIA.sounds.nonexistent.name': ['Error'],
 				}[message]
-				if (reply) return reply
+				if (reply) {
+					return reply
+				}
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			// expect(await connection.listMediaClips()).toStrictEqual([])
+			expect(await connection.listMediaClips()).toStrictEqual([])
 			expect(await connection.getMediaClip('nonexistent')).toBeUndefined()
-			// expect(await connection.listMediaStills()).toStrictEqual([])
-			// expect(await connection.getMediaStill('nonexistent')).toBeUndefined()
-			// expect(await connection.listMediaRamRec()).toStrictEqual([])
-			// expect(await connection.getMediaRamRec('nonexistent')).toBeUndefined()
-			// expect(await connection.listMediaImage()).toStrictEqual([])
-			// expect(await connection.getMediaImage('nonexistent')).toBeUndefined()
-			// expect(await connection.listMediaSounds()).toStrictEqual([])
-			// expect(await connection.getMediaSound('nonexistent')).toBeUndefined()
+			expect(await connection.listMediaStills()).toStrictEqual([])
+			expect(await connection.getMediaStill('nonexistent')).toBeUndefined()
+			expect(await connection.listMediaRamRec()).toStrictEqual([])
+			expect(await connection.getMediaRamRec('nonexistent')).toBeUndefined()
+			expect(await connection.listMediaImage()).toStrictEqual([])
+			expect(await connection.getMediaImage('nonexistent')).toBeUndefined()
+			expect(await connection.listMediaSounds()).toStrictEqual([])
+			expect(await connection.getMediaSound('nonexistent')).toBeUndefined()
 		})
 
 		// TRANSLIB
