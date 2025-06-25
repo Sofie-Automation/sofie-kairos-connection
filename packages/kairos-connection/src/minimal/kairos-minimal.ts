@@ -120,7 +120,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 			// Special case to handle values from subscriptions
 			const equalsIndex = firstLine.indexOf('=') // TODO - this feels like a messy hack
-			if (equalsIndex !== -1) {
+			if (equalsIndex !== -1 && !firstLine.endsWith('=')) {
 				// This looks like a response to a subscription or a query
 				const path = firstLine.slice(0, equalsIndex)
 				const value = firstLine.slice(equalsIndex + 1)
@@ -132,12 +132,8 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 					this.#emitToAllSubscribers(subscription.subscribers, path, null, value)
 				}
 
-				if (
-					// TODO - this feels like a messy hack
-					!firstLine.endsWith('=') &&
-					(!nextCommand || (nextCommand && nextCommand.sentTime && nextCommand.queryValuePath !== path))
-				) {
-					// This looks like a value for a subcription, and does not match the queued command
+				// If the next command in the queue is not a query for this value, remove it from the queue
+				if (!nextCommand || (nextCommand && nextCommand.sentTime && nextCommand.queryValuePath !== path)) {
 					this._unprocessedLines.shift()
 					continue
 				}
