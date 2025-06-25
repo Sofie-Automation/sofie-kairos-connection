@@ -1147,6 +1147,35 @@ export class KairosConnection extends MinimalKairosConnection {
 	//                 Transition
 	//                 BgdMix
 	//                     TransitionEffect
+
+	async listSceneTransitions(sceneRef: SceneRef): Promise<(SceneTransitionRef & { name: string })[]> {
+		return (
+			await this._listDeep(
+				`${refToPath(sceneRef)}.Transitions`,
+				(_, path) => {
+					// console.log(path)
+					if (path.endsWith('Transitions.BgdMix')) return true // There can be a Transition called 'BgdMix' at the root level
+					if (path.includes('BgdMix')) return false
+					return true
+				},
+				false
+			)
+		).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Transitions')
+			if (paths.length !== 2)
+				throw new Error(
+					`Invalid layer path: "${JSON.stringify(paths)}" ("Transitions" missing) (${JSON.stringify(itemPath)})`
+				)
+
+			return {
+				realm: 'scene-transition',
+				name: paths[1][paths[1].length - 1],
+				scenePath: paths[0].slice(1), // remove the "SCENES" part
+				transitionPath: paths[1],
+			}
+		})
+	}
+
 	// Scene.Layers.Layer
 	//             Snapshots
 	//                 SNP

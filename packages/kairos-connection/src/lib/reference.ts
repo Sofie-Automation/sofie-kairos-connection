@@ -47,6 +47,13 @@ export function refToPath(ref: AnyRef): string {
 			return ['MEDIA', 'images', ...ref.clipPath.map(protocolEncodeStr)].join('.')
 		case 'media-sound':
 			return ['MEDIA', 'sounds', ...ref.clipPath.map(protocolEncodeStr)].join('.')
+		case 'scene-transition':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+			].join('.')
 		default:
 			assertNever(ref)
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
@@ -104,6 +111,15 @@ export type SceneLayerEffectRef = {
 }
 export function refSceneLayerEffect(layerRef: SceneLayerRef, effectPath: RefPath): SceneLayerEffectRef {
 	return { realm: 'scene-layer-effect', scenePath: layerRef.scenePath, layerPath: layerRef.layerPath, effectPath }
+}
+
+export type SceneTransitionRef = {
+	realm: 'scene-transition'
+	scenePath: RefPath
+	transitionPath: RefPath
+}
+export function refSceneTransition(scenePath: RefPath, transitionPath: RefPath): SceneTransitionRef {
+	return { realm: 'scene-transition', scenePath, transitionPath }
 }
 
 // ---------------------------- MEDIA -----------------------------

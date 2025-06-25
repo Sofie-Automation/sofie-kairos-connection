@@ -1990,6 +1990,43 @@ describe('KairosConnection', () => {
 		// 				Transition
 		// 				BgdMix
 		// 					TransitionEffect
+
+		test('SCENES.Layers.Transitions', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SCENES.Main.Transitions': [
+						'list_ex:SCENES.Main.Transitions=',
+						'SCENES.Main.Transitions.BgdMix',
+						'SCENES.Main.Transitions.L1',
+						'SCENES.Main.Transitions.L2',
+						'',
+					],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.listSceneTransitions(refMain, true)).toStrictEqual([
+				{
+					name: 'BgdMix',
+					realm: 'scene-transition',
+					scenePath: ['Main'],
+					transitionPath: ['BgdMix'],
+				},
+				{
+					name: 'L1',
+					realm: 'scene-transition',
+					scenePath: ['Main'],
+					transitionPath: ['L1'],
+				},
+				{
+					name: 'L2',
+					realm: 'scene-transition',
+					scenePath: ['Main'],
+					transitionPath: ['L2'],
+				},
+			])
+		})
 		// SCENES.Scene.Layers.Layer
 		// 			Snapshots
 		// 				SNP
