@@ -77,9 +77,23 @@ import {
 	UpdateSceneLayerEffectToneCurveCorrectionObject,
 	UpdateSceneLayerEffectVirtualPTZObject,
 	UpdateSceneLayerEffectYUVCorrectionObject,
+	SceneSnapshotObject,
+	SceneSnapshotStatus,
+	SceneSnapshotCurve,
+	SceneSnapshotPriorityRecall,
+	UpdateSceneSnapshotObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
-import { AnyRef, isRef, refToPath, SceneLayerEffectRef, SceneLayerRef, SceneRef, splitPath } from './lib/reference.js'
+import {
+	AnyRef,
+	isRef,
+	refToPath,
+	SceneLayerEffectRef,
+	SceneLayerRef,
+	SceneRef,
+	SceneSnapshotRef,
+	splitPath,
+} from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -1142,7 +1156,73 @@ export class KairosConnection extends MinimalKairosConnection {
 	//             Snapshots
 	//                 SNP
 
-	// SOURCES
+	async listSceneSnapshots(sceneRef: SceneRef): Promise<(SceneSnapshotRef & { name: string })[]> {
+		return (await this._listDeep(`${refToPath(sceneRef)}.Snapshots`, [], false)).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Snapshots')
+			if (paths.length !== 2)
+				throw new Error(
+					`Invalid layer path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
+				)
+
+			return {
+				realm: 'scene-snapshot',
+				name: paths[1][paths[1].length - 1],
+				scenePath: paths[0].slice(1), // remove the "SCENES" part
+				snapshotPath: paths[1],
+			}
+		})
+	}
+	async getSceneSnapshot(snapshotRef: SceneSnapshotRef): Promise<SceneSnapshotObject> {
+		const values = await this.getAttributes(refToPath(snapshotRef), [
+			'status',
+			'color',
+			'dissolve_time',
+			'enable_curve',
+			'curve',
+			'priority_recall',
+		])
+
+		return {
+			status: parseEnum<SceneSnapshotStatus>(values.status, SceneSnapshotStatus),
+			color: parseColorRGB(values.color),
+			dissolveTime: parseInteger(values.dissolve_time),
+			enableCurve: parseBoolean(values.enable_curve),
+			curve: parseEnum<SceneSnapshotCurve>(values.curve, SceneSnapshotCurve),
+			priorityRecall: parseEnum<SceneSnapshotPriorityRecall>(values.priority_recall, SceneSnapshotPriorityRecall),
+		}
+	}
+
+	async updateSceneSnapshot(snapshotRef: SceneSnapshotRef, props: Partial<UpdateSceneSnapshotObject>): Promise<void> {
+		await this.setAttributes(refToPath(snapshotRef), [
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
+			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
+			{ attribute: 'enable_curve', value: stringifyBoolean(props.enableCurve) },
+			{ attribute: 'curve', value: stringifyEnum<SceneSnapshotCurve>(props.curve, SceneSnapshotCurve) },
+			{
+				attribute: 'priority_recall',
+				value: stringifyEnum<SceneSnapshotPriorityRecall>(props.priorityRecall, SceneSnapshotPriorityRecall),
+			},
+			// status is read only
+		])
+	}
+	async sceneSnapshotRecall(snapshotRef: SceneSnapshotRef): Promise<void> {
+		return this.executeFunction(`${refToPath(snapshotRef)}.recall`)
+	}
+	async sceneSnapshotForceDissolve(snapshotRef: SceneSnapshotRef): Promise<void> {
+		return this.executeFunction(`${refToPath(snapshotRef)}.force_dissolve`)
+	}
+	async sceneSnapshotForceRecall(snapshotRef: SceneSnapshotRef): Promise<void> {
+		return this.executeFunction(`${refToPath(snapshotRef)}.force_recall`)
+	}
+	async sceneSnapshotUpdate(snapshotRef: SceneSnapshotRef): Promise<void> {
+		return this.executeFunction(`${refToPath(snapshotRef)}.update`)
+	}
+	async sceneSnapshotAbort(snapshotRef: SceneSnapshotRef): Promise<void> {
+		return this.executeFunction(`${refToPath(snapshotRef)}.abort`)
+	}
+	async sceneSnapshotDeleteEx(snapshotRef: SceneSnapshotRef): Promise<void> {
+		return this.executeFunction(`${refToPath(snapshotRef)}.delete_ex`)
+	} // SOURCES
 	// 	FXINPUTS
 	// 		Fx
 	// 			SourceEffectGroup

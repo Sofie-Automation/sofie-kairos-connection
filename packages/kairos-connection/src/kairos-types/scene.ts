@@ -1209,6 +1209,30 @@ export interface SceneLayerEffectGlowEffectObject {
 	glowColor: ColorRGB
 }
 
+export interface SceneSnapshotObject {
+	/**
+	 * [ enum, read_only ] */
+	readonly status: SceneSnapshotStatus
+
+	/**
+	 * [ ColorRGB ]
+	 */
+	color: ColorRGB
+
+	/**
+	 * [ int, min: 0, max: 9999 ]
+	 */
+	dissolveTime: number
+
+	enableCurve: boolean
+	curve: SceneSnapshotCurve
+
+	/**
+	 * [enum, min: 0, max: 2 ]
+	 */
+	priorityRecall: SceneSnapshotPriorityRecall
+}
+
 // ------------------------- enums -----------------------------
 export enum SceneResolution {
 	Resolution1280x720 = '1280x720',
@@ -1331,6 +1355,59 @@ export enum SceneLayerEffectFilmLookColorMode {
 	Sepia = 'Sepia',
 	Film = 'Film',
 }
+export enum SceneSnapshotStatus {
+	Stopped = 'Stopped',
+	Playing = 'Playing',
+}
+export enum SceneSnapshotCurve {
+	Linear = 'Linear',
+	QuadIn = 'QuadIn',
+	QuadOut = 'QuadOut',
+	QuadInOut = 'QuadInOut',
+	QuadOutIn = 'QuadOutIn',
+	CubicIn = 'CubicIn',
+	CubicOut = 'CubicOut',
+	CubicInOut = 'CubicInOut',
+	CubicOutIn = 'CubicOutIn',
+	QuartIn = 'QuartIn',
+	QuartOut = 'QuartOut',
+	QuartInOut = 'QuartInOut',
+	QuartOutIn = 'QuartOutIn',
+	QuintIn = 'QuintIn',
+	QuintOut = 'QuintOut',
+	QuintInOut = 'QuintInOut',
+	QuintOutIn = 'QuintOutIn',
+	SineIn = 'SineIn',
+	SineOut = 'SineOut',
+	SineInOut = 'SineInOut',
+	SineOutIn = 'SineOutIn',
+	ExpoIn = 'ExpoIn',
+	ExpoOut = 'ExpoOut',
+	ExpoInOut = 'ExpoInOut',
+	ExpoOutIn = 'ExpoOutIn',
+	CircularIn = 'CircularIn',
+	CircularOut = 'CircularOut',
+	CircularInOut = 'CircularInOut',
+	CircularOutIn = 'CircularOutIn',
+	ElasticIn = 'ElasticIn',
+	ElasticOut = 'ElasticOut',
+	ElasticInOut = 'ElasticInOut',
+	ElasticOutIn = 'ElasticOutIn',
+	BackIn = 'BackIn',
+	BackOut = 'BackOut',
+	BackInOut = 'BackInOut',
+	BackOutIn = 'BackOutIn',
+	BounceIn = 'BounceIn',
+	BounceOut = 'BounceOut',
+	BounceInOut = 'BounceInOut',
+	BounceOutIn = 'BounceOutIn',
+}
+export enum SceneSnapshotPriorityRecall {
+	Off = 'Off',
+	Pre = 'Pre',
+	Post = 'Post',
+}
+
 // ------------------------- types -----------------------------
 export interface Pos3Df {
 	x: number
@@ -1374,3 +1451,4 @@ export type UpdateSceneLayerEffectPositionObject = OmitReadonly<SceneLayerEffect
 export type UpdateSceneLayerEffectPCropObject = OmitReadonly<SceneLayerEffectPCropObject>
 export type UpdateSceneLayerEffectFilmLookObject = OmitReadonly<SceneLayerEffectFilmLookObject>
 export type UpdateSceneLayerEffectGlowEffectObject = OmitReadonly<SceneLayerEffectGlowEffectObject>
+export type UpdateSceneSnapshotObject = OmitReadonly<SceneSnapshotObject>

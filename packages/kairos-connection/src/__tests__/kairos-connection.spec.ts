@@ -40,9 +40,13 @@ import {
 	SceneLimitOffAction,
 	SceneObject,
 	SceneResolution,
+	SceneSnapshotCurve,
+	SceneSnapshotObject,
+	SceneSnapshotPriorityRecall,
+	SceneSnapshotStatus,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
-import { refScene, refSceneLayer, refSceneLayerEffect, SceneRef } from '../lib/reference.js'
+import { refScene, refSceneLayer, refSceneLayerEffect, refSceneSnapshot, SceneRef } from '../lib/reference.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -1993,6 +1997,82 @@ describe('KairosConnection', () => {
 		// SCENES.Scene.Layers.Layer
 		// 			Snapshots
 		// 				SNP
+
+		test('SCENES.Layers.Snapshots', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					// NOTE: These replies are guessed from the documentation, and should be replaced with recorded values:
+					'list_ex:SCENES.Main.Snapshots': [
+						'list_ex:SCENES.Main.Snapshots=',
+						'SCENES.Main.Snapshots.SNP1',
+						'SCENES.Main.Snapshots.SNP2',
+						'SCENES.Main.Snapshots.SNP3',
+						'',
+					],
+					'SCENES.Main.Snapshots.SNP1.status': ['SCENES.Main.Snapshots.SNP1.status=Stopped'],
+					'SCENES.Main.Snapshots.SNP1.color': ['SCENES.Main.Snapshots.SNP1.color=rgb(255,0,0)'],
+					'SCENES.Main.Snapshots.SNP1.dissolve_time': ['SCENES.Main.Snapshots.SNP1.dissolve_time=0'],
+					'SCENES.Main.Snapshots.SNP1.enable_curve': ['SCENES.Main.Snapshots.SNP1.enable_curve=0'],
+					'SCENES.Main.Snapshots.SNP1.curve': ['SCENES.Main.Snapshots.SNP1.curve=Linear'],
+					'SCENES.Main.Snapshots.SNP1.priority_recall': ['SCENES.Main.Snapshots.SNP1.priority_recall=Off'],
+					'SCENES.Main.Snapshots.SNP1.recall=': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.force_dissolve=': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.force_recall=': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.update=': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.abort=': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.delete_ex=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				if (emulatorConnection) {
+					// If there is an emulatorConnection, use it to handle the command:
+					const reply = await emulatorConnection.doCommand(message)
+					if (reply !== null) return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.listSceneSnapshots(refMain)).toStrictEqual([
+				{
+					name: 'SNP1',
+					realm: 'scene-snapshot',
+					scenePath: ['Main'],
+					snapshotPath: ['SNP1'],
+				},
+				{
+					name: 'SNP2',
+					realm: 'scene-snapshot',
+					scenePath: ['Main'],
+					snapshotPath: ['SNP2'],
+				},
+				{
+					name: 'SNP3',
+					realm: 'scene-snapshot',
+					scenePath: ['Main'],
+					snapshotPath: ['SNP3'],
+				},
+			])
+			expect(await connection.updateSceneSnapshot(refSceneSnapshot(refMain, ['SNP1']), {})).toBeUndefined()
+			expect(await connection.getSceneSnapshot(refSceneSnapshot(refMain, ['SNP1']))).toStrictEqual({
+				status: SceneSnapshotStatus.Stopped,
+				color: {
+					blue: 0,
+					green: 0,
+					red: 255,
+				},
+				dissolveTime: 0,
+				enableCurve: false,
+				curve: SceneSnapshotCurve.Linear,
+				priorityRecall: SceneSnapshotPriorityRecall.Off,
+			} satisfies SceneSnapshotObject)
+
+			expect(await connection.sceneSnapshotRecall(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+			expect(await connection.sceneSnapshotForceDissolve(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+			expect(await connection.sceneSnapshotForceRecall(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+			expect(await connection.sceneSnapshotUpdate(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+			expect(await connection.sceneSnapshotAbort(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+			expect(await connection.sceneSnapshotDeleteEx(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+		})
 
 		// SOURCES
 		// 	FXINPUTS
