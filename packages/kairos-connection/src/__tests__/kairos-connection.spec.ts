@@ -319,11 +319,6 @@ describe('KairosConnection', () => {
 				if (reply) {
 					return reply
 				}
-				if (emulatorConnection) {
-					// If there is an emulatorConnection, use it to handle the command:
-					const reply = await emulatorConnection.doCommand(message)
-					if (reply !== null) return reply
-				}
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
@@ -468,12 +463,6 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Layers.Background.toggle_layer=': ['OK'],
 				}[message]
 				if (reply) return reply
-
-				if (emulatorConnection) {
-					// If there is an emulatorConnection, use it to handle the command:
-					const reply = await emulatorConnection.doCommand(message)
-					if (reply !== null) return reply
-				}
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
@@ -2009,6 +1998,14 @@ describe('KairosConnection', () => {
 						'SCENES.Main.Snapshots.SNP3',
 						'',
 					],
+
+					'SCENES.Main.Snapshots.SNP1.status=Stopped': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.color=rgb(255,0,0)': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.dissolve_time=0': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.enable_curve=0': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.curve=Linear': ['OK'],
+					'SCENES.Main.Snapshots.SNP1.priority_recall=Off': ['OK'],
+
 					'SCENES.Main.Snapshots.SNP1.status': ['SCENES.Main.Snapshots.SNP1.status=Stopped'],
 					'SCENES.Main.Snapshots.SNP1.color': ['SCENES.Main.Snapshots.SNP1.color=rgb(255,0,0)'],
 					'SCENES.Main.Snapshots.SNP1.dissolve_time': ['SCENES.Main.Snapshots.SNP1.dissolve_time=0'],
@@ -2024,11 +2021,11 @@ describe('KairosConnection', () => {
 				}[message]
 				if (reply) return reply
 
-				if (emulatorConnection) {
-					// If there is an emulatorConnection, use it to handle the command:
-					const reply = await emulatorConnection.doCommand(message)
-					if (reply !== null) return reply
-				}
+				// if (emulatorConnection) {
+				// 	// If there is an emulatorConnection, use it to handle the command:
+				// 	const reply = await emulatorConnection.doCommand(message)
+				// 	if (reply !== null) return reply
+				// }
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
@@ -2052,7 +2049,20 @@ describe('KairosConnection', () => {
 					snapshotPath: ['SNP3'],
 				},
 			])
-			expect(await connection.updateSceneSnapshot(refSceneSnapshot(refMain, ['SNP1']), {})).toBeUndefined()
+			expect(
+				await connection.updateSceneSnapshot(refSceneSnapshot(refMain, ['SNP1']), {
+					color: {
+						blue: 0,
+						green: 0,
+						red: 255,
+					},
+					dissolveTime: 0,
+					enableCurve: false,
+					curve: SceneSnapshotCurve.Linear,
+					priorityRecall: SceneSnapshotPriorityRecall.Off,
+					// status is read only
+				})
+			).toBeUndefined()
 			expect(await connection.getSceneSnapshot(refSceneSnapshot(refMain, ['SNP1']))).toStrictEqual({
 				status: SceneSnapshotStatus.Stopped,
 				color: {
