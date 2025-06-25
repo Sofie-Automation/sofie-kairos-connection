@@ -79,8 +79,17 @@ import {
 	UpdateSceneLayerEffectYUVCorrectionObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
-import { refToPath, SceneLayerEffectRef, SceneLayerRef, SceneRef, splitPath } from './lib/reference.js'
-import { protocolDecodePath } from './lib/encode-decode.js'
+import {
+	AnyRef,
+	isRef,
+	refToPath,
+	SceneLayerEffectRef,
+	SceneLayerRef,
+	SceneRef,
+	SceneTransitionRef,
+	splitPath,
+} from './lib/reference.js'
+import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	// SYS
@@ -116,43 +125,13 @@ export class KairosConnection extends MinimalKairosConnection {
 		scenePath: SceneRef = { realm: 'scene', scenePath: [] },
 		deep?: boolean
 	): Promise<(SceneRef & { name: string })[]> {
-		const list = (await this.getList(refToPath(scenePath)))
-			.map<SceneRef & { name: string }>((scenePath) => {
-				const path = protocolDecodePath(scenePath)
-				return {
-					realm: 'scene',
-					name: path[path.length - 1],
-					scenePath: path.slice(1), // remove the "SCENES" part
-				}
-			})
-			.filter((scene) => {
-				// Prune things from the list that are NOT scenes:
-
-				const last = scene.scenePath[scene.scenePath.length - 1]
-				if (last === 'Layers') return false
-				if (last === 'Transitions') return false
-
-				return true
-			})
-
-		if (deep) {
-			// Also include subfolders:
-			for (const scene of list) {
-				// console.log('scene', scene)
-				try {
-					const innerList = await this.listScenes(scene, true)
-
-					for (const innerScene of innerList) {
-						list.push(innerScene)
-					}
-				} catch (e) {
-					if (e instanceof ResponseError) continue // ignore response error, this just means that the scene is not a folder
-					throw e
-				}
+		return (await this._listDeep(scenePath, ['Layers', 'Transitions'], deep)).map((itemPath) => {
+			return {
+				realm: 'scene',
+				name: itemPath[itemPath.length - 1],
+				scenePath: itemPath.slice(1), // remove the "SCENES" part
 			}
-		}
-
-		return list
+		})
 	}
 	async getScene(sceneRef: SceneRef): Promise<SceneObject> {
 		const values = await this.getAttributes(refToPath(sceneRef), [
@@ -229,47 +208,20 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			Layer
 
 	async listSceneLayers(layerRef: SceneLayerRef, deep?: boolean): Promise<(SceneLayerRef & { name: string })[]> {
-		const list = (await this.getList(refToPath(layerRef)))
-			.map<SceneLayerRef & { name: string }>((layerPath) => {
-				const paths = splitPath(protocolDecodePath(layerPath), 'Layers')
-				if (paths.length !== 2)
-					throw new Error(
-						`Invalid layer path: "${layerPath}" ("Layers" missing) (${JSON.stringify(paths)}, ${JSON.stringify(layerPath)})`
-					)
+		return (await this._listDeep(layerRef, ['Effects'], deep)).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Layers')
+			if (paths.length !== 2)
+				throw new Error(
+					`Invalid layer path: "${JSON.stringify(paths)}" ("Layers" missing) (${JSON.stringify(itemPath)})`
+				)
 
-				return {
-					realm: 'scene-layer',
-					name: paths[1][paths[1].length - 1],
-					scenePath: paths[0].slice(1), // remove the "SCENES" part
-					layerPath: paths[1],
-				}
-			})
-			.filter((scene) => {
-				// Prune things from the list that are NOT layers:
-
-				const last = scene.layerPath[scene.layerPath.length - 1]
-				if (last === 'Effects') return false
-
-				return true
-			})
-
-		if (deep) {
-			// Also include subfolders:
-			for (const layer of list) {
-				try {
-					const innerList = await this.listSceneLayers(layer, true)
-
-					for (const innerScene of innerList) {
-						list.push(innerScene)
-					}
-				} catch (e) {
-					if (e instanceof ResponseError) continue // ignore response error, this just means that the scene is not a folder
-					throw e
-				}
+			return {
+				realm: 'scene-layer',
+				name: paths[1][paths[1].length - 1],
+				scenePath: paths[0].slice(1), // remove the "SCENES" part
+				layerPath: paths[1],
 			}
-		}
-
-		return list
+		})
 	}
 
 	async getSceneLayer(layerRef: SceneLayerRef): Promise<SceneLayerObject> {
@@ -371,24 +323,25 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 					PCrop
 	// 					FilmLook
 	// 					GlowEffect
-	async listSceneLayerEffects(layerRef: SceneLayerRef): Promise<(SceneLayerEffectRef & { name: string })[]> {
-		return (await this.getList(`${refToPath(layerRef)}.Effects`)).map<SceneLayerEffectRef & { name: string }>(
-			(effectPath) => {
-				const paths = splitPath(protocolDecodePath(effectPath), 'Layers', 'Effects')
-				if (paths.length !== 3)
-					throw new Error(
-						`Invalid layer path: "${effectPath}" ("Layers", "Effects" missing) (${JSON.stringify(paths)}, ${JSON.stringify(effectPath)})`
-					)
+	async listSceneLayerEffects(
+		layerRef: SceneLayerRef,
+		deep?: boolean
+	): Promise<(SceneLayerEffectRef & { name: string })[]> {
+		return (await this._listDeep(`${refToPath(layerRef)}.Effects`, [], deep)).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Layers', 'Effects')
+			if (paths.length !== 3)
+				throw new Error(
+					`Invalid layer path: "${JSON.stringify(paths)}" ("Layers" or "Effects" missing) (${JSON.stringify(itemPath)})`
+				)
 
-				return {
-					realm: 'scene-layer-effect',
-					name: paths[2][paths[2].length - 1],
-					scenePath: paths[0].slice(1), // remove the "SCENES" part
-					layerPath: paths[1],
-					effectPath: paths[2],
-				}
+			return {
+				realm: 'scene-layer-effect',
+				name: paths[2][paths[2].length - 1],
+				scenePath: paths[0].slice(1), // remove the "SCENES" part
+				layerPath: paths[1],
+				effectPath: paths[2],
 			}
-		)
+		})
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -1054,6 +1007,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			'enabled',
 			'position',
 			// 'size',
+			'width',
 			'height',
 			'rotate',
 		])
@@ -1061,6 +1015,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		return {
 			enabled: parseBoolean(values.enabled),
 			position: parsePos2D(values.position),
+			width: parseInteger(values.width),
 			// size: parseInteger(values.size), // wierd, we get an Error if we query for the size
 			height: parseInteger(values.height),
 			rotate: parseEnum<SceneLayerEffectPositionRotate>(values.rotate, SceneLayerEffectPositionRotate),
@@ -1076,6 +1031,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
 			{ attribute: 'position', value: stringifyPos2D(props.position) },
 			// { attribute: 'size', value: stringifyInteger(props.size) },
+			{ attribute: 'width', value: stringifyInteger(props.width) },
 			{ attribute: 'height', value: stringifyInteger(props.height) },
 			{
 				attribute: 'rotate',
@@ -1114,7 +1070,6 @@ export class KairosConnection extends MinimalKairosConnection {
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectFilmLook(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectFilmLookObject> {
 		const values = await this.getAttributes(refToPath(effectRef), [
-			// 'enabled',
 			'crack',
 			'spots',
 			'grain',
@@ -1125,7 +1080,6 @@ export class KairosConnection extends MinimalKairosConnection {
 		])
 
 		return {
-			// enabled: parseBoolean(values.enabled),// wierd, we get an Error if we query for "enabled"
 			crack: parseFloatValue(values.crack),
 			spots: parseFloatValue(values.spots),
 			grain: parseFloatValue(values.grain),
@@ -1142,7 +1096,6 @@ export class KairosConnection extends MinimalKairosConnection {
 		props: Partial<UpdateSceneLayerEffectFilmLookObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
-			// { attribute: 'enabled', value: stringifyBoolean(props.enabled) },
 			{ attribute: 'crack', value: stringifyFloat(props.crack) },
 			{ attribute: 'spots', value: stringifyFloat(props.spots) },
 			{ attribute: 'grain', value: stringifyFloat(props.grain) },
@@ -1703,6 +1656,55 @@ export class KairosConnection extends MinimalKairosConnection {
 	// IMAGESTORES
 	// 	IS<1-8>
 	// SPANELPROFILES
+
+	/**
+	 * Convenience method for listing items in a deep list
+	 * @param baseRef Path to the base item to list from
+	 * @param excludeFilter Either a list of names that are known properties (and should be excluded), or a filter function.
+	 *   This is used to NOT traverse into the tree of properties
+	 * @param deep Whether to traverse into subfolders
+	 * @returns A list of items
+	 */
+	private async _listDeep(
+		baseRef: AnyRef | RefPath | string,
+		excludeFilter: string[] | ((ref: RefPath, path: string) => boolean) = [],
+		deep?: boolean
+	): Promise<RefPath[]> {
+		const basePath: string =
+			typeof baseRef === 'string' ? baseRef : isRef(baseRef) ? refToPath(baseRef) : protocolEncodePath(baseRef)
+
+		const list = (await this.getList(basePath))
+			.map((itemPath) => protocolDecodePath(itemPath)) // decode the path
+			.filter((itemPath) => {
+				// Prune things from the list that are properties, not listable items:
+
+				if (typeof excludeFilter === 'function') {
+					return excludeFilter(itemPath, protocolEncodePath(itemPath)) // use the function to determine if the item is listable
+				} else {
+					const last = itemPath[itemPath.length - 1]
+					if (excludeFilter.includes(last)) return false // known properties are not listable items
+					return true
+				}
+			})
+
+		if (deep) {
+			// Also include subfolders:
+			for (const itemRef of list) {
+				try {
+					const innerList = await this._listDeep(itemRef, excludeFilter, true)
+
+					for (const innerItemRef of innerList) {
+						list.push(innerItemRef)
+					}
+				} catch (e) {
+					if (e instanceof ResponseError) continue // ignore response error, this just means that the item is not a folder
+					throw e
+				}
+			}
+		}
+
+		return list
+	}
 }
 
 // export interface UpdateLayerCommandParameters<SceneName extends string, LayerName extends string> {

@@ -1,4 +1,4 @@
-import { protocolEncodeStr } from './encode-decode.js'
+import { protocolEncodeStr, RefPath } from './encode-decode.js'
 import { assertNever } from './lib.js'
 
 export type AnyRef =
@@ -10,9 +10,13 @@ export type AnyRef =
 	| MediaRamRecRef
 	| MediaImageRef
 	| MediaSoundRef
+	| SceneTransitionRef
 
-export type RefPath = string[]
-
+export function isRef(ref: unknown): ref is AnyRef {
+	if (typeof ref !== 'object' || ref === null) return false
+	if (!('realm' in ref) || typeof ref.realm !== 'string') return false
+	return true
+}
 export function refToPath(ref: AnyRef): string {
 	switch (ref.realm) {
 		case 'scene':

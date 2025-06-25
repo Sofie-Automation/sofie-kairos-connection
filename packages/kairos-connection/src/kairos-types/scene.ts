@@ -1116,6 +1116,8 @@ export interface SceneLayerEffectPositionObject {
 	/**
 	 * [ int, min: 1, max: 4096 ]
 	 */
+	width: number // assuming there is a typo in the docs (it's called "size" there)
+
 	// size: number // wierd, we get an Error if we query for the size
 
 	/**
@@ -1152,7 +1154,7 @@ export interface SceneLayerEffectPCropObject {
 	bottom: number
 }
 export interface SceneLayerEffectFilmLookObject {
-	// enabled: boolean // wierd, we get an Error if we query for "enabled"
+	// enabled: boolean // hmm, there is no enabled defined in the protocol
 
 	/**
 	 * [ float, min: 0, max: 1 ]
@@ -1187,7 +1189,7 @@ export interface SceneLayerEffectFilmLookObject {
 	colorStrength: number
 }
 export interface SceneLayerEffectGlowEffectObject {
-	// enabled: boolean  // wierd, we get an Error if we query for "enabled"
+	// enabled: boolean  // hmm, there is no enabled defined in the protocol
 
 	/**
 	 * [ float, min: 0, max: 1 ]

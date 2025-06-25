@@ -1,4 +1,4 @@
-import { RefPath } from './reference.js'
+export type RefPath = string[]
 
 const PROTOCOL_ENCODE_MAP: Record<string, string> = {
 	':': '&#58',

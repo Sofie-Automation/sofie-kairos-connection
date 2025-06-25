@@ -183,6 +183,9 @@ describe('KairosConnection', () => {
 	})
 
 	describe('commands', () => {
+		const refMain = refScene(['Main'])
+		const refBackground = refSceneLayer(refMain, ['Group-1'])
+
 		beforeEach(() => {
 			connection = new KairosConnection() as unknown as MockedKairosConnection
 
@@ -631,9 +634,6 @@ describe('KairosConnection', () => {
 		// 					FilmLook
 		// 					GlowEffect
 		describe('SCENES.Layers.Effects', async () => {
-			const refMain = refScene(['Main'])
-			const refBackground = refSceneLayer(refMain, ['Group-1'])
-
 			test('List', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 					const reply = {
@@ -1801,6 +1801,9 @@ describe('KairosConnection', () => {
 						'SCENES.Main.Layers.Group-1.Effects.Position-1.position': [
 							'SCENES.Main.Layers.Group-1.Effects.Position-1.position=0/0',
 						],
+						'SCENES.Main.Layers.Group-1.Effects.Position-1.width': [
+							'SCENES.Main.Layers.Group-1.Effects.Position-1.width=2037',
+						],
 						'SCENES.Main.Layers.Group-1.Effects.Position-1.height': [
 							'SCENES.Main.Layers.Group-1.Effects.Position-1.height=360',
 						],
@@ -1826,6 +1829,7 @@ describe('KairosConnection', () => {
 					await connection.getSceneLayerEffectPosition(refSceneLayerEffect(refBackground, ['Position-1']))
 				).toStrictEqual({
 					enabled: false,
+					width: 2037,
 					height: 360,
 					position: {
 						x: 0,
@@ -1981,7 +1985,7 @@ describe('KairosConnection', () => {
 				} satisfies SceneLayerEffectGlowEffectObject)
 			})
 		})
-		// SCENES.Scene.Layers.Layer
+		// SCENES.Scene
 		// 			Transitions
 		// 				Transition
 		// 				BgdMix
