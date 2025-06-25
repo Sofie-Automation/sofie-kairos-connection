@@ -27,12 +27,10 @@ import {
 	type UpdateClipPlayerObject,
 	type SceneLayerObject,
 	type UpdateSceneLayerObject,
-	SceneLayerActiveBus,
 	SceneResolution,
 	SceneLimitOffAction,
 	ClipPlayerTMS,
 	SceneLayerPgmPstMode,
-	SceneLayerState,
 	SceneLayerMode,
 	SceneLayerDissolveMode,
 	SceneLayerBlendMode,
@@ -99,8 +97,83 @@ import {
 	splitPath,
 } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
+import { getAttributeNames, ObjectEncodingDefinition, ObjectValueEncodingDefinition } from './object-encoding/types.js'
+import { SceneLayerObjectEncodingDefinition } from './object-encoding/scene.js'
 
 export class KairosConnection extends MinimalKairosConnection {
+	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
+		const attributeNames = getAttributeNames(definition)
+
+		const values = await this.getAttributes(pathPrefix, attributeNames)
+
+		return Object.fromEntries(
+			Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).map(([id, def]) => {
+				const value = values[def.protocolName]
+				if (value === undefined) {
+					throw new Error(`Missing attribute "${def.protocolName}" in response for path "${pathPrefix}"`)
+				}
+				return [id, def.parser(value) as any] // TODO - type this properly
+			})
+		) as TObj
+	}
+
+	#subscribeObject<TObj>(
+		pathPrefix: string,
+		definition: ObjectEncodingDefinition<TObj>,
+		signal: AbortSignal,
+		callback: (error: Error | null, value: TObj | null) => void
+	): void {
+		const attributeNames = getAttributeNames(definition)
+		const pendingValues = new Set<string>(attributeNames)
+		const valueObject: TObj = {} as any // TODO - fill with defaults?
+
+		const localAbort = new AbortController()
+
+		const updateValueCallback: SubscriptionCallback<string> = (path, error, value) => {
+			if (localAbort.signal.aborted) return
+
+			if (!error && value === null) error = new Error(`Received null value for path: ${path}. This is unexpected.`)
+
+			if (error) {
+				// Terminate other subscriptions and stop this callback from being called again
+				localAbort.abort()
+
+				callback(error, null)
+				return
+			}
+
+			if (!path.startsWith(pathPrefix)) return // This shouldn't happen, but just in case
+			const attributeName = path.slice(pathPrefix.length + 1)
+
+			const transferDefinition = Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).find(
+				([_id, def]) => def.protocolName === attributeName
+			)
+			if (!transferDefinition) {
+				// TODO
+				return
+			}
+
+			valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
+
+			// if (pendingValues.delete(attributeName) && pendingValues.size > 0) {
+			// 	// Not ready yet, still waiting for more first values
+			// 	return
+			// }
+
+			pendingValues.delete(attributeName)
+			if (pendingValues.size === 0) {
+				// TODO - debounce this
+				callback(null, valueObject)
+			}
+		}
+
+		const chainedAbort = AbortSignal.any([signal, localAbort.signal])
+		for (const attributeName of attributeNames) {
+			const path = `${pathPrefix}.${attributeName}`
+			this.subscribeValue(path, chainedAbort, updateValueCallback)
+		}
+	}
+
 	// SYS
 	// INTSOURCES
 	// 	BLACK
@@ -233,81 +306,8 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 
-	async #getObject<TObj>(pathPrefix: string, definition: ObjectTransferDefinition<TObj>): Promise<TObj> {
-		const attributeNames = getAttributeNames(definition)
-
-		const values = await this.getAttributes(pathPrefix, attributeNames)
-
-		return Object.fromEntries(
-			Object.entries<ObjectValueTransferDefinition<TObj, any>>(definition).map(([id, def]) => {
-				const value = values[def.protocolName]
-				if (value === undefined) {
-					throw new Error(`Missing attribute "${def.protocolName}" in response for path "${pathPrefix}"`)
-				}
-				return [id, def.parser(value) as any] // TODO - type this properly
-			})
-		) as TObj
-	}
-
 	async getSceneLayer(layerRef: SceneLayerRef): Promise<SceneLayerObject> {
-		return this.#getObject(refToPath(layerRef), SceneLayerObjectDefinition)
-	}
-
-	#subscribeObject<TObj>(
-		pathPrefix: string,
-		definition: ObjectTransferDefinition<TObj>,
-		signal: AbortSignal,
-		callback: (error: Error | null, value: TObj | null) => void
-	): void {
-		const attributeNames = getAttributeNames(definition)
-		const pendingValues = new Set<string>(attributeNames)
-		const valueObject: TObj = {} as any // TODO - fill with defaults?
-
-		const localAbort = new AbortController()
-
-		const updateValueCallback: SubscriptionCallback<string> = (path, error, value) => {
-			if (localAbort.signal.aborted) return
-
-			if (!error && value === null) error = new Error(`Received null value for path: ${path}. This is unexpected.`)
-
-			if (error) {
-				// Terminate other subscriptions and stop this callback from being called again
-				localAbort.abort()
-
-				callback(error, null)
-				return
-			}
-
-			if (!path.startsWith(pathPrefix)) return // This shouldn't happen, but just in case
-			const attributeName = path.slice(pathPrefix.length + 1)
-
-			const transferDefinition = Object.entries<ObjectValueTransferDefinition<TObj, any>>(definition).find(
-				([_id, def]) => def.protocolName === attributeName
-			)
-			if (!transferDefinition) {
-				// TODO
-				return
-			}
-
-			valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
-
-			// if (pendingValues.delete(attributeName) && pendingValues.size > 0) {
-			// 	// Not ready yet, still waiting for more first values
-			// 	return
-			// }
-
-			pendingValues.delete(attributeName)
-			if (pendingValues.size === 0) {
-				// TODO - debounce this
-				callback(null, valueObject)
-			}
-		}
-
-		const chainedAbort = AbortSignal.any([signal, localAbort.signal])
-		for (const attributeName of attributeNames) {
-			const path = `${pathPrefix}.${attributeName}`
-			this.subscribeValue(path, chainedAbort, updateValueCallback)
-		}
+		return this.#getObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition)
 	}
 
 	subscribeSceneLayer(
@@ -318,7 +318,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	): void {
 		return this.#subscribeObject(
 			`SCENES.${sceneName}.Layers.${layerName}`,
-			SceneLayerObjectDefinition,
+			SceneLayerObjectEncodingDefinition,
 			signal,
 			callback
 		)
@@ -1888,49 +1888,3 @@ export class KairosConnection extends MinimalKairosConnection {
 // 		adf: boolean
 // 	}>
 // }
-
-type ObjectTransferDefinition<TObj> = {
-	[key in keyof TObj]: ObjectValueTransferDefinition<TObj, key>
-}
-type ObjectValueTransferDefinition<TObj, TKey extends keyof TObj> = {
-	protocolName: string
-	parser: (value: string) => TObj[TKey]
-}
-
-const SceneLayerObjectDefinition: ObjectTransferDefinition<SceneLayerObject> = {
-	opacity: { protocolName: 'opacity', parser: (value) => parseFloatValue(value) },
-	sourceA: { protocolName: 'sourceA', parser: (value) => value },
-	sourceB: { protocolName: 'sourceB', parser: (value) => value },
-	sourcePgm: { protocolName: 'source_pgm', parser: (value) => value },
-	sourcePst: { protocolName: 'source_pst', parser: (value) => value },
-	activeBus: {
-		protocolName: 'active_bus',
-		parser: (value) => parseEnum<SceneLayerActiveBus>(value, SceneLayerActiveBus),
-	},
-	pgmPstMode: {
-		protocolName: 'pgm_pst_mode',
-		parser: (value) => parseEnum<SceneLayerPgmPstMode>(value, SceneLayerPgmPstMode),
-	},
-	sourceOptions: { protocolName: 'sourceOptions', parser: (value) => parseCommaSeparated(value) },
-	state: { protocolName: 'state', parser: (value) => parseEnum<SceneLayerState>(value, SceneLayerState) },
-	mode: { protocolName: 'mode', parser: (value) => parseEnum<SceneLayerMode>(value, SceneLayerMode) },
-	fxEnabled: { protocolName: 'fxEnabled', parser: (value) => parseBoolean(value) },
-	presetEnabled: { protocolName: 'preset_enabled', parser: (value) => parseBoolean(value) },
-	color: { protocolName: 'color', parser: (value) => parseColorRGB(value) },
-	cleanMask: { protocolName: 'clean_mask', parser: (value) => parseInteger(value) },
-	sourceCleanMask: { protocolName: 'dissolve_enabled', parser: (value) => parseInteger(value) },
-	dissolveEnabled: { protocolName: 'dissolve_time', parser: (value) => parseBoolean(value) },
-	dissolveTime: { protocolName: 'source_clean_mask', parser: (value) => parseInteger(value) },
-	dissolveMode: {
-		protocolName: 'dissolve_mode',
-		parser: (value) => parseEnum<SceneLayerDissolveMode>(value, SceneLayerDissolveMode),
-	},
-	blendMode: {
-		protocolName: 'blend_mode',
-		parser: (value) => parseEnum<SceneLayerBlendMode>(value, SceneLayerBlendMode),
-	},
-}
-
-function getAttributeNames<TObj>(definition: ObjectTransferDefinition<TObj>): string[] {
-	return Object.values<ObjectValueTransferDefinition<TObj, any>>(definition).map((attr) => attr.protocolName)
-}
