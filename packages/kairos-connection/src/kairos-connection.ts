@@ -79,16 +79,7 @@ import {
 	UpdateSceneLayerEffectYUVCorrectionObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
-import {
-	AnyRef,
-	isRef,
-	refToPath,
-	SceneLayerEffectRef,
-	SceneLayerRef,
-	SceneRef,
-	SceneTransitionRef,
-	splitPath,
-} from './lib/reference.js'
+import { AnyRef, isRef, refToPath, SceneLayerEffectRef, SceneLayerRef, SceneRef, splitPath } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
 
 export class KairosConnection extends MinimalKairosConnection {

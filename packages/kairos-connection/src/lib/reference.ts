@@ -10,7 +10,6 @@ export type AnyRef =
 	| MediaRamRecRef
 	| MediaImageRef
 	| MediaSoundRef
-	| SceneTransitionRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
