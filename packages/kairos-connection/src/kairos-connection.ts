@@ -149,28 +149,29 @@ export class KairosConnection extends MinimalKairosConnection {
 				([_id, def]) => def.protocolName === attributeName
 			)
 			if (!transferDefinition) {
-				// TODO
+				// Terminate other subscriptions and stop this callback from being called again
+				localAbort.abort()
+
+				callback(new Error('Got value for unknown attribute: ' + attributeName), null)
 				return
 			}
 
 			valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
 
-			// if (pendingValues.delete(attributeName) && pendingValues.size > 0) {
-			// 	// Not ready yet, still waiting for more first values
-			// 	return
-			// }
-
+			// Check if the object has been fully populated
 			pendingValues.delete(attributeName)
 			if (pendingValues.size === 0) {
-				// TODO - debounce this
+				// Future: Maybe this should be debounced, to avoid calling multiple times in a row. But that is easy enough for consumers to do themselves.
 				callback(null, valueObject)
 			}
 		}
 
-		const chainedAbort = AbortSignal.any([signal, localAbort.signal])
+		// Create a combined signal, that will abort if either the original signal or the localAbort signal is aborted
+		const combinedSignal = AbortSignal.any([signal, localAbort.signal])
+
 		for (const attributeName of attributeNames) {
 			const path = `${pathPrefix}.${attributeName}`
-			this.subscribeValue(path, chainedAbort, updateValueCallback)
+			this.subscribeValue(path, combinedSignal, updateValueCallback)
 		}
 	}
 

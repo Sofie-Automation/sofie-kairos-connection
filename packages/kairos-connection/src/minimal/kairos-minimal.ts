@@ -399,15 +399,15 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 		const subscriberId = randomUUID()
 
-		let callbackIsAborted = false
+		const localAbort = new AbortController()
+		const combinedAbortSignal = AbortSignal.any([abort, localAbort.signal])
+
 		const wrappedCallback: SubscriptionCallback<string> = (path, error, value) => {
-			if (abort.aborted) return // If the abort signal is already aborted, do not call the callback
-			if (callbackIsAborted) return // If the callback has already errored, do not call it again
+			if (combinedAbortSignal.aborted) return // If the abort signal is already aborted, do not call the callback
 
 			// If an error is received, we should not call the callback again
 			if (error) {
-				callbackIsAborted = true
-				disposeAbortListener[Symbol.dispose]()
+				localAbort.abort()
 			}
 
 			// Call the original callback with the path and value
@@ -463,9 +463,8 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				})
 		}
 
-		// TODO - does this dispose itself when fired?
-		// TODO - this should be removed when the subscription errors
-		const disposeAbortListener = addAbortListener(abort, () => {
+		// Listen for the abort, to remove the listener from the subscription and stop the subscription if needed
+		addAbortListener(combinedAbortSignal, () => {
 			const subscription = this._subscriptions.get(path)
 			if (!subscription) return // Should not happen, but just in case
 
