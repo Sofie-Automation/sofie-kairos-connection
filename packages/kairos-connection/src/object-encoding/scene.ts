@@ -18,7 +18,7 @@ import {
 } from '../lib/data-parsers.js'
 
 export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneLayerObject> = {
-	opacity: { protocolName: 'opacity', parser: (value) => parseFloatValue(value) },
+	opacity: { protocolName: 'opacity', parser: parseFloatValue },
 	sourceA: { protocolName: 'sourceA', parser: (value) => value },
 	sourceB: { protocolName: 'sourceB', parser: (value) => value },
 	sourcePgm: { protocolName: 'source_pgm', parser: (value) => value },
@@ -31,16 +31,16 @@ export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneL
 		protocolName: 'pgm_pst_mode',
 		parser: (value) => parseEnum<SceneLayerPgmPstMode>(value, SceneLayerPgmPstMode),
 	},
-	sourceOptions: { protocolName: 'sourceOptions', parser: (value) => parseCommaSeparated(value) },
+	sourceOptions: { protocolName: 'sourceOptions', parser: parseCommaSeparated },
 	state: { protocolName: 'state', parser: (value) => parseEnum<SceneLayerState>(value, SceneLayerState) },
 	mode: { protocolName: 'mode', parser: (value) => parseEnum<SceneLayerMode>(value, SceneLayerMode) },
-	fxEnabled: { protocolName: 'fxEnabled', parser: (value) => parseBoolean(value) },
-	presetEnabled: { protocolName: 'preset_enabled', parser: (value) => parseBoolean(value) },
-	color: { protocolName: 'color', parser: (value) => parseColorRGB(value) },
-	cleanMask: { protocolName: 'clean_mask', parser: (value) => parseInteger(value) },
-	sourceCleanMask: { protocolName: 'dissolve_enabled', parser: (value) => parseInteger(value) },
-	dissolveEnabled: { protocolName: 'dissolve_time', parser: (value) => parseBoolean(value) },
-	dissolveTime: { protocolName: 'source_clean_mask', parser: (value) => parseInteger(value) },
+	fxEnabled: { protocolName: 'fxEnabled', parser: parseBoolean },
+	presetEnabled: { protocolName: 'preset_enabled', parser: parseBoolean },
+	color: { protocolName: 'color', parser: parseColorRGB },
+	cleanMask: { protocolName: 'clean_mask', parser: parseInteger },
+	sourceCleanMask: { protocolName: 'dissolve_enabled', parser: parseInteger },
+	dissolveEnabled: { protocolName: 'dissolve_time', parser: parseBoolean },
+	dissolveTime: { protocolName: 'source_clean_mask', parser: parseInteger },
 	dissolveMode: {
 		protocolName: 'dissolve_mode',
 		parser: (value) => parseEnum<SceneLayerDissolveMode>(value, SceneLayerDissolveMode),
