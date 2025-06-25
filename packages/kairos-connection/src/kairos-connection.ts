@@ -82,11 +82,15 @@ import {
 	SceneSnapshotCurve,
 	SceneSnapshotPriorityRecall,
 	UpdateSceneSnapshotObject,
+	MacroObject,
+	MacroStatus,
+	UpdateMacroObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import {
 	AnyRef,
 	isRef,
+	MacroRef,
 	refToPath,
 	SceneLayerEffectRef,
 	SceneLayerRef,
@@ -1641,6 +1645,58 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		<1-36>
 	// MACROS
 	// 	Macro
+	async listMacros(
+		macroRef: MacroRef = { realm: 'macro', macroPath: [] },
+		deep?: boolean
+	): Promise<(MacroRef & { name: string })[]> {
+		return (await this._listDeep(macroRef, ['status'], deep)).map((itemPath) => {
+			return {
+				realm: 'macro',
+				name: itemPath[itemPath.length - 1],
+				macroPath: itemPath.slice(1), // remove the "MACROS" part
+			}
+		})
+	}
+	async getMacro(macroRef: MacroRef): Promise<MacroObject> {
+		const values = await this.getAttributes(refToPath(macroRef), ['status', 'color'])
+
+		return {
+			status: parseEnum<MacroStatus>(values.status, MacroStatus),
+			color: parseColorRGB(values.color),
+		}
+	}
+
+	async updateMacro(macroRef: MacroRef, props: Partial<UpdateMacroObject>): Promise<void> {
+		await this.setAttributes(refToPath(macroRef), [
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
+			// status is read only
+		])
+	}
+	async macroRecall(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.recall`)
+	}
+
+	async macroPlay(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.play`)
+	}
+	async macroContinue(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.continue`)
+	}
+	async macroRecord(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.record`)
+	}
+	async macroStopRecord(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.stop_record`)
+	}
+	async macroPause(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.pause`)
+	}
+	async macroStop(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.stop`)
+	}
+	async macroDeleteEx(macroRef: MacroRef): Promise<void> {
+		return this.executeFunction(`${refToPath(macroRef)}.delete_ex`)
+	}
 	// AUX
 	// 	NDI-AUX<1-2>
 	// 		Effects

@@ -1,3 +1,5 @@
+export * from './lib-types.js'
 export * from './clip-player.js'
+export * from './macro.js'
 export * from './media.js'
 export * from './scene.js'

@@ -1,5 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
-import { ColorRGB } from './scene.js'
+import { ColorRGB } from './lib-types.js'
 
 export interface ClipPlayerObject {
 	colorOverwrite: boolean

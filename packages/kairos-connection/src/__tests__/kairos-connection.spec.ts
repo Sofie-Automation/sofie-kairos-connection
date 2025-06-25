@@ -3,6 +3,8 @@ import {
 	ClipPlayerObject,
 	ClipPlayerTMS,
 	KairosConnection,
+	MacroObject,
+	MacroStatus,
 	MinimalKairosConnection,
 	ResponseError,
 	SceneLayerActiveBus,
@@ -46,7 +48,7 @@ import {
 	SceneSnapshotStatus,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
-import { refScene, refSceneLayer, refSceneLayerEffect, refSceneSnapshot, SceneRef } from '../lib/reference.js'
+import { refMacro, refScene, refSceneLayer, refSceneLayerEffect, refSceneSnapshot, SceneRef } from '../lib/reference.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -2447,6 +2449,71 @@ describe('KairosConnection', () => {
 		// 		<1-36>
 		// MACROS
 		// 	Macro
+
+		test('MACROS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					// NOTE: These replies are guessed from the documentation, and should be replaced with recorded values:
+
+					'list_ex:MACROS': ['list_ex:MACROS=', 'MACROS.M-1', ''],
+					'list_ex:MACROS.M-1': ['list_ex:MACROS.M-1=', ''],
+
+					'MACROS.M-1.status': ['MACROS.M-1.status=Stopped'],
+					'MACROS.M-1.color': ['MACROS.M-1.color=rgb(255,255,0)'],
+					'MACROS.M-1.color=rgb(255,255,0)': ['OK'],
+					'MACROS.M-1.play=': ['OK'],
+					'MACROS.M-1.continue=': ['OK'],
+					'MACROS.M-1.record=': ['OK'],
+					'MACROS.M-1.stop_record=': ['OK'],
+					'MACROS.M-1.pause=': ['OK'],
+					'MACROS.M-1.stop=': ['OK'],
+					'MACROS.M-1.delete_ex=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				// if (emulatorConnection) {
+				// 	// If there is an emulatorConnection, use it to handle the command:
+				// 	const reply = await emulatorConnection.doCommand(message)
+				// 	if (reply !== null) return reply
+				// }
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.listMacros(undefined, true)).toStrictEqual([
+				{
+					realm: 'macro',
+					macroPath: ['M-1'],
+					name: 'M-1',
+				},
+			])
+			expect(
+				await connection.updateMacro(refMacro(['M-1']), {
+					color: {
+						blue: 0,
+						green: 255,
+						red: 255,
+					},
+					// status is read only
+				})
+			).toBeUndefined()
+			expect(await connection.getMacro(refMacro(['M-1']))).toStrictEqual({
+				color: {
+					blue: 0,
+					green: 255,
+					red: 255,
+				},
+				status: MacroStatus.Stopped,
+			} satisfies MacroObject)
+
+			expect(await connection.macroPlay(refMacro(['M-1']))).toBeUndefined()
+			expect(await connection.macroContinue(refMacro(['M-1']))).toBeUndefined()
+			expect(await connection.macroRecord(refMacro(['M-1']))).toBeUndefined()
+			expect(await connection.macroStopRecord(refMacro(['M-1']))).toBeUndefined()
+			expect(await connection.macroPause(refMacro(['M-1']))).toBeUndefined()
+			expect(await connection.macroStop(refMacro(['M-1']))).toBeUndefined()
+			expect(await connection.macroDeleteEx(refMacro(['M-1']))).toBeUndefined()
+		})
+
 		// AUX
 		// 	NDI-AUX<1-2>
 		// 		Effects

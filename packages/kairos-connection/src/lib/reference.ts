@@ -11,6 +11,7 @@ export type AnyRef =
 	| MediaImageRef
 	| MediaSoundRef
 	| SceneSnapshotRef
+	| MacroRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -54,6 +55,8 @@ export function refToPath(ref: AnyRef): string {
 				'Snapshots',
 				...ref.snapshotPath.map(protocolEncodeStr),
 			].join('.')
+		case 'macro':
+			return ['MACROS', ...ref.macroPath.map(protocolEncodeStr)].join('.')
 		default:
 			assertNever(ref)
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
@@ -157,4 +160,13 @@ export function refMediaImage(clipPath: RefPath): MediaImageRef {
 }
 export function refMediaSound(clipPath: RefPath): MediaSoundRef {
 	return { realm: 'media-sound', clipPath }
+}
+
+// ---------------------------- MACROS -----------------------------
+export type MacroRef = {
+	realm: 'macro'
+	macroPath: RefPath
+}
+export function refMacro(macroPath: RefPath): MacroRef {
+	return { realm: 'macro', macroPath }
 }

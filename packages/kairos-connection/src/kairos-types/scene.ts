@@ -1,4 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
+import { ColorRGB } from './lib-types.js'
 
 export interface SceneObject {
 	/**
@@ -1423,12 +1424,6 @@ export interface Pos2Df {
 export interface Pos2D {
 	x: number
 	y: number
-}
-
-export type ColorRGB = {
-	red: number
-	green: number
-	blue: number
 }
 
 // ------------------------- Update* types, used in update* methods --------------------------
