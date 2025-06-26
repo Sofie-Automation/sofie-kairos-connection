@@ -79,12 +79,16 @@ import {
 	UpdateSceneLayerEffectYUVCorrectionObject,
 	SceneSnapshotObject,
 	SceneSnapshotStatus,
-	SceneSnapshotCurve,
+	SceneCurve,
 	SceneSnapshotPriorityRecall,
 	UpdateSceneSnapshotObject,
 	MacroObject,
 	MacroStatus,
 	UpdateMacroObject,
+	SceneTransitionObject,
+	UpdateSceneTransitionObject,
+	SceneTransitionMixEffectObject,
+	UpdateSceneTransitionMixEffectObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import {
@@ -96,6 +100,9 @@ import {
 	SceneLayerRef,
 	SceneRef,
 	SceneSnapshotRef,
+	SceneTransitionMixEffectRef,
+	SceneTransitionMixRef,
+	SceneTransitionRef,
 	splitPath,
 } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
@@ -221,7 +228,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			const paths = splitPath(itemPath, 'Layers')
 			if (paths.length !== 2)
 				throw new Error(
-					`Invalid layer path: "${JSON.stringify(paths)}" ("Layers" missing) (${JSON.stringify(itemPath)})`
+					`Invalid Layer path: "${JSON.stringify(paths)}" ("Layers" missing) (${JSON.stringify(itemPath)})`
 				)
 
 			return {
@@ -340,7 +347,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			const paths = splitPath(itemPath, 'Layers', 'Effects')
 			if (paths.length !== 3)
 				throw new Error(
-					`Invalid layer path: "${JSON.stringify(paths)}" ("Layers" or "Effects" missing) (${JSON.stringify(itemPath)})`
+					`Invalid Layer.Effects path: "${JSON.stringify(paths)}" ("Layers" or "Effects" missing) (${JSON.stringify(itemPath)})`
 				)
 
 			return {
@@ -1156,6 +1163,123 @@ export class KairosConnection extends MinimalKairosConnection {
 	//                 Transition
 	//                 BgdMix
 	//                     TransitionEffect
+
+	async listSceneTransitions(sceneRef: SceneRef): Promise<SceneTransition[]> {
+		// List base Transitions:
+		return await Promise.all(
+			(await this.getList(`${refToPath(sceneRef)}.Transitions`)).map(async (rawTransitionPath) => {
+				// "SCENES.Main.Transitions.L1"
+				const decodedTransitionPath = protocolDecodePath(rawTransitionPath) // decode the path
+
+				const paths = splitPath(decodedTransitionPath, 'Transitions')
+				if (paths.length !== 2)
+					throw new Error(
+						`Invalid Transitions path: "${JSON.stringify(paths)}" ("Transitions" missing) (${JSON.stringify(rawTransitionPath)})`
+					)
+				const scenePath = paths[0].slice(1) // remove the "SCENES" part
+				const transitionPath = paths[1]
+				return {
+					realm: 'scene-transition',
+					scenePath,
+					transitionPath,
+					name: paths[1][paths[1].length - 1],
+					mixes: await Promise.all(
+						(await this.getList(rawTransitionPath)).map(async (rawTransitionMixPath) => {
+							// "SCENES.Main.Transitions.L1.L1"
+							const decodedTransitionMixPath = protocolDecodePath(rawTransitionMixPath) // decode the path
+
+							const mixPath = decodedTransitionMixPath.slice(decodedTransitionPath.length) // remove the "SCENES.Transitions.L1" part
+
+							if (mixPath.length === 0)
+								throw new Error(
+									`Invalid Transitions.Mix path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixPath)})`
+								)
+
+							return {
+								realm: 'scene-transition-mix',
+								scenePath,
+								transitionPath,
+								mixPath,
+								name: mixPath[mixPath.length - 1],
+								effects: await Promise.all(
+									(await this.getList(rawTransitionMixPath)).map(async (rawTransitionMixEffectPath) => {
+										// "SCENES.Main.Transitions.L1.L1.Effect-1"
+										const decodedTransitionMixEffectPath = protocolDecodePath(rawTransitionMixEffectPath) // decode the path
+
+										const effectPath = decodedTransitionMixEffectPath.slice(decodedTransitionMixPath.length) // remove the "SCENES.Transitions.L1.L1" part
+
+										if (mixPath.length === 0)
+											throw new Error(
+												`Invalid Transitions.Mix path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixPath)})`
+											)
+
+										return {
+											realm: 'scene-transition-mix-effect',
+											scenePath,
+											transitionPath,
+											mixPath,
+											effectPath,
+											name: effectPath[effectPath.length - 1],
+										} satisfies SceneTransitionMixEffect
+									})
+								),
+							} satisfies SceneTransitionMix
+						})
+					),
+				} satisfies SceneTransition
+			})
+		)
+	}
+	async getSceneTransition(sceneTransitionRef: SceneTransitionRef): Promise<SceneTransitionObject> {
+		const values = await this.getAttributes(refToPath(sceneTransitionRef), [
+			'progress',
+			'progressFrames', // note: _not_ snake_case in docs!
+			'duration',
+		])
+
+		return {
+			progress: parseFloatValue(values.progress),
+			progressFrames: parseInteger(values.progressFrames),
+			duration: parseInteger(values.duration),
+		}
+	}
+	async updateSceneTransition(
+		sceneTransitionRef: SceneTransitionRef,
+		props: Partial<UpdateSceneTransitionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(sceneTransitionRef), [
+			{ attribute: 'duration', value: stringifyInteger(props.duration) },
+			// progress, progressFrames are read-only
+		])
+	}
+	async sceneTransitionTransitionCut(sceneTransitionRef: SceneTransitionRef): Promise<void> {
+		return this.executeFunction(`${refToPath(sceneTransitionRef)}.transition_cut`)
+	}
+	async sceneTransitionTransitionAuto(sceneTransitionRef: SceneTransitionRef): Promise<void> {
+		return this.executeFunction(`${refToPath(sceneTransitionRef)}.transition_auto`)
+	}
+
+	async getSceneTransitionMixEffect(
+		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef
+	): Promise<SceneTransitionMixEffectObject> {
+		const values = await this.getAttributes(refToPath(sceneTransitionMixEffectRef), ['curve', 'effect', 'effect_name'])
+
+		return {
+			curve: parseEnum<SceneCurve>(values.curve, SceneCurve),
+			effect: values.effect,
+			effectName: values.effect_name,
+		}
+	}
+	async updateSceneTransitionMixEffect(
+		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef,
+		props: Partial<UpdateSceneTransitionMixEffectObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(sceneTransitionMixEffectRef), [
+			{ attribute: 'curve', value: stringifyEnum<SceneCurve>(props.curve, SceneCurve) },
+			// effect, effect_name are read-only
+		])
+	}
+
 	// Scene.Layers.Layer
 	//             Snapshots
 	//                 SNP
@@ -1165,7 +1289,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			const paths = splitPath(itemPath, 'Snapshots')
 			if (paths.length !== 2)
 				throw new Error(
-					`Invalid layer path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
+					`Invalid Snapshot path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
 				)
 
 			return {
@@ -1191,7 +1315,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			color: parseColorRGB(values.color),
 			dissolveTime: parseInteger(values.dissolve_time),
 			enableCurve: parseBoolean(values.enable_curve),
-			curve: parseEnum<SceneSnapshotCurve>(values.curve, SceneSnapshotCurve),
+			curve: parseEnum<SceneCurve>(values.curve, SceneCurve),
 			priorityRecall: parseEnum<SceneSnapshotPriorityRecall>(values.priority_recall, SceneSnapshotPriorityRecall),
 		}
 	}
@@ -1201,7 +1325,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
 			{ attribute: 'enable_curve', value: stringifyBoolean(props.enableCurve) },
-			{ attribute: 'curve', value: stringifyEnum<SceneSnapshotCurve>(props.curve, SceneSnapshotCurve) },
+			{ attribute: 'curve', value: stringifyEnum<SceneCurve>(props.curve, SceneCurve) },
 			{
 				attribute: 'priority_recall',
 				value: stringifyEnum<SceneSnapshotPriorityRecall>(props.priorityRecall, SceneSnapshotPriorityRecall),
@@ -1834,12 +1958,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 }
 
-// export interface UpdateLayerCommandParameters<SceneName extends string, LayerName extends string> {
-// 	sceneName: SceneName
-// 	layerName: LayerName
-// 	props: Partial<{
-// 		source: string
-// 		sdfsd: number
-// 		adf: boolean
-// 	}>
-// }
+// ------------------------ Custom types -------------------------
+export type SceneTransition = SceneTransitionRef & { name: string; mixes: SceneTransitionMix[] }
+export type SceneTransitionMix = SceneTransitionMixRef & { name: string; effects: SceneTransitionMixEffect[] }
+export type SceneTransitionMixEffect = SceneTransitionMixEffectRef & { name: string }

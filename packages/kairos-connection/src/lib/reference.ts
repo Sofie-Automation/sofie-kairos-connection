@@ -10,6 +10,9 @@ export type AnyRef =
 	| MediaRamRecRef
 	| MediaImageRef
 	| MediaSoundRef
+	| SceneTransitionRef
+	| SceneTransitionMixRef
+	| SceneTransitionMixEffectRef
 	| SceneSnapshotRef
 	| MacroRef
 
@@ -48,6 +51,30 @@ export function refToPath(ref: AnyRef): string {
 			return ['MEDIA', 'images', ...ref.clipPath.map(protocolEncodeStr)].join('.')
 		case 'media-sound':
 			return ['MEDIA', 'sounds', ...ref.clipPath.map(protocolEncodeStr)].join('.')
+		case 'scene-transition':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+			].join('.')
+		case 'scene-transition-mix':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+				...ref.mixPath.map(protocolEncodeStr),
+			].join('.')
+		case 'scene-transition-mix-effect':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+				...ref.mixPath.map(protocolEncodeStr),
+				...ref.effectPath.map(protocolEncodeStr),
+			].join('.')
 		case 'scene-snapshot':
 			return [
 				'SCENES',
@@ -122,6 +149,48 @@ export type SceneSnapshotRef = {
 }
 export function refSceneSnapshot(sceneRef: SceneRef, snapshotPath: RefPath): SceneSnapshotRef {
 	return { realm: 'scene-snapshot', scenePath: sceneRef.scenePath, snapshotPath }
+}
+
+export type SceneTransitionRef = {
+	realm: 'scene-transition'
+	scenePath: RefPath
+	transitionPath: RefPath
+}
+export function refSceneTransition(sceneRef: SceneRef, transitionPath: RefPath): SceneTransitionRef {
+	return { realm: 'scene-transition', scenePath: sceneRef.scenePath, transitionPath }
+}
+export type SceneTransitionMixRef = {
+	realm: 'scene-transition-mix'
+	scenePath: RefPath
+	transitionPath: RefPath
+	mixPath: RefPath
+}
+export function refSceneTransitionMix(transitionRef: SceneTransitionRef, mixPath: RefPath): SceneTransitionMixRef {
+	return {
+		realm: 'scene-transition-mix',
+		scenePath: transitionRef.scenePath,
+		transitionPath: transitionRef.transitionPath,
+		mixPath,
+	}
+}
+export type SceneTransitionMixEffectRef = {
+	realm: 'scene-transition-mix-effect'
+	scenePath: RefPath
+	transitionPath: RefPath
+	mixPath: RefPath
+	effectPath: RefPath
+}
+export function refSceneTransitionMixEffect(
+	mixRef: SceneTransitionMixRef,
+	effectPath: RefPath
+): SceneTransitionMixEffectRef {
+	return {
+		realm: 'scene-transition-mix-effect',
+		scenePath: mixRef.scenePath,
+		transitionPath: mixRef.transitionPath,
+		mixPath: mixRef.mixPath,
+		effectPath,
+	}
 }
 
 // ---------------------------- MEDIA -----------------------------

@@ -1209,6 +1209,28 @@ export interface SceneLayerEffectGlowEffectObject {
 
 	glowColor: ColorRGB
 }
+export interface SceneTransitionObject {
+	/**
+	 * [ float, min: 0, max: 1 ]
+	 */
+	readonly progress: number
+	/**
+	 * [ integer, min: 0, max: 9999 ]
+	 */
+	readonly progressFrames: number
+	/**
+	 * [ integer, min: 0, max: 9999 ]
+	 */
+	duration: number
+}
+// export interface SceneTransitionMixObject {
+// no properties
+// }
+export interface SceneTransitionMixEffectObject {
+	curve: SceneCurve
+	readonly effect: string
+	effectName: string
+}
 
 export interface SceneSnapshotObject {
 	/**
@@ -1226,7 +1248,7 @@ export interface SceneSnapshotObject {
 	dissolveTime: number
 
 	enableCurve: boolean
-	curve: SceneSnapshotCurve
+	curve: SceneCurve
 
 	/**
 	 * [enum, min: 0, max: 2 ]
@@ -1360,7 +1382,8 @@ export enum SceneSnapshotStatus {
 	Stopped = 'Stopped',
 	Playing = 'Playing',
 }
-export enum SceneSnapshotCurve {
+export enum SceneCurve {
+	// Used both in snapshots and transitions
 	Linear = 'Linear',
 	QuadIn = 'QuadIn',
 	QuadOut = 'QuadOut',
@@ -1408,7 +1431,6 @@ export enum SceneSnapshotPriorityRecall {
 	Pre = 'Pre',
 	Post = 'Post',
 }
-
 // ------------------------- types -----------------------------
 export interface Pos3Df {
 	x: number
@@ -1446,4 +1468,6 @@ export type UpdateSceneLayerEffectPositionObject = OmitReadonly<SceneLayerEffect
 export type UpdateSceneLayerEffectPCropObject = OmitReadonly<SceneLayerEffectPCropObject>
 export type UpdateSceneLayerEffectFilmLookObject = OmitReadonly<SceneLayerEffectFilmLookObject>
 export type UpdateSceneLayerEffectGlowEffectObject = OmitReadonly<SceneLayerEffectGlowEffectObject>
+export type UpdateSceneTransitionObject = OmitReadonly<SceneTransitionObject>
+export type UpdateSceneTransitionMixEffectObject = OmitReadonly<SceneTransitionMixEffectObject>
 export type UpdateSceneSnapshotObject = OmitReadonly<SceneSnapshotObject>

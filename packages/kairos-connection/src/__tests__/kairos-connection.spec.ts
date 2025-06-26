@@ -42,13 +42,26 @@ import {
 	SceneLimitOffAction,
 	SceneObject,
 	SceneResolution,
-	SceneSnapshotCurve,
+	SceneCurve,
 	SceneSnapshotObject,
 	SceneSnapshotPriorityRecall,
 	SceneSnapshotStatus,
+	SceneTransition,
+	SceneTransitionObject,
+	SceneTransitionMixEffectObject,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
-import { refMacro, refScene, refSceneLayer, refSceneLayerEffect, refSceneSnapshot, SceneRef } from '../lib/reference.js'
+import {
+	refMacro,
+	refScene,
+	refSceneLayer,
+	refSceneLayerEffect,
+	refSceneSnapshot,
+	refSceneTransition,
+	refSceneTransitionMix,
+	refSceneTransitionMixEffect,
+	SceneRef,
+} from '../lib/reference.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -1985,6 +1998,208 @@ describe('KairosConnection', () => {
 		// 				Transition
 		// 				BgdMix
 		// 					TransitionEffect
+
+		test('SCENES.Layers.Transitions', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SCENES.Main.Transitions': [
+						'list_ex:SCENES.Main.Transitions=',
+						'SCENES.Main.Transitions.BgdMix',
+						'SCENES.Main.Transitions.L1',
+						'SCENES.Main.Transitions.L2',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.BgdMix': [
+						'list_ex:SCENES.Main.Transitions.BgdMix=',
+						'SCENES.Main.Transitions.BgdMix.BgdMix',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.L1': [
+						'list_ex:SCENES.Main.Transitions.L1=',
+						'SCENES.Main.Transitions.L1.L1',
+						'SCENES.Main.Transitions.L1.Element-1',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.L2': [
+						'list_ex:SCENES.Main.Transitions.L2=',
+						'SCENES.Main.Transitions.L2.L2',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.BgdMix.BgdMix': [
+						'list_ex:SCENES.Main.Transitions.BgdMix.BgdMix=',
+						'SCENES.Main.Transitions.BgdMix.BgdMix.Effect-1',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.L1.L1': [
+						'list_ex:SCENES.Main.Transitions.L1.L1=',
+						'SCENES.Main.Transitions.L1.L1.Effect-1',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.L1.Element-1': [
+						'list_ex:SCENES.Main.Transitions.L1.Element-1=',
+						'SCENES.Main.Transitions.L1.Element-1.Effect-1',
+						'',
+					],
+					'list_ex:SCENES.Main.Transitions.L2.L2': [
+						'list_ex:SCENES.Main.Transitions.L2.L2=',
+						'SCENES.Main.Transitions.L2.L2.Effect-1',
+						'',
+					],
+					'SCENES.Main.Layers.Group-1.Effects.FilmLook-1.progress': ['Error'],
+					'SCENES.Main.Transitions.L1.progress': ['SCENES.Main.Transitions.L1.progress=0'],
+					'SCENES.Main.Transitions.L1.progressFrames': ['SCENES.Main.Transitions.L1.progressFrames=0'],
+					'SCENES.Main.Transitions.L1.duration': ['SCENES.Main.Transitions.L1.duration=20'],
+					'SCENES.Main.Snapshots.SNP1.transition_cut=': ['Error'],
+					'SCENES.Main.Transitions.L1.duration=20': ['OK'],
+					'SCENES.Main.Transitions.L1.transition_cut=': ['OK'],
+					'SCENES.Main.Transitions.L1.transition_auto=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.listSceneTransitions(refMain)).toStrictEqual([
+				{
+					name: 'BgdMix',
+					realm: 'scene-transition',
+					scenePath: ['Main'],
+					transitionPath: ['BgdMix'],
+					mixes: [
+						{
+							mixPath: ['BgdMix'],
+							name: 'BgdMix',
+							realm: 'scene-transition-mix',
+							scenePath: ['Main'],
+							transitionPath: ['BgdMix'],
+							effects: [
+								{
+									effectPath: ['Effect-1'],
+									mixPath: ['BgdMix'],
+									name: 'Effect-1',
+									realm: 'scene-transition-mix-effect',
+									scenePath: ['Main'],
+									transitionPath: ['BgdMix'],
+								},
+							],
+						},
+					],
+				},
+				{
+					name: 'L1',
+					realm: 'scene-transition',
+					scenePath: ['Main'],
+					transitionPath: ['L1'],
+					mixes: [
+						{
+							mixPath: ['L1'],
+							name: 'L1',
+							realm: 'scene-transition-mix',
+							scenePath: ['Main'],
+							transitionPath: ['L1'],
+							effects: [
+								{
+									effectPath: ['Effect-1'],
+									mixPath: ['L1'],
+									name: 'Effect-1',
+									realm: 'scene-transition-mix-effect',
+									scenePath: ['Main'],
+									transitionPath: ['L1'],
+								},
+							],
+						},
+						{
+							mixPath: ['Element-1'],
+							name: 'Element-1',
+							realm: 'scene-transition-mix',
+							scenePath: ['Main'],
+							transitionPath: ['L1'],
+							effects: [
+								{
+									effectPath: ['Effect-1'],
+									mixPath: ['Element-1'],
+									name: 'Effect-1',
+									realm: 'scene-transition-mix-effect',
+									scenePath: ['Main'],
+									transitionPath: ['L1'],
+								},
+							],
+						},
+					],
+				},
+				{
+					name: 'L2',
+					realm: 'scene-transition',
+					scenePath: ['Main'],
+					transitionPath: ['L2'],
+					mixes: [
+						{
+							mixPath: ['L2'],
+							name: 'L2',
+							realm: 'scene-transition-mix',
+							scenePath: ['Main'],
+							transitionPath: ['L2'],
+							effects: [
+								{
+									effectPath: ['Effect-1'],
+									mixPath: ['L2'],
+									name: 'Effect-1',
+									realm: 'scene-transition-mix-effect',
+									scenePath: ['Main'],
+									transitionPath: ['L2'],
+								},
+							],
+						},
+					],
+				},
+			] satisfies SceneTransition[])
+
+			const refTransition = refSceneTransition(refMain, ['L1'])
+
+			expect(
+				await connection.updateSceneTransition(refTransition, {
+					duration: 20,
+				})
+			).toBeUndefined()
+			expect(await connection.getSceneTransition(refTransition)).toStrictEqual({
+				duration: 20,
+				progress: 0,
+				progressFrames: 0,
+			} satisfies SceneTransitionObject)
+
+			expect(await connection.sceneTransitionTransitionCut(refTransition)).toBeUndefined()
+			expect(await connection.sceneTransitionTransitionAuto(refTransition)).toBeUndefined()
+		})
+
+		test('SCENES.Layers.Transitions.Mix.Effect', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'SCENES.Main.Transitions.L1.L1.Effect-1.curve=Linear': ['OK'],
+					'SCENES.Main.Transitions.L1.L1.Effect-1.curve': ['SCENES.Main.Transitions.L1.L1.Effect-1.curve=Linear'],
+					'SCENES.Main.Transitions.L1.L1.Effect-1.effect': ['SCENES.Main.Transitions.L1.L1.Effect-1.effect=MIX_FX.Mix'],
+					'SCENES.Main.Transitions.L1.L1.Effect-1.effect_name': [
+						'SCENES.Main.Transitions.L1.L1.Effect-1.effect_name=Mix',
+					],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const refTransition = refSceneTransition(refMain, ['L1'])
+			const refTransitionMix = refSceneTransitionMix(refTransition, ['L1'])
+			const refTransitionMixEffect = refSceneTransitionMixEffect(refTransitionMix, ['Effect-1'])
+
+			expect(
+				await connection.updateSceneTransitionMixEffect(refTransitionMixEffect, {
+					curve: SceneCurve.Linear,
+				})
+			).toBeUndefined()
+			expect(await connection.getSceneTransitionMixEffect(refTransitionMixEffect)).toStrictEqual({
+				curve: SceneCurve.Linear,
+				effect: 'MIX_FX.Mix',
+				effectName: 'Mix',
+			} satisfies SceneTransitionMixEffectObject)
+		})
 		// SCENES.Scene.Layers.Layer
 		// 			Snapshots
 		// 				SNP
@@ -2060,7 +2275,7 @@ describe('KairosConnection', () => {
 					},
 					dissolveTime: 0,
 					enableCurve: false,
-					curve: SceneSnapshotCurve.Linear,
+					curve: SceneCurve.Linear,
 					priorityRecall: SceneSnapshotPriorityRecall.Off,
 					// status is read only
 				})
@@ -2074,7 +2289,7 @@ describe('KairosConnection', () => {
 				},
 				dissolveTime: 0,
 				enableCurve: false,
-				curve: SceneSnapshotCurve.Linear,
+				curve: SceneCurve.Linear,
 				priorityRecall: SceneSnapshotPriorityRecall.Off,
 			} satisfies SceneSnapshotObject)
 

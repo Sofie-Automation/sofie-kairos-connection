@@ -181,7 +181,6 @@ describe('Encode/Decode', () => {
 			testPaths.forEach((path) => {
 				const encoded = protocolEncodePath(path)
 				const decoded = protocolDecodePath(encoded)
-				console.log(`Encoded: ${JSON.stringify(encoded)}, Decoded: ${JSON.stringify(decoded)}`)
 				expect(decoded).toEqual(path)
 			})
 		})
