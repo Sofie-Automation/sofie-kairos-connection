@@ -2243,7 +2243,6 @@ describe('KairosConnection', () => {
 		test('SCENES.Layers.Snapshots', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
-					// NOTE: These replies are guessed from the documentation, and should be replaced with recorded values:
 					'list_ex:SCENES.Main.Snapshots': [
 						'list_ex:SCENES.Main.Snapshots=',
 						'SCENES.Main.Snapshots.SNP1',
@@ -2251,14 +2250,11 @@ describe('KairosConnection', () => {
 						'SCENES.Main.Snapshots.SNP3',
 						'',
 					],
-
-					'SCENES.Main.Snapshots.SNP1.status=Stopped': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.color=rgb(255,0,0)': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.dissolve_time=0': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.enable_curve=0': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.curve=Linear': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.priority_recall=Off': ['OK'],
-
 					'SCENES.Main.Snapshots.SNP1.status': ['SCENES.Main.Snapshots.SNP1.status=Stopped'],
 					'SCENES.Main.Snapshots.SNP1.color': ['SCENES.Main.Snapshots.SNP1.color=rgb(255,0,0)'],
 					'SCENES.Main.Snapshots.SNP1.dissolve_time': ['SCENES.Main.Snapshots.SNP1.dissolve_time=0'],
@@ -2273,12 +2269,6 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Snapshots.SNP1.delete_ex=': ['OK'],
 				}[message]
 				if (reply) return reply
-
-				// if (emulatorConnection) {
-				// 	// If there is an emulatorConnection, use it to handle the command:
-				// 	const reply = await emulatorConnection.doCommand(message)
-				// 	if (reply !== null) return reply
-				// }
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
@@ -2704,14 +2694,11 @@ describe('KairosConnection', () => {
 		test('MACROS', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
-					// NOTE: These replies are guessed from the documentation, and should be replaced with recorded values:
-
 					'list_ex:MACROS': ['list_ex:MACROS=', 'MACROS.M-1', ''],
 					'list_ex:MACROS.M-1': ['list_ex:MACROS.M-1=', ''],
-
-					'MACROS.M-1.status': ['MACROS.M-1.status=Stopped'],
-					'MACROS.M-1.color': ['MACROS.M-1.color=rgb(255,255,0)'],
 					'MACROS.M-1.color=rgb(255,255,0)': ['OK'],
+					'MACROS.M-1.status': ['MACROS.M-1.status=Stopped'],
+					'MACROS.M-1.color': ['MACROS.M-1.color=rgb(255,255,255)'],
 					'MACROS.M-1.play=': ['OK'],
 					'MACROS.M-1.continue=': ['OK'],
 					'MACROS.M-1.record=': ['OK'],
@@ -2721,12 +2708,6 @@ describe('KairosConnection', () => {
 					'MACROS.M-1.delete_ex=': ['OK'],
 				}[message]
 				if (reply) return reply
-
-				// if (emulatorConnection) {
-				// 	// If there is an emulatorConnection, use it to handle the command:
-				// 	const reply = await emulatorConnection.doCommand(message)
-				// 	if (reply !== null) return reply
-				// }
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
@@ -2749,7 +2730,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getMacro(refMacro(['M-1']))).toStrictEqual({
 				color: {
-					blue: 0,
+					blue: 255,
 					green: 255,
 					red: 255,
 				},
