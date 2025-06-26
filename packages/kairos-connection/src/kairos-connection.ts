@@ -17,6 +17,11 @@ import {
 	stringifyColorRGB,
 	stringifyPos2D,
 	stringifyPos2Df,
+	parseSourceRef,
+	stringifySourceRef,
+	parseSceneTransitionRef,
+	stringifySceneTransitionRef,
+	parseSourceRefOptional,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
 import {
@@ -105,7 +110,7 @@ import {
 	SceneTransitionRef,
 	splitPath,
 } from './lib/reference.js'
-import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
+import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	// SYS
@@ -141,7 +146,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		scenePath: SceneRef = { realm: 'scene', scenePath: [] },
 		deep?: boolean
 	): Promise<(SceneRef & { name: string })[]> {
-		return (await this._listDeep(scenePath, ['Layers', 'Transitions'], deep)).map((itemPath) => {
+		return (await this._listDeep(scenePath, ['Layers', 'Transitions', 'Snapshots'], deep)).map((itemPath) => {
 			return {
 				realm: 'scene',
 				name: itemPath[itemPath.length - 1],
@@ -174,7 +179,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			tally: parseInteger(values.tally),
 			color: parseColorRGB(values.color),
 			resolution: parseEnum<SceneResolution>(values.resolution, SceneResolution),
-			nextTransition: parseCommaSeparated(values.next_transition),
+			nextTransition: parseCommaSeparated(values.next_transition).map((o) => parseSceneTransitionRef(o)),
 			allDuration: parseInteger(values.all_duration),
 			allFader: parseFloatValue(values.all_fader),
 			nextTransitionType: values.next_transition_type,
@@ -190,7 +195,10 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
-			{ attribute: 'next_transition', value: stringifyCommaSeparated(props.nextTransition) },
+			{
+				attribute: 'next_transition',
+				value: stringifyCommaSeparated(props.nextTransition?.map((o) => stringifySceneTransitionRef(o))),
+			},
 			{ attribute: 'all_duration', value: stringifyInteger(props.allDuration) },
 			{ attribute: 'all_fader', value: stringifyFloat(props.allFader) },
 			{ attribute: 'next_transition_type', value: props.nextTransitionType },
@@ -265,13 +273,13 @@ export class KairosConnection extends MinimalKairosConnection {
 
 		return {
 			opacity: parseFloatValue(values.opacity),
-			sourceA: values.sourceA,
-			sourceB: values.sourceB,
-			sourcePgm: values.source_pgm,
-			sourcePst: values.source_pst,
+			sourceA: parseSourceRef(values.sourceA),
+			sourceB: parseSourceRef(values.sourceB),
+			sourcePgm: parseSourceRef(values.source_pgm),
+			sourcePst: parseSourceRef(values.source_pst),
 			activeBus: parseEnum<SceneLayerActiveBus>(values.active_bus, SceneLayerActiveBus),
 			pgmPstMode: parseEnum<SceneLayerPgmPstMode>(values.pgm_pst_mode, SceneLayerPgmPstMode),
-			sourceOptions: parseCommaSeparated(values.sourceOptions),
+			sourceOptions: parseCommaSeparated(values.sourceOptions).map(parseSourceRef),
 			state: parseEnum<SceneLayerState>(values.state, SceneLayerState),
 			mode: parseEnum<SceneLayerMode>(values.mode, SceneLayerMode),
 			fxEnabled: parseBoolean(values.fxEnabled),
@@ -289,11 +297,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	async updateSceneLayer(layerRef: SceneLayerRef, props: Partial<UpdateSceneLayerObject>): Promise<void> {
 		await this.setAttributes(refToPath(layerRef), [
 			{ attribute: 'opacity', value: stringifyFloat(props.opacity) },
-			{ attribute: 'sourceA', value: props.sourceA },
-			{ attribute: 'source_pgm', value: props.sourcePgm },
-			{ attribute: 'source_pst', value: props.sourcePst },
+			{ attribute: 'sourceA', value: stringifySourceRef(props.sourceA) },
+			{ attribute: 'source_pgm', value: stringifySourceRef(props.sourcePgm) },
+			{ attribute: 'source_pst', value: stringifySourceRef(props.sourcePst) },
 			{ attribute: 'pgm_pst_mode', value: stringifyEnum<SceneLayerPgmPstMode>(props.pgmPstMode, SceneLayerPgmPstMode) },
-			{ attribute: 'sourceOptions', value: stringifyCommaSeparated(props.sourceOptions) },
+			{
+				attribute: 'sourceOptions',
+				value: stringifyCommaSeparated(props.sourceOptions?.map((o) => stringifySourceRef(o))),
+			},
 			{ attribute: 'mode', value: stringifyEnum<SceneLayerMode>(props.mode, SceneLayerMode) },
 			{ attribute: 'preset_enabled', value: stringifyBoolean(props.presetEnabled) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
@@ -491,7 +502,7 @@ export class KairosConnection extends MinimalKairosConnection {
 				values.blend_mode,
 				SceneLayerEffectLuminanceKeyBlendMode
 			),
-			sourceKey: values.sourceKey,
+			sourceKey: parseSourceRefOptional(values.sourceKey),
 		}
 	}
 
@@ -514,7 +525,7 @@ export class KairosConnection extends MinimalKairosConnection {
 					SceneLayerEffectLuminanceKeyBlendMode
 				),
 			},
-			{ attribute: 'sourceKey', value: props.sourceKey },
+			{ attribute: 'sourceKey', value: stringifySourceRef(props.sourceKey) },
 		])
 	}
 	async sceneLayerEffectLuminanceKeyAutoAdjust(effectRef: SceneLayerEffectRef): Promise<void> {
@@ -996,7 +1007,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		return {
 			enabled: parseBoolean(values.enabled),
 			invert: parseBoolean(values.invert),
-			keySource: values.key_source,
+			keySource: parseSourceRefOptional(values.key_source),
 			blendMode: parseEnum<SceneLayerEffectLinearKeyBlendMode>(values.blend_mode, SceneLayerEffectLinearKeyBlendMode),
 		}
 	}
@@ -1009,7 +1020,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
 			{ attribute: 'invert', value: stringifyBoolean(props.invert) },
-			{ attribute: 'key_source', value: props.keySource },
+			{ attribute: 'key_source', value: stringifySourceRef(props.keySource) },
 			{
 				attribute: 'blend_mode',
 				value: stringifyEnum<SceneLayerEffectLinearKeyBlendMode>(props.blendMode, SceneLayerEffectLinearKeyBlendMode),
@@ -1177,7 +1188,12 @@ export class KairosConnection extends MinimalKairosConnection {
 						`Invalid Transitions path: "${JSON.stringify(paths)}" ("Transitions" missing) (${JSON.stringify(rawTransitionPath)})`
 					)
 				const scenePath = paths[0].slice(1) // remove the "SCENES" part
-				const transitionPath = paths[1]
+				const path1 = paths[1]
+				if (path1.length !== 1)
+					throw new Error(
+						`Invalid Transitions path: "${JSON.stringify(paths)}" (expected a single Transition name) (${JSON.stringify(rawTransitionPath)})`
+					)
+				const transitionPath: RefPathSingle = [path1[0]]
 				return {
 					realm: 'scene-transition',
 					scenePath,
@@ -1188,12 +1204,13 @@ export class KairosConnection extends MinimalKairosConnection {
 							// "SCENES.Main.Transitions.L1.L1"
 							const decodedTransitionMixPath = protocolDecodePath(rawTransitionMixPath) // decode the path
 
-							const mixPath = decodedTransitionMixPath.slice(decodedTransitionPath.length) // remove the "SCENES.Transitions.L1" part
-
-							if (mixPath.length === 0)
+							const mixPathRest = decodedTransitionMixPath.slice(decodedTransitionPath.length) // remove the "SCENES.Transitions.L1" part
+							if (mixPathRest.length !== 1)
 								throw new Error(
 									`Invalid Transitions.Mix path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixPath)})`
 								)
+
+							const mixPath: RefPathSingle = [mixPathRest[0]]
 
 							return {
 								realm: 'scene-transition-mix',
@@ -1206,12 +1223,13 @@ export class KairosConnection extends MinimalKairosConnection {
 										// "SCENES.Main.Transitions.L1.L1.Effect-1"
 										const decodedTransitionMixEffectPath = protocolDecodePath(rawTransitionMixEffectPath) // decode the path
 
-										const effectPath = decodedTransitionMixEffectPath.slice(decodedTransitionMixPath.length) // remove the "SCENES.Transitions.L1.L1" part
-
-										if (mixPath.length === 0)
+										const effectPathRest = decodedTransitionMixEffectPath.slice(decodedTransitionMixPath.length) // remove the "SCENES.Transitions.L1" part
+										if (effectPathRest.length !== 1)
 											throw new Error(
-												`Invalid Transitions.Mix path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixPath)})`
+												`Invalid Transitions.Mix.Effect path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixEffectPath)})`
 											)
+
+										const effectPath: RefPathSingle = [effectPathRest[0]]
 
 										return {
 											realm: 'scene-transition-mix-effect',

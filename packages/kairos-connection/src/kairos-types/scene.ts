@@ -1,4 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
+import { SceneTransitionRef, SourceRef } from '../lib/reference.js'
 import { ColorRGB } from './lib-types.js'
 
 export interface SceneObject {
@@ -66,7 +67,7 @@ export interface SceneObject {
 	resolution: SceneResolution
 
 	/** list[ObjectID] */
-	nextTransition: string[]
+	nextTransition: SceneTransitionRef[]
 
 	/** [ integer ,min: 0, max: 9999 ] */
 	allDuration: number
@@ -103,7 +104,7 @@ export interface SceneLayerObject {
 	 * external as well as internal sources.
 	 * [ ObjectID ]
 	 */
-	sourceA: string
+	sourceA: SourceRef
 
 	/**
 	 * Source A/B source selection allows the User to select a source for the appropriate
@@ -114,13 +115,13 @@ export interface SceneLayerObject {
 	 * external as well as internal sources.
 	 * [ ObjectID, read_only ]
 	 */
-	readonly sourceB: string
+	readonly sourceB: SourceRef | string
 
 	/** [ ObjectID ] */
-	sourcePgm: string
+	sourcePgm: SourceRef
 	/**
 	 * [ ObjectID ] */
-	sourcePst: string
+	sourcePst: SourceRef
 	/**
 	 * [ enum, read_only, min: 0, max: 1 ]
 	 */
@@ -171,7 +172,7 @@ export interface SceneLayerObject {
 	 * sources can be added and/or subtracted from the designated source option list.
 	 * Also the order of appearance within the “Source Options” list can be edited.
 	 * [ list[ObjectID] ] */
-	sourceOptions: string[]
+	sourceOptions: SourceRef[]
 
 	/**
 	 * [ enum, read_only, min: 0, max: 3 ]
@@ -451,7 +452,7 @@ export interface SceneLayerEffectLuminanceKeyObject {
 	 * menu to select from all available listed external as well as internal sources.
 	 * [ ObjectID ]
 	 */
-	sourceKey: string
+	sourceKey: SourceRef | null
 }
 export interface SceneLayerEffectTransform2DObject {
 	enabled: boolean
@@ -1106,7 +1107,7 @@ export interface SceneLayerEffectLinearKeyObject {
 	/**
 	 * [ ObjectID ]
 	 */
-	keySource: string
+	keySource: SourceRef | null // null means <undefined>
 
 	blendMode: SceneLayerEffectLinearKeyBlendMode
 }
@@ -1452,7 +1453,9 @@ export interface Pos2D {
 export type UpdateSceneObject = OmitReadonly<SceneObject>
 export type UpdateSceneLayerObject = OmitReadonly<SceneLayerObject>
 export type UpdateSceneLayerEffectCropObject = OmitReadonly<SceneLayerEffectCropObject>
-export type UpdateSceneLayerEffectLuminanceKeyObject = OmitReadonly<SceneLayerEffectLuminanceKeyObject>
+export type UpdateSceneLayerEffectLuminanceKeyObject = OmitReadonly<SceneLayerEffectLuminanceKeyObject> & {
+	sourceKey: SourceRef // Cannot be null in updates
+}
 export type UpdateSceneLayerEffectTransform2DObject = OmitReadonly<SceneLayerEffectTransform2DObject>
 export type UpdateSceneLayerEffectChromaKeyObject = OmitReadonly<SceneLayerEffectChromaKeyObject>
 export type UpdateSceneLayerEffectYUVCorrectionObject = OmitReadonly<SceneLayerEffectYUVCorrectionObject>
@@ -1463,7 +1466,9 @@ export type UpdateSceneLayerEffectToneCurveCorrectionObject = OmitReadonly<Scene
 export type UpdateSceneLayerEffectMatrixCorrectionObject = OmitReadonly<SceneLayerEffectMatrixCorrectionObject>
 export type UpdateSceneLayerEffectTemperatureCorrectionObject =
 	OmitReadonly<SceneLayerEffectTemperatureCorrectionObject>
-export type UpdateSceneLayerEffectLinearKeyObject = OmitReadonly<SceneLayerEffectLinearKeyObject>
+export type UpdateSceneLayerEffectLinearKeyObject = OmitReadonly<SceneLayerEffectLinearKeyObject> & {
+	keySource: SourceRef // Cannot be null in updates
+}
 export type UpdateSceneLayerEffectPositionObject = OmitReadonly<SceneLayerEffectPositionObject>
 export type UpdateSceneLayerEffectPCropObject = OmitReadonly<SceneLayerEffectPCropObject>
 export type UpdateSceneLayerEffectFilmLookObject = OmitReadonly<SceneLayerEffectFilmLookObject>
