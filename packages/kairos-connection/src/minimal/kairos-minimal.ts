@@ -1,13 +1,8 @@
 import EventEmitter, { addAbortListener } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
-import {
-	queryAttributeDeserializer,
-	okOrErrorDeserializer,
-	listDeserializer,
-	type DeserializeResult,
-} from './deserializers.js'
 import { ResponseError, TerminateSubscriptionError } from './errors.js'
+import { assertNever } from '../lib/lib.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -20,12 +15,16 @@ export interface Options {
 	autoConnect?: boolean
 }
 
-type Deserializer<TRes> = (lineBuffer: readonly string[]) => DeserializeResult<TRes> | null
+enum ExpectedResponseType {
+	OK = 'OK',
+	Query = 'Query',
+	List = 'List',
+}
 
 interface InternalRequest {
 	serializedCommand: string
-	queryValuePath: string | null // If this is a query, the path to the value that is being queried
-	deserializer: Deserializer<any>
+	expectedResponse: ExpectedResponseType
+	expectedResponsePath: string | null // If this is a query/list_ex, the path expected in the response line
 
 	resolve: (response: any) => void
 	reject: (error: Error) => void
@@ -116,11 +115,14 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				continue
 			}
 
-			const nextCommand = this._requestQueue[0]
+			const nextCommand = this._requestQueue[0] as InternalRequest | undefined
 
-			// Special case to handle values from subscriptions
-			const equalsIndex = firstLine.indexOf('=') // TODO - this feels like a messy hack
-			if (equalsIndex !== -1 && !firstLine.endsWith('=')) {
+			// First try treating the line as a query value, which could satisfy a subscription and/or the first command in the queue
+			const equalsIndex = firstLine.indexOf('=')
+			if (
+				equalsIndex !== -1 &&
+				firstLine.indexOf(':') === -1 // Not a response to a list/info
+			) {
 				// This looks like a response to a subscription or a query
 				const path = firstLine.slice(0, equalsIndex)
 				const value = firstLine.slice(equalsIndex + 1)
@@ -132,11 +134,20 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 					this.#emitToAllSubscribers(subscription.subscribers, path, null, value)
 				}
 
-				// If the next command in the queue is not a query for this value, remove it from the queue
-				if (!nextCommand || (nextCommand && nextCommand.sentTime && nextCommand.queryValuePath !== path)) {
-					this._unprocessedLines.shift()
-					continue
+				// If the first command in the queue is a query for this value, we can resolve it
+				if (
+					nextCommand &&
+					nextCommand.sentTime &&
+					nextCommand.expectedResponse === ExpectedResponseType.Query &&
+					nextCommand.expectedResponsePath === path
+				) {
+					nextCommand.resolve(value)
+
+					this._requestQueue.shift() // Remove the command from the queue after processing
 				}
+
+				this._unprocessedLines.shift() // Remove the line from the queue after processing
+				continue
 			}
 
 			if (nextCommand && nextCommand.sentTime) {
@@ -151,25 +162,70 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 					continue
 				}
 
-				try {
-					const res = nextCommand.deserializer(this._unprocessedLines)
-					if (!res) {
-						// Data not yet ready, stop processing
-						return
-					}
+				let handledOk = false
 
-					this._unprocessedLines = res.remainingLines
-					nextCommand.resolve(res.response)
+				switch (nextCommand.expectedResponse) {
+					case ExpectedResponseType.Query:
+						// Handled above, should never reach here
+						break
+					case ExpectedResponseType.OK:
+						// OK response, resolve the command
+						if (firstLine === 'OK') {
+							handledOk = true
+							nextCommand.resolve(undefined)
+						}
 
-					this._requestQueue.shift() // Remove the command from the queue after processing
-				} catch (e: unknown) {
-					nextCommand.reject(e as Error)
+						break
+					case ExpectedResponseType.List:
+						if (nextCommand.expectedResponsePath && firstLine === `list_ex:${nextCommand.expectedResponsePath}=`) {
+							const emptyLineIndex = this._unprocessedLines.indexOf('')
+							if (emptyLineIndex !== -1) {
+								const listItems = this._unprocessedLines.slice(1, emptyLineIndex)
 
-					// Unknown line, skip it so that we don't get stuck
-					this._unprocessedLines.shift()
+								// Note: leave one behind for the shift at the bottom
+								this._unprocessedLines = this._unprocessedLines.slice(emptyLineIndex)
 
-					this._requestQueue.shift() // Remove the command from the queue after processing
+								handledOk = true
+								nextCommand.resolve(listItems)
+							} else {
+								// Data not yet ready, stop processing
+								return
+							}
+						}
+
+						break
+					default:
+						assertNever(nextCommand.expectedResponse)
+						break
 				}
+
+				// Line and command have both been processed
+				this._unprocessedLines.shift()
+				this._requestQueue.shift()
+
+				if (!handledOk) {
+					nextCommand.reject(new ResponseError(nextCommand.serializedCommand, firstLine))
+				}
+
+				// try {
+				// 	const res = nextCommand.deserializer(this._unprocessedLines)
+				// 	if (!res) {
+				// 		// Data not yet ready, stop processing
+				// 		return
+				// 	}
+
+				// 	this._unprocessedLines = res.remainingLines
+				// 	nextCommand.resolve(res.response)
+
+				// 	this._requestQueue.shift() // Remove the command from the queue after processing
+				// } catch (e: unknown) {
+				// 	nextCommand.reject(e as Error)
+
+				// 	// Unknown line, skip it so that we don't get stuck
+				// 	this._unprocessedLines.shift()
+
+				// 	this._requestQueue.shift() // Remove the command from the queue after processing
+				// }
 			} else {
 				// Unexpected response, no command is in flight
 				this.emit('error', new Error(`Unknown line received: ${firstLine}`))
@@ -221,19 +277,19 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @return { request: Promise<Response> } a Promise that resolves when the KAIROS replies after a command has been sent.
 	 * If this throws, there's something seriously wrong :)
 	 */
-	async executeCommand<TRes>(
+	async executeCommand(
 		commandStr: string,
-		deserializer: Deserializer<TRes>,
-		queryValuePath: string | null
-	): Promise<TRes> {
+		expectedResponse: ExpectedResponseType,
+		expectedResponsePath: string | null
+	): Promise<unknown> {
 		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
 
 		const orgError = new Error() // To be used later in case of an Error
 
 		const internalRequest: InternalRequest = {
 			serializedCommand: commandStr,
-			queryValuePath: queryValuePath,
-			deserializer,
+			expectedResponse,
+			expectedResponsePath,
 
 			// stubs to be replaced
 			resolve: () => null,
@@ -241,9 +297,25 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 			processed: false,
 		}
-		const request = new Promise<TRes>((resolve, reject) => {
-			internalRequest.resolve = resolve
-			internalRequest.reject = reject
+		const request = new Promise<unknown>((resolve, reject) => {
+			internalRequest.resolve = (val) => {
+				process.nextTick(() => {
+					try {
+						resolve(val)
+					} catch (e) {
+						this.emit('error', e as Error)
+					}
+				})
+			}
+			internalRequest.reject = (err) => {
+				process.nextTick(() => {
+					try {
+						reject(err)
+					} catch (e) {
+						this.emit('error', e as Error)
+					}
+				})
+			}
 		})
 
 		this._requestQueue.push(internalRequest)
@@ -314,7 +386,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async setAttribute(path: string, value: string): Promise<void> {
 		const commandStr = `${path}=${value}`
-		return this.executeCommand(commandStr, okOrErrorDeserializer, null)
+		await this.executeCommand(commandStr, ExpectedResponseType.OK, null)
 	}
 	/**
 	 * Set the values of multiple attributes at the same path on the KAIROS
@@ -346,7 +418,12 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		if (subscription && subscription.latestValue !== null) return subscription.latestValue
 
 		const commandStr = `${path}`
-		return this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path), commandStr)
+		const result = await this.executeCommand(commandStr, ExpectedResponseType.Query, path)
+
+		if (typeof result !== 'string') {
+			throw new Error(`Expected a string response for path "${path}", but got: ${result}`)
+		}
+		return result
 	}
 	/**
 	 * Get the values of multiple attributes at the same path from the KAIROS
@@ -371,7 +448,12 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 */
 	async getList(path: string): Promise<string[]> {
 		const commandStr = `list_ex:${path}`
-		return this.executeCommand(commandStr, (lineBuffer) => listDeserializer(lineBuffer, path), null)
+		const result = await this.executeCommand(commandStr, ExpectedResponseType.List, path)
+
+		if (!Array.isArray(result)) {
+			throw new Error(`Expected a string array response for path "${path}", but got: ${result}`)
+		}
+		return result
 	}
 
 	async executeFunction(path: string, ...args: string[]): Promise<void> {
@@ -385,7 +467,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 			escapedArgs.push(arg.replaceAll(',', '&#44;').replaceAll('\r', '&#13;').replaceAll('\n', '&#10;'))
 		}
-		return this.executeCommand(`${path}=${escapedArgs.join(',')}`, okOrErrorDeserializer, null)
+		await this.executeCommand(`${path}=${escapedArgs.join(',')}`, ExpectedResponseType.OK, null)
 	}
 
 	subscribeValue(
@@ -442,15 +524,19 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 			// start a subscription to the KAIROS for this path
 			const newSubcription = subscription
-			this.executeCommand(`subscribe:${path}`, okOrErrorDeserializer, null).catch((e) => {
+			this.executeCommand(`subscribe:${path}`, ExpectedResponseType.OK, null).catch((e) => {
 				this.#terminateSubscription(path, newSubcription, e as Error)
 			})
 		}
 
 		if (needsToQueryValue && fetchCurrentValue) {
 			const commandStr = `${path}`
-			this.executeCommand(commandStr, (lineBuffer) => queryAttributeDeserializer(lineBuffer, path), commandStr)
+			this.executeCommand(commandStr, ExpectedResponseType.Query, path)
 				.then((res) => {
+					if (typeof res !== 'string') {
+						throw new Error(`Expected a string response for path "${path}", but got: ${res}`)
+					}
+
 					// If the subscription already has a value, we don't need to update it
 					if (subscription.latestValue !== null) return
 
@@ -475,7 +561,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				this._subscriptions.delete(path)
 
 				// stop the subscription to the KAIROS for this path
-				this.executeCommand(`unsubscribe:${path}`, okOrErrorDeserializer, null).catch((e) => {
+				this.executeCommand(`unsubscribe:${path}`, ExpectedResponseType.OK, null).catch((e) => {
 					// TODO - wrap error?
 					this.emit('warn', e)
 				})
