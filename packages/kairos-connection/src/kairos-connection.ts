@@ -9,19 +9,14 @@ import {
 	stringifyEnum,
 	stringifyFloat,
 	stringifyInteger,
-	parsePos3Df,
 	stringifyPos3Df,
 	parseColorRGB,
-	parsePos2D,
-	parsePos2Df,
 	stringifyColorRGB,
 	stringifyPos2D,
 	stringifyPos2Df,
-	parseSourceRef,
 	stringifySourceRef,
 	parseSceneTransitionRef,
 	stringifySceneTransitionRef,
-	parseSourceRefOptional,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
 import {
@@ -32,12 +27,10 @@ import {
 	type UpdateClipPlayerObject,
 	type SceneLayerObject,
 	type UpdateSceneLayerObject,
-	SceneLayerActiveBus,
 	SceneResolution,
 	SceneLimitOffAction,
 	ClipPlayerTMS,
 	SceneLayerPgmPstMode,
-	SceneLayerState,
 	SceneLayerMode,
 	SceneLayerDissolveMode,
 	SceneLayerBlendMode,
@@ -111,8 +104,46 @@ import {
 	splitPath,
 } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
+import {
+	getProtocolAttributeNames,
+	ObjectEncodingDefinition,
+	ObjectValueEncodingDefinition,
+	SceneLayerObjectEncodingDefinition,
+	SceneLayerEffectCropObjectEncodingDefinition,
+	SceneLayerEffectTransform2DObjectEncodingDefinition,
+	SceneLayerEffectLuminanceKeyObjectEncodingDefinition,
+	SceneLayerEffectChromaKeyObjectEncodingDefinition,
+	SceneLayerEffectYUVCorrectionObjectEncodingDefinition,
+	SceneLayerEffectRGBCorrectionObjectEncodingDefinition,
+	SceneLayerEffectLUTCorrectionObjectEncodingDefinition,
+	SceneLayerEffectVirtualPTZObjectEncodingDefinition,
+	SceneLayerEffectToneCurveCorrectionObjectEncodingDefinition,
+	SceneLayerEffectMatrixCorrectionObjectEncodingDefinition,
+	SceneLayerEffectTemperatureCorrectionObjectEncodingDefinition,
+	SceneLayerEffectLinearKeyObjectEncodingDefinition,
+	SceneLayerEffectPositionObjectEncodingDefinition,
+	SceneLayerEffectPCropObjectEncodingDefinition,
+	SceneLayerEffectFilmLookObjectEncodingDefinition,
+	SceneLayerEffectGlowEffectObjectEncodingDefinition,
+} from './object-encoding/index.js'
 
 export class KairosConnection extends MinimalKairosConnection {
+	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
+		const attributeNames = getProtocolAttributeNames(definition)
+
+		const values = await this.getAttributes(pathPrefix, attributeNames)
+
+		return Object.fromEntries(
+			Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).map(([id, def]) => {
+				const value = values[def.protocolName]
+				if (value === undefined) {
+					throw new Error(`Missing attribute "${def.protocolName}" in response for path "${pathPrefix}"`)
+				}
+				return [id, def.parser(value) as any] // TODO - type this properly
+			})
+		) as TObj
+	}
+
 	// SYS
 	// INTSOURCES
 	// 	BLACK
@@ -249,49 +280,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	async getSceneLayer(layerRef: SceneLayerRef): Promise<SceneLayerObject> {
-		const values = await this.getAttributes(refToPath(layerRef), [
-			'opacity',
-			'sourceA',
-			'sourceB',
-			'source_pgm',
-			'source_pst',
-			'active_bus',
-			'pgm_pst_mode',
-			'sourceOptions',
-			'state',
-			'mode',
-			'fxEnabled',
-			'preset_enabled',
-			'color',
-			'clean_mask',
-			'dissolve_enabled',
-			'dissolve_time',
-			'source_clean_mask',
-			'dissolve_mode',
-			'blend_mode',
-		])
-
-		return {
-			opacity: parseFloatValue(values.opacity),
-			sourceA: parseSourceRef(values.sourceA),
-			sourceB: parseSourceRef(values.sourceB),
-			sourcePgm: parseSourceRef(values.source_pgm),
-			sourcePst: parseSourceRef(values.source_pst),
-			activeBus: parseEnum<SceneLayerActiveBus>(values.active_bus, SceneLayerActiveBus),
-			pgmPstMode: parseEnum<SceneLayerPgmPstMode>(values.pgm_pst_mode, SceneLayerPgmPstMode),
-			sourceOptions: parseCommaSeparated(values.sourceOptions).map(parseSourceRef),
-			state: parseEnum<SceneLayerState>(values.state, SceneLayerState),
-			mode: parseEnum<SceneLayerMode>(values.mode, SceneLayerMode),
-			fxEnabled: parseBoolean(values.fxEnabled),
-			presetEnabled: parseBoolean(values.preset_enabled),
-			color: parseColorRGB(values.color),
-			cleanMask: parseInteger(values.clean_mask),
-			sourceCleanMask: parseInteger(values.source_clean_mask),
-			dissolveEnabled: parseBoolean(values.dissolve_enabled),
-			dissolveTime: parseInteger(values.dissolve_time),
-			dissolveMode: parseEnum<SceneLayerDissolveMode>(values.dissolve_mode, SceneLayerDissolveMode),
-			blendMode: parseEnum<SceneLayerBlendMode>(values.blend_mode, SceneLayerBlendMode),
-		}
+		return this.#getObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition)
 	}
 
 	async updateSceneLayer(layerRef: SceneLayerRef, props: Partial<UpdateSceneLayerObject>): Promise<void> {
@@ -373,35 +362,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectCrop(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectCropObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'top',
-			'left',
-			'right',
-			'bottom',
-			'softness',
-			'rounded_corners',
-			'global_softness',
-			'softness_top',
-			'softness_left',
-			'softness_right',
-			'softness_bottom',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			top: parseFloatValue(values.top),
-			left: parseFloatValue(values.left),
-			right: parseFloatValue(values.right),
-			bottom: parseFloatValue(values.bottom),
-			softness: parseFloatValue(values.softness),
-			roundedCorners: parseFloatValue(values.rounded_corners),
-			globalSoftness: parseBoolean(values.global_softness),
-			softnessTop: parseFloatValue(values.softness_top),
-			softnessLeft: parseFloatValue(values.softness_left),
-			softnessRight: parseFloatValue(values.softness_right),
-			softnessBottom: parseFloatValue(values.softness_bottom),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectCropObjectEncodingDefinition)
 	}
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectCrop(
@@ -423,35 +384,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectTransform2D(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectTransform2DObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'type',
-			'scale',
-			'rotation_x',
-			'rotation_y',
-			'rotation_z',
-			'rotation_origin',
-			'position',
-			'cubic_interpolation',
-			'hide_backside',
-			'stretch_h',
-			'stretch_v',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			type: parseEnum<SceneLayerEffectTransform2DType>(values.type, SceneLayerEffectTransform2DType),
-			scale: parseFloatValue(values.scale),
-			rotationX: parseFloatValue(values.rotation_x),
-			rotationY: parseFloatValue(values.rotation_y),
-			rotationZ: parseFloatValue(values.rotation_z),
-			rotationOrigin: parsePos3Df(values.rotation_origin),
-			position: parsePos3Df(values.position),
-			cubicInterpolation: parseBoolean(values.cubic_interpolation),
-			hideBackside: parseBoolean(values.hide_backside),
-			stretchH: parseFloatValue(values.stretch_h),
-			stretchV: parseFloatValue(values.stretch_v),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectTransform2DObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -480,30 +413,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectLuminanceKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLuminanceKeyObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'clip',
-			'gain',
-			'cleanup',
-			'density',
-			'invert',
-			'blend_mode',
-			'sourceKey',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			clip: parseFloatValue(values.clip),
-			gain: parseFloatValue(values.gain),
-			cleanup: parseFloatValue(values.cleanup),
-			density: parseFloatValue(values.density),
-			invert: parseBoolean(values.invert),
-			blendMode: parseEnum<SceneLayerEffectLuminanceKeyBlendMode>(
-				values.blend_mode,
-				SceneLayerEffectLuminanceKeyBlendMode
-			),
-			sourceKey: parseSourceRefOptional(values.sourceKey),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectLuminanceKeyObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -534,52 +444,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectChromaKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectChromaKeyObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'clip',
-			'gain',
-			'cleanup',
-			'density',
-			'hue',
-			'selectivity_left',
-			'selectivity_right',
-			'luminance',
-			'chroma',
-			'a_chroma',
-			'spill_supression',
-			'spill_supression_left',
-			'spill_supression_right',
-			'noise_removal',
-			'invert',
-			'fgd_fade',
-			'auto_state',
-			'edge_smoothing_size',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			clip: parseFloatValue(values.clip),
-			gain: parseFloatValue(values.gain),
-			cleanup: parseFloatValue(values.cleanup),
-			density: parseFloatValue(values.density),
-			hue: parseFloatValue(values.hue),
-			selectivityLeft: parseFloatValue(values.selectivity_left),
-			selectivityRight: parseFloatValue(values.selectivity_right),
-			luminance: parseFloatValue(values.luminance),
-			chroma: parseFloatValue(values.chroma),
-			aChroma: parseFloatValue(values.a_chroma),
-			spillSupression: parseFloatValue(values.spill_supression),
-			spillSupressionLeft: parseFloatValue(values.spill_supression_left),
-			spillSupressionRight: parseFloatValue(values.spill_supression_right),
-			noiseRemoval: parseFloatValue(values.noise_removal),
-			invert: parseBoolean(values.invert),
-			fgdFade: parseBoolean(values.fgd_fade),
-			autoState: parseInteger(values.auto_state),
-			edgeSmoothingSize: parseEnum<SceneLayerEffectChromaKeyEdgeSmoothingSize>(
-				values.edge_smoothing_size,
-				SceneLayerEffectChromaKeyEdgeSmoothingSize
-			),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectChromaKeyObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -621,33 +486,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectYUVCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectYUVCorrectionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'pedestal',
-			'luminance_lift',
-			'luminance_gain',
-			'luminance_gamma',
-			'contrast',
-			'saturation',
-			'UV_rotation',
-			'cyan_red',
-			'magenta_green',
-			'yellow_blue',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			pedestal: parseFloatValue(values.pedestal),
-			luminanceLift: parseFloatValue(values.luminance_lift),
-			luminanceGain: parseFloatValue(values.luminance_gain),
-			luminanceGamma: parseFloatValue(values.luminance_gamma),
-			contrast: parseFloatValue(values.contrast),
-			saturation: parseFloatValue(values.saturation),
-			uvRotation: parseFloatValue(values.UV_rotation),
-			cyanRed: parseFloatValue(values.cyan_red),
-			magentaGreen: parseFloatValue(values.magenta_green),
-			yellowBlue: parseFloatValue(values.yellow_blue),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectYUVCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -672,37 +511,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectRGBCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectRGBCorrectionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'pedestal_red',
-			'pedestal_green',
-			'pedestal_blue',
-			'lift_red',
-			'lift_green',
-			'lift_blue',
-			'gain_red',
-			'gain_green',
-			'gain_blue',
-			'gamma_red',
-			'gamma_green',
-			'gamma_blue',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			pedestalRed: parseFloatValue(values.pedestal_red),
-			pedestalGreen: parseFloatValue(values.pedestal_green),
-			pedestalBlue: parseFloatValue(values.pedestal_blue),
-			liftRed: parseFloatValue(values.lift_red),
-			liftGreen: parseFloatValue(values.lift_green),
-			liftBlue: parseFloatValue(values.lift_blue),
-			gainRed: parseFloatValue(values.gain_red),
-			gainGreen: parseFloatValue(values.gain_green),
-			gainBlue: parseFloatValue(values.gain_blue),
-			gammaRed: parseFloatValue(values.gamma_red),
-			gammaGreen: parseFloatValue(values.gamma_green),
-			gammaBlue: parseFloatValue(values.gamma_blue),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectRGBCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -729,34 +538,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectLUTCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLUTCorrectionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'index',
-			'input_colorspace',
-			'output_colorspace',
-			'input_range',
-			'output_range',
-			'color_space_conversion',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			index: parseEnum<SceneLayerEffectLUTCorrectionIndex>(values.index, SceneLayerEffectLUTCorrectionIndex),
-			inputColorspace: parseEnum<SceneLayerEffectLUTCorrectionColorspace>(
-				values.input_colorspace,
-				SceneLayerEffectLUTCorrectionColorspace
-			),
-			outputColorspace: parseEnum<SceneLayerEffectLUTCorrectionColorspace>(
-				values.output_colorspace,
-				SceneLayerEffectLUTCorrectionColorspace
-			),
-			inputRange: parseEnum<SceneLayerEffectLUTCorrectionRange>(values.input_range, SceneLayerEffectLUTCorrectionRange),
-			outputRange: parseEnum<SceneLayerEffectLUTCorrectionRange>(
-				values.output_range,
-				SceneLayerEffectLUTCorrectionRange
-			),
-			colorSpaceConversion: parseBoolean(values.color_space_conversion),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectLUTCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -798,13 +580,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectVirtualPTZ(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectVirtualPTZObject> {
-		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'position', 'zoom'])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			position: parsePos2Df(values.position),
-			zoom: parseFloatValue(values.zoom),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectVirtualPTZObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -823,37 +599,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getSceneLayerEffectToneCurveCorrection(
 		effectRef: SceneLayerEffectRef
 	): Promise<SceneLayerEffectToneCurveCorrectionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'black_red',
-			'black_green',
-			'black_blue',
-			'gray_low_red',
-			'gray_low_green',
-			'gray_low_blue',
-			'gray_high_red',
-			'gray_high_green',
-			'gray_high_blue',
-			'white_red',
-			'white_green',
-			'white_blue',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			blackRed: parseFloatValue(values.black_red),
-			blackGreen: parseFloatValue(values.black_green),
-			blackBlue: parseFloatValue(values.black_blue),
-			grayLowRed: parseFloatValue(values.gray_low_red),
-			grayLowGreen: parseFloatValue(values.gray_low_green),
-			grayLowBlue: parseFloatValue(values.gray_low_blue),
-			grayHighRed: parseFloatValue(values.gray_high_red),
-			grayHighGreen: parseFloatValue(values.gray_high_green),
-			grayHighBlue: parseFloatValue(values.gray_high_blue),
-			whiteRed: parseFloatValue(values.white_red),
-			whiteGreen: parseFloatValue(values.white_green),
-			whiteBlue: parseFloatValue(values.white_blue),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectToneCurveCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -882,61 +628,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getSceneLayerEffectMatrixCorrection(
 		effectRef: SceneLayerEffectRef
 	): Promise<SceneLayerEffectMatrixCorrectionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'r-g_n',
-			'r-g_p',
-			'r-b_n',
-			'r-b_p',
-			'g-r_n',
-			'g-r_p',
-			'g-b_n',
-			'g-b_p',
-			'b-r_n',
-			'b-r_p',
-			'b-g_n',
-			'b-g_p',
-			'red_phase',
-			'red_level',
-			'yellow_phase',
-			'yellow_level',
-			'green_phase',
-			'green_level',
-			'cyan_phase',
-			'cyan_level',
-			'blue_phase',
-			'blue_level',
-			'magenta_phase',
-			'magenta_level',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			rgN: parseFloatValue(values['r-g_n']),
-			rgP: parseFloatValue(values['r-g_p']),
-			rbN: parseFloatValue(values['r-b_n']),
-			rbP: parseFloatValue(values['r-b_p']),
-			grN: parseFloatValue(values['g-r_n']),
-			grP: parseFloatValue(values['g-r_p']),
-			gbN: parseFloatValue(values['g-b_n']),
-			gbP: parseFloatValue(values['g-b_p']),
-			brN: parseFloatValue(values['b-r_n']),
-			brP: parseFloatValue(values['b-r_p']),
-			bgN: parseFloatValue(values['b-g_n']),
-			bgP: parseFloatValue(values['b-g_p']),
-			redPhase: parseFloatValue(values.red_phase),
-			redLevel: parseFloatValue(values.red_level),
-			yellowPhase: parseFloatValue(values.yellow_phase),
-			yellowLevel: parseFloatValue(values.yellow_level),
-			greenPhase: parseFloatValue(values.green_phase),
-			greenLevel: parseFloatValue(values.green_level),
-			cyanPhase: parseFloatValue(values.cyan_phase),
-			cyanLevel: parseFloatValue(values.cyan_level),
-			bluePhase: parseFloatValue(values.blue_phase),
-			blueLevel: parseFloatValue(values.blue_level),
-			magentaPhase: parseFloatValue(values.magenta_phase),
-			magentaLevel: parseFloatValue(values.magenta_level),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectMatrixCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -977,14 +669,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getSceneLayerEffectTemperatureCorrection(
 		effectRef: SceneLayerEffectRef
 	): Promise<SceneLayerEffectTemperatureCorrectionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'temperature', 'tint', 'keep_luminance'])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			temperature: parseInteger(values.temperature),
-			tint: parseFloatValue(values.tint),
-			keepLuminance: parseBoolean(values.keep_luminance),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectTemperatureCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -1002,14 +687,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectLinearKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLinearKeyObject> {
-		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'invert', 'key_source', 'blend_mode'])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			invert: parseBoolean(values.invert),
-			keySource: parseSourceRefOptional(values.key_source),
-			blendMode: parseEnum<SceneLayerEffectLinearKeyBlendMode>(values.blend_mode, SceneLayerEffectLinearKeyBlendMode),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectLinearKeyObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -1030,23 +708,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectPosition(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectPositionObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'enabled',
-			'position',
-			// 'size',
-			'width',
-			'height',
-			'rotate',
-		])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			position: parsePos2D(values.position),
-			width: parseInteger(values.width),
-			// size: parseInteger(values.size), // wierd, we get an Error if we query for the size
-			height: parseInteger(values.height),
-			rotate: parseEnum<SceneLayerEffectPositionRotate>(values.rotate, SceneLayerEffectPositionRotate),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectPositionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -1069,15 +731,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectPCrop(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectPCropObject> {
-		const values = await this.getAttributes(refToPath(effectRef), ['enabled', 'left', 'right', 'top', 'bottom'])
-
-		return {
-			enabled: parseBoolean(values.enabled),
-			left: parseInteger(values.left),
-			right: parseInteger(values.right),
-			top: parseInteger(values.top),
-			bottom: parseInteger(values.bottom),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectPCropObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -1096,25 +750,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectFilmLook(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectFilmLookObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			'crack',
-			'spots',
-			'grain',
-			'shake',
-			'shadow',
-			'color mode',
-			'color strength',
-		])
-
-		return {
-			crack: parseFloatValue(values.crack),
-			spots: parseFloatValue(values.spots),
-			grain: parseFloatValue(values.grain),
-			shake: parseFloatValue(values.shake),
-			shadow: parseFloatValue(values.shadow),
-			colorMode: parseEnum<SceneLayerEffectFilmLookColorMode>(values['color mode'], SceneLayerEffectFilmLookColorMode),
-			colorStrength: parseFloatValue(values['color strength']),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectFilmLookObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -1138,21 +774,7 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectGlowEffect(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectGlowEffectObject> {
-		const values = await this.getAttributes(refToPath(effectRef), [
-			// 'enabled',
-			'clip',
-			'gain',
-			'softness',
-			'glow color',
-		])
-
-		return {
-			// enabled: parseBoolean(values.enabled),
-			clip: parseFloatValue(values.clip),
-			gain: parseFloatValue(values.gain),
-			softness: parseFloatValue(values.softness),
-			glowColor: parseColorRGB(values['glow color']),
-		}
+		return this.#getObject(refToPath(effectRef), SceneLayerEffectGlowEffectObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
