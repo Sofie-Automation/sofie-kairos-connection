@@ -1,3 +1,4 @@
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import EventEmitter, { addAbortListener } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
