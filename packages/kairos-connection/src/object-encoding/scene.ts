@@ -1,53 +1,38 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import {
-	SceneLayerActiveBus,
-	SceneLayerBlendMode,
-	SceneLayerDissolveMode,
-	SceneLayerMode,
-	SceneLayerObject,
-	SceneLayerPgmPstMode,
-	SceneLayerState,
-} from '../kairos-types/scene.js'
+import { SceneObject, SceneResolution, SceneLimitOffAction } from '../kairos-types/scene.js'
 import {
 	parseBoolean,
-	parseCommaSeparated,
 	parseEnum,
 	parseInteger,
 	parseFloatValue,
 	parseColorRGB,
-	parseSourceRef,
+	parseCommaSeparated,
+	parseSceneTransitionRef,
 } from '../lib/data-parsers.js'
 
-export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneLayerObject> = {
-	opacity: { protocolName: 'opacity', parser: parseFloatValue },
-	sourceA: { protocolName: 'sourceA', parser: parseSourceRef },
-	sourceB: { protocolName: 'sourceB', parser: parseSourceRef },
-	sourcePgm: { protocolName: 'source_pgm', parser: parseSourceRef },
-	sourcePst: { protocolName: 'source_pst', parser: parseSourceRef },
-	activeBus: {
-		protocolName: 'active_bus',
-		parser: (value) => parseEnum<SceneLayerActiveBus>(value, SceneLayerActiveBus),
-	},
-	pgmPstMode: {
-		protocolName: 'pgm_pst_mode',
-		parser: (value) => parseEnum<SceneLayerPgmPstMode>(value, SceneLayerPgmPstMode),
-	},
-	sourceOptions: { protocolName: 'sourceOptions', parser: (val) => parseCommaSeparated(val).map(parseSourceRef) },
-	state: { protocolName: 'state', parser: (value) => parseEnum<SceneLayerState>(value, SceneLayerState) },
-	mode: { protocolName: 'mode', parser: (value) => parseEnum<SceneLayerMode>(value, SceneLayerMode) },
-	fxEnabled: { protocolName: 'fxEnabled', parser: parseBoolean },
-	presetEnabled: { protocolName: 'preset_enabled', parser: parseBoolean },
+export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject> = {
+	advancedResolutionControl: { protocolName: 'advanced_resolution_control', parser: parseBoolean },
+	resolutionX: { protocolName: 'resolution_x', parser: parseInteger },
+	resolutionY: { protocolName: 'resolution_y', parser: parseInteger },
+	tally: { protocolName: 'tally', parser: parseInteger },
 	color: { protocolName: 'color', parser: parseColorRGB },
-	cleanMask: { protocolName: 'clean_mask', parser: parseInteger },
-	sourceCleanMask: { protocolName: 'dissolve_enabled', parser: parseInteger },
-	dissolveEnabled: { protocolName: 'dissolve_time', parser: parseBoolean },
-	dissolveTime: { protocolName: 'source_clean_mask', parser: parseInteger },
-	dissolveMode: {
-		protocolName: 'dissolve_mode',
-		parser: (value) => parseEnum<SceneLayerDissolveMode>(value, SceneLayerDissolveMode),
+	resolution: {
+		protocolName: 'resolution',
+		parser: (value) => parseEnum<SceneResolution>(value, SceneResolution),
 	},
-	blendMode: {
-		protocolName: 'blend_mode',
-		parser: (value) => parseEnum<SceneLayerBlendMode>(value, SceneLayerBlendMode),
+	nextTransition: {
+		protocolName: 'next_transition',
+		parser: (value) => parseCommaSeparated(value).map((o) => parseSceneTransitionRef(o)),
 	},
+	allDuration: { protocolName: 'all_duration', parser: parseInteger },
+	allFader: { protocolName: 'all_fader', parser: parseFloatValue },
+	nextTransitionType: { protocolName: 'next_transition_type', parser: (value) => value },
+	faderReverse: { protocolName: 'fader_reverse', parser: parseBoolean },
+	faderSync: { protocolName: 'fader_sync', parser: parseBoolean },
+	limitOffAction: {
+		protocolName: 'limit_off_action',
+		parser: (value) => parseEnum<SceneLimitOffAction>(value, SceneLimitOffAction),
+	},
+	limitReturnTime: { protocolName: 'limit_return_time', parser: parseInteger },
+	keyPreview: { protocolName: 'key_preview', parser: (value) => value },
 }
