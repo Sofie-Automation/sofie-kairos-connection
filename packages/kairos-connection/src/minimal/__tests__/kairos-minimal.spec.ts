@@ -406,10 +406,10 @@ describe('MinimalKairosConnection', () => {
 			await vi.runOnlyPendingTimersAsync()
 
 			// Simulate error response
-			mockConnection.emit('lines', ['Error: Command failed'])
+			mockConnection.emit('lines', ['My Real Error'])
 
 			// The request should be rejected with an error
-			await expect(promise).rejects.toThrow('Error response received: Error: Command failed')
+			await expect(promise).rejects.toThrow('Error response received: My Real Error')
 		})
 
 		test('should handle unexpected lines when no command is in flight', async () => {
@@ -422,7 +422,7 @@ describe('MinimalKairosConnection', () => {
 			await vi.runOnlyPendingTimersAsync()
 			expect(errorSpy).toHaveBeenCalledWith(
 				expect.objectContaining({
-					message: 'Unknown line received: unexpected_line',
+					message: 'Unexpected line received (no command is pending): unexpected_line',
 				})
 			)
 		})
