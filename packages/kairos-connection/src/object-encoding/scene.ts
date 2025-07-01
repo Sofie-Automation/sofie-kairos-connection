@@ -15,14 +15,15 @@ import {
 	parseInteger,
 	parseFloatValue,
 	parseColorRGB,
+	parseSourceRef,
 } from '../lib/data-parsers.js'
 
 export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneLayerObject> = {
 	opacity: { protocolName: 'opacity', parser: parseFloatValue },
-	sourceA: { protocolName: 'sourceA', parser: (value) => value },
-	sourceB: { protocolName: 'sourceB', parser: (value) => value },
-	sourcePgm: { protocolName: 'source_pgm', parser: (value) => value },
-	sourcePst: { protocolName: 'source_pst', parser: (value) => value },
+	sourceA: { protocolName: 'sourceA', parser: parseSourceRef },
+	sourceB: { protocolName: 'sourceB', parser: parseSourceRef },
+	sourcePgm: { protocolName: 'source_pgm', parser: parseSourceRef },
+	sourcePst: { protocolName: 'source_pst', parser: parseSourceRef },
 	activeBus: {
 		protocolName: 'active_bus',
 		parser: (value) => parseEnum<SceneLayerActiveBus>(value, SceneLayerActiveBus),
@@ -31,7 +32,7 @@ export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneL
 		protocolName: 'pgm_pst_mode',
 		parser: (value) => parseEnum<SceneLayerPgmPstMode>(value, SceneLayerPgmPstMode),
 	},
-	sourceOptions: { protocolName: 'sourceOptions', parser: parseCommaSeparated },
+	sourceOptions: { protocolName: 'sourceOptions', parser: (val) => parseCommaSeparated(val).map(parseSourceRef) },
 	state: { protocolName: 'state', parser: (value) => parseEnum<SceneLayerState>(value, SceneLayerState) },
 	mode: { protocolName: 'mode', parser: (value) => parseEnum<SceneLayerMode>(value, SceneLayerMode) },
 	fxEnabled: { protocolName: 'fxEnabled', parser: parseBoolean },

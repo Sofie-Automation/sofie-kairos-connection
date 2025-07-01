@@ -17,6 +17,10 @@ import {
 	stringifyColorRGB,
 	stringifyPos2D,
 	stringifyPos2Df,
+	stringifySourceRef,
+	parseSceneTransitionRef,
+	stringifySceneTransitionRef,
+	parseSourceRefOptional,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -77,12 +81,16 @@ import {
 	UpdateSceneLayerEffectYUVCorrectionObject,
 	SceneSnapshotObject,
 	SceneSnapshotStatus,
-	SceneSnapshotCurve,
+	SceneCurve,
 	SceneSnapshotPriorityRecall,
 	UpdateSceneSnapshotObject,
 	MacroObject,
 	MacroStatus,
 	UpdateMacroObject,
+	SceneTransitionObject,
+	UpdateSceneTransitionObject,
+	SceneTransitionMixEffectObject,
+	UpdateSceneTransitionMixEffectObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import {
@@ -94,9 +102,12 @@ import {
 	SceneLayerRef,
 	SceneRef,
 	SceneSnapshotRef,
+	SceneTransitionMixEffectRef,
+	SceneTransitionMixRef,
+	SceneTransitionRef,
 	splitPath,
 } from './lib/reference.js'
-import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
+import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
 import {
 	getProtocolAttributeNames,
 	ObjectEncodingDefinition,
@@ -212,7 +223,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		scenePath: SceneRef = { realm: 'scene', scenePath: [] },
 		deep?: boolean
 	): Promise<(SceneRef & { name: string })[]> {
-		return (await this._listDeep(scenePath, ['Layers', 'Transitions'], deep)).map((itemPath) => {
+		return (await this._listDeep(scenePath, ['Layers', 'Transitions', 'Snapshots'], deep)).map((itemPath) => {
 			return {
 				realm: 'scene',
 				name: itemPath[itemPath.length - 1],
@@ -245,7 +256,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			tally: parseInteger(values.tally),
 			color: parseColorRGB(values.color),
 			resolution: parseEnum<SceneResolution>(values.resolution, SceneResolution),
-			nextTransition: parseCommaSeparated(values.next_transition),
+			nextTransition: parseCommaSeparated(values.next_transition).map((o) => parseSceneTransitionRef(o)),
 			allDuration: parseInteger(values.all_duration),
 			allFader: parseFloatValue(values.all_fader),
 			nextTransitionType: values.next_transition_type,
@@ -261,7 +272,10 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
-			{ attribute: 'next_transition', value: stringifyCommaSeparated(props.nextTransition) },
+			{
+				attribute: 'next_transition',
+				value: stringifyCommaSeparated(props.nextTransition?.map((o) => stringifySceneTransitionRef(o))),
+			},
 			{ attribute: 'all_duration', value: stringifyInteger(props.allDuration) },
 			{ attribute: 'all_fader', value: stringifyFloat(props.allFader) },
 			{ attribute: 'next_transition_type', value: props.nextTransitionType },
@@ -299,7 +313,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			const paths = splitPath(itemPath, 'Layers')
 			if (paths.length !== 2)
 				throw new Error(
-					`Invalid layer path: "${JSON.stringify(paths)}" ("Layers" missing) (${JSON.stringify(itemPath)})`
+					`Invalid Layer path: "${JSON.stringify(paths)}" ("Layers" missing) (${JSON.stringify(itemPath)})`
 				)
 
 			return {
@@ -326,11 +340,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	async updateSceneLayer(layerRef: SceneLayerRef, props: Partial<UpdateSceneLayerObject>): Promise<void> {
 		await this.setAttributes(refToPath(layerRef), [
 			{ attribute: 'opacity', value: stringifyFloat(props.opacity) },
-			{ attribute: 'sourceA', value: props.sourceA },
-			{ attribute: 'source_pgm', value: props.sourcePgm },
-			{ attribute: 'source_pst', value: props.sourcePst },
+			{ attribute: 'sourceA', value: stringifySourceRef(props.sourceA) },
+			{ attribute: 'source_pgm', value: stringifySourceRef(props.sourcePgm) },
+			{ attribute: 'source_pst', value: stringifySourceRef(props.sourcePst) },
 			{ attribute: 'pgm_pst_mode', value: stringifyEnum<SceneLayerPgmPstMode>(props.pgmPstMode, SceneLayerPgmPstMode) },
-			{ attribute: 'sourceOptions', value: stringifyCommaSeparated(props.sourceOptions) },
+			{
+				attribute: 'sourceOptions',
+				value: stringifyCommaSeparated(props.sourceOptions?.map((o) => stringifySourceRef(o))),
+			},
 			{ attribute: 'mode', value: stringifyEnum<SceneLayerMode>(props.mode, SceneLayerMode) },
 			{ attribute: 'preset_enabled', value: stringifyBoolean(props.presetEnabled) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
@@ -384,7 +401,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			const paths = splitPath(itemPath, 'Layers', 'Effects')
 			if (paths.length !== 3)
 				throw new Error(
-					`Invalid layer path: "${JSON.stringify(paths)}" ("Layers" or "Effects" missing) (${JSON.stringify(itemPath)})`
+					`Invalid Layer.Effects path: "${JSON.stringify(paths)}" ("Layers" or "Effects" missing) (${JSON.stringify(itemPath)})`
 				)
 
 			return {
@@ -528,7 +545,7 @@ export class KairosConnection extends MinimalKairosConnection {
 				values.blend_mode,
 				SceneLayerEffectLuminanceKeyBlendMode
 			),
-			sourceKey: values.sourceKey,
+			sourceKey: parseSourceRefOptional(values.sourceKey),
 		}
 	}
 
@@ -551,7 +568,7 @@ export class KairosConnection extends MinimalKairosConnection {
 					SceneLayerEffectLuminanceKeyBlendMode
 				),
 			},
-			{ attribute: 'sourceKey', value: props.sourceKey },
+			{ attribute: 'sourceKey', value: stringifySourceRef(props.sourceKey) },
 		])
 	}
 	async sceneLayerEffectLuminanceKeyAutoAdjust(effectRef: SceneLayerEffectRef): Promise<void> {
@@ -1033,7 +1050,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		return {
 			enabled: parseBoolean(values.enabled),
 			invert: parseBoolean(values.invert),
-			keySource: values.key_source,
+			keySource: parseSourceRefOptional(values.key_source),
 			blendMode: parseEnum<SceneLayerEffectLinearKeyBlendMode>(values.blend_mode, SceneLayerEffectLinearKeyBlendMode),
 		}
 	}
@@ -1046,7 +1063,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
 			{ attribute: 'invert', value: stringifyBoolean(props.invert) },
-			{ attribute: 'key_source', value: props.keySource },
+			{ attribute: 'key_source', value: stringifySourceRef(props.keySource) },
 			{
 				attribute: 'blend_mode',
 				value: stringifyEnum<SceneLayerEffectLinearKeyBlendMode>(props.blendMode, SceneLayerEffectLinearKeyBlendMode),
@@ -1200,6 +1217,130 @@ export class KairosConnection extends MinimalKairosConnection {
 	//                 Transition
 	//                 BgdMix
 	//                     TransitionEffect
+
+	async listSceneTransitions(sceneRef: SceneRef): Promise<SceneTransition[]> {
+		// List base Transitions:
+		return await Promise.all(
+			(await this.getList(`${refToPath(sceneRef)}.Transitions`)).map(async (rawTransitionPath) => {
+				// "SCENES.Main.Transitions.L1"
+				const decodedTransitionPath = protocolDecodePath(rawTransitionPath) // decode the path
+
+				const paths = splitPath(decodedTransitionPath, 'Transitions')
+				if (paths.length !== 2)
+					throw new Error(
+						`Invalid Transitions path: "${JSON.stringify(paths)}" ("Transitions" missing) (${JSON.stringify(rawTransitionPath)})`
+					)
+				const scenePath = paths[0].slice(1) // remove the "SCENES" part
+				const path1 = paths[1]
+				if (path1.length !== 1)
+					throw new Error(
+						`Invalid Transitions path: "${JSON.stringify(paths)}" (expected a single Transition name) (${JSON.stringify(rawTransitionPath)})`
+					)
+				const transitionPath: RefPathSingle = [path1[0]]
+				return {
+					realm: 'scene-transition',
+					scenePath,
+					transitionPath,
+					name: paths[1][paths[1].length - 1],
+					mixes: await Promise.all(
+						(await this.getList(rawTransitionPath)).map(async (rawTransitionMixPath) => {
+							// "SCENES.Main.Transitions.L1.L1"
+							const decodedTransitionMixPath = protocolDecodePath(rawTransitionMixPath) // decode the path
+
+							const mixPathRest = decodedTransitionMixPath.slice(decodedTransitionPath.length) // remove the "SCENES.Transitions.L1" part
+							if (mixPathRest.length !== 1)
+								throw new Error(
+									`Invalid Transitions.Mix path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixPath)})`
+								)
+
+							const mixPath: RefPathSingle = [mixPathRest[0]]
+
+							return {
+								realm: 'scene-transition-mix',
+								scenePath,
+								transitionPath,
+								mixPath,
+								name: mixPath[mixPath.length - 1],
+								effects: await Promise.all(
+									(await this.getList(rawTransitionMixPath)).map(async (rawTransitionMixEffectPath) => {
+										// "SCENES.Main.Transitions.L1.L1.Effect-1"
+										const decodedTransitionMixEffectPath = protocolDecodePath(rawTransitionMixEffectPath) // decode the path
+
+										const effectPathRest = decodedTransitionMixEffectPath.slice(decodedTransitionMixPath.length) // remove the "SCENES.Transitions.L1" part
+										if (effectPathRest.length !== 1)
+											throw new Error(
+												`Invalid Transitions.Mix.Effect path: "${JSON.stringify(paths)}" (${JSON.stringify(rawTransitionMixEffectPath)})`
+											)
+
+										const effectPath: RefPathSingle = [effectPathRest[0]]
+
+										return {
+											realm: 'scene-transition-mix-effect',
+											scenePath,
+											transitionPath,
+											mixPath,
+											effectPath,
+											name: effectPath[effectPath.length - 1],
+										} satisfies SceneTransitionMixEffect
+									})
+								),
+							} satisfies SceneTransitionMix
+						})
+					),
+				} satisfies SceneTransition
+			})
+		)
+	}
+	async getSceneTransition(sceneTransitionRef: SceneTransitionRef): Promise<SceneTransitionObject> {
+		const values = await this.getAttributes(refToPath(sceneTransitionRef), [
+			'progress',
+			'progressFrames', // note: _not_ snake_case in docs!
+			'duration',
+		])
+
+		return {
+			progress: parseFloatValue(values.progress),
+			progressFrames: parseInteger(values.progressFrames),
+			duration: parseInteger(values.duration),
+		}
+	}
+	async updateSceneTransition(
+		sceneTransitionRef: SceneTransitionRef,
+		props: Partial<UpdateSceneTransitionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(sceneTransitionRef), [
+			{ attribute: 'duration', value: stringifyInteger(props.duration) },
+			// progress, progressFrames are read-only
+		])
+	}
+	async sceneTransitionTransitionCut(sceneTransitionRef: SceneTransitionRef): Promise<void> {
+		return this.executeFunction(`${refToPath(sceneTransitionRef)}.transition_cut`)
+	}
+	async sceneTransitionTransitionAuto(sceneTransitionRef: SceneTransitionRef): Promise<void> {
+		return this.executeFunction(`${refToPath(sceneTransitionRef)}.transition_auto`)
+	}
+
+	async getSceneTransitionMixEffect(
+		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef
+	): Promise<SceneTransitionMixEffectObject> {
+		const values = await this.getAttributes(refToPath(sceneTransitionMixEffectRef), ['curve', 'effect', 'effect_name'])
+
+		return {
+			curve: parseEnum<SceneCurve>(values.curve, SceneCurve),
+			effect: values.effect,
+			effectName: values.effect_name,
+		}
+	}
+	async updateSceneTransitionMixEffect(
+		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef,
+		props: Partial<UpdateSceneTransitionMixEffectObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(sceneTransitionMixEffectRef), [
+			{ attribute: 'curve', value: stringifyEnum<SceneCurve>(props.curve, SceneCurve) },
+			// effect, effect_name are read-only
+		])
+	}
+
 	// Scene.Layers.Layer
 	//             Snapshots
 	//                 SNP
@@ -1209,7 +1350,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			const paths = splitPath(itemPath, 'Snapshots')
 			if (paths.length !== 2)
 				throw new Error(
-					`Invalid layer path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
+					`Invalid Snapshot path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
 				)
 
 			return {
@@ -1235,7 +1376,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			color: parseColorRGB(values.color),
 			dissolveTime: parseInteger(values.dissolve_time),
 			enableCurve: parseBoolean(values.enable_curve),
-			curve: parseEnum<SceneSnapshotCurve>(values.curve, SceneSnapshotCurve),
+			curve: parseEnum<SceneCurve>(values.curve, SceneCurve),
 			priorityRecall: parseEnum<SceneSnapshotPriorityRecall>(values.priority_recall, SceneSnapshotPriorityRecall),
 		}
 	}
@@ -1245,7 +1386,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
 			{ attribute: 'enable_curve', value: stringifyBoolean(props.enableCurve) },
-			{ attribute: 'curve', value: stringifyEnum<SceneSnapshotCurve>(props.curve, SceneSnapshotCurve) },
+			{ attribute: 'curve', value: stringifyEnum<SceneCurve>(props.curve, SceneCurve) },
 			{
 				attribute: 'priority_recall',
 				value: stringifyEnum<SceneSnapshotPriorityRecall>(props.priorityRecall, SceneSnapshotPriorityRecall),
@@ -1878,12 +2019,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 }
 
-// export interface UpdateLayerCommandParameters<SceneName extends string, LayerName extends string> {
-// 	sceneName: SceneName
-// 	layerName: LayerName
-// 	props: Partial<{
-// 		source: string
-// 		sdfsd: number
-// 		adf: boolean
-// 	}>
-// }
+// ------------------------ Custom types -------------------------
+export type SceneTransition = SceneTransitionRef & { name: string; mixes: SceneTransitionMix[] }
+export type SceneTransitionMix = SceneTransitionMixRef & { name: string; effects: SceneTransitionMixEffect[] }
+export type SceneTransitionMixEffect = SceneTransitionMixEffectRef & { name: string }

@@ -1,17 +1,18 @@
 export type RefPath = string[]
+export type RefPathSingle = [string] // Used when there is only a shallow path, is no deep nesting
 
 const PROTOCOL_ENCODE_MAP: Record<string, string> = {
-	':': '&#58',
-	'.': '&#46',
-	'=': '&#61',
-	'\\': '&#92',
-	'\r': '&#13',
-	'\n': '&#10',
+	':': '&#58;',
+	'.': '&#46;',
+	'=': '&#61;',
+	'\\': '&#92;',
+	'\r': '&#13;',
+	'\n': '&#10;',
 }
 // const PROTOCOL_DECODE_MAP = Object.fromEntries(Object.entries(PROTOCOL_ENCODE_MAP).map(([key, value]) => [value, key]))
 
 const PROTOCOL_ENCODE_REGEXP = /[:.=\\\r\n]/g
-const PROTOCOL_DECODE_REGEXP = /&#(\d{2})/g
+const PROTOCOL_DECODE_REGEXP = /&#(\d+);/g
 
 export function protocolEncodeStr(str: string): string {
 	return str.replaceAll(PROTOCOL_ENCODE_REGEXP, (char: string) => PROTOCOL_ENCODE_MAP[char] || char)

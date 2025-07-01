@@ -1,4 +1,5 @@
 import { Pos3Df, Pos2Df, Pos2D, ColorRGB } from '../kairos-types/main.js'
+import { isRef, isSourceRef, pathRoRef, refToPath, SceneTransitionRef, SourceRef } from './reference.js'
 
 export function parseBoolean(value: string): boolean {
 	if (value === '1') return true
@@ -137,4 +138,56 @@ export function stringifyColorRGB(color: ColorRGB | undefined): string | undefin
 	if (color === undefined) return undefined
 	// return `${color.red}/${color.green}/${color.blue}`
 	return `rgb(${color.red},${color.green},${color.blue})`
+}
+
+export function parseSourceRefOptional(value: string): SourceRef | null {
+	if (value === '<unknown>') return null as any // This is a special case for undefined sources
+	return parseSourceRef(value)
+}
+export function parseSourceRef(value: string): SourceRef {
+	const ref = pathRoRef(value)
+
+	if (!isRef(ref)) throw new Error(`Unable to parse SourceRef from string: "${value}"`)
+	if (!isSourceRef(ref)) throw new Error(`Unable to parse SourceRef, is a "${ref.realm}" (value: "${value}")`)
+
+	return ref
+}
+
+export function stringifySourceRef(ref: undefined): undefined
+export function stringifySourceRef(ref: null): '<unknown>'
+export function stringifySourceRef(ref: string): string
+export function stringifySourceRef(ref: SourceRef): string
+export function stringifySourceRef(ref: SourceRef | string): string
+export function stringifySourceRef(ref: SourceRef | null | undefined): string | undefined
+export function stringifySourceRef(ref: SourceRef | string | undefined): string | undefined
+export function stringifySourceRef(ref: SourceRef | string | undefined): string | undefined
+export function stringifySourceRef(ref: SourceRef | string | null | undefined): string | undefined
+export function stringifySourceRef(ref: SourceRef | string | null | undefined): string | undefined {
+	if (ref === undefined) return undefined
+	if (ref === null) return '<unknown>'
+	if (typeof ref === 'string') return ref
+
+	return refToPath(ref)
+}
+
+export function parseSceneTransitionRef(value: string): SceneTransitionRef {
+	const ref = pathRoRef(value)
+
+	if (!isRef(ref)) throw new Error(`Unable to parse SourceRef from string: "${value}"`)
+	if (ref.realm !== 'scene-transition')
+		throw new Error(`Unable to parse SceneTransitionRef, is a "${ref.realm}" (value: "${value}")`)
+
+	return ref
+}
+
+export function stringifySceneTransitionRef(ref: undefined): undefined
+export function stringifySceneTransitionRef(ref: string): string
+export function stringifySceneTransitionRef(ref: SceneTransitionRef): string
+export function stringifySceneTransitionRef(ref: SceneTransitionRef | string): string
+export function stringifySceneTransitionRef(ref: SceneTransitionRef | string | undefined): string | undefined
+export function stringifySceneTransitionRef(ref: SceneTransitionRef | string | undefined): string | undefined {
+	if (ref === undefined) return undefined
+	if (typeof ref === 'string') return ref
+
+	return refToPath(ref)
 }

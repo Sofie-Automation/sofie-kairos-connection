@@ -1,4 +1,4 @@
-import { protocolEncodeStr, RefPath } from './encode-decode.js'
+import { protocolDecodePath, protocolEncodeStr, RefPath, RefPathSingle } from './encode-decode.js'
 import { assertNever } from './lib.js'
 
 export type AnyRef =
@@ -10,14 +10,37 @@ export type AnyRef =
 	| MediaRamRecRef
 	| MediaImageRef
 	| MediaSoundRef
+	| SceneTransitionRef
+	| SceneTransitionMixRef
+	| SceneTransitionMixEffectRef
 	| SceneSnapshotRef
 	| MacroRef
+	| RamRecorderRef
+	| ClipPlayerRef
+	| ImageStoreRef
+	| SourceBaseRef
+	| SourceIntRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
 	if (!('realm' in ref) || typeof ref.realm !== 'string') return false
 	return true
 }
+
+/** Any refs that can be used as sources */
+export type SourceRef = RamRecorderRef | ClipPlayerRef | ImageStoreRef | SourceBaseRef | SourceIntRef | SceneRef
+
+export function isSourceRef(ref: AnyRef): ref is SourceRef {
+	return (
+		ref.realm === 'ramRecorder' ||
+		ref.realm === 'clipPlayer' ||
+		ref.realm === 'imageStore' ||
+		ref.realm === 'source-base' ||
+		ref.realm === 'source-int' ||
+		ref.realm === 'scene'
+	)
+}
+
 export function refToPath(ref: AnyRef): string {
 	switch (ref.realm) {
 		case 'scene':
@@ -48,6 +71,30 @@ export function refToPath(ref: AnyRef): string {
 			return ['MEDIA', 'images', ...ref.clipPath.map(protocolEncodeStr)].join('.')
 		case 'media-sound':
 			return ['MEDIA', 'sounds', ...ref.clipPath.map(protocolEncodeStr)].join('.')
+		case 'scene-transition':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+			].join('.')
+		case 'scene-transition-mix':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+				...ref.mixPath.map(protocolEncodeStr),
+			].join('.')
+		case 'scene-transition-mix-effect':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Transitions',
+				...ref.transitionPath.map(protocolEncodeStr),
+				...ref.mixPath.map(protocolEncodeStr),
+				...ref.effectPath.map(protocolEncodeStr),
+			].join('.')
 		case 'scene-snapshot':
 			return [
 				'SCENES',
@@ -57,10 +104,149 @@ export function refToPath(ref: AnyRef): string {
 			].join('.')
 		case 'macro':
 			return ['MACROS', ...ref.macroPath.map(protocolEncodeStr)].join('.')
+		case 'source-base':
+			return [...ref.path.map(protocolEncodeStr)].join('.')
+		case 'source-int':
+			return ['INTSOURCES', ...ref.path.map(protocolEncodeStr)].join('.')
+		case 'ramRecorder':
+			return [...ref.path].join('.')
+		case 'clipPlayer':
+			return [...ref.path].join('.')
+		case 'imageStore':
+			return [...ref.path].join('.')
 		default:
 			assertNever(ref)
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
 	}
+}
+export function pathRoRef(ref: string): AnyRef | string {
+	const path = protocolDecodePath(ref)
+
+	if (path[0] === 'SCENES') {
+		if (path.includes('Layers')) {
+			const paths = splitPath(
+				path.slice(1), // Omit 'SCENES'
+				'Layers',
+				'Effects'
+			)
+			const sceneRef = refScene(paths[0])
+
+			if (paths.length >= 2) {
+				const layerRef = refSceneLayer(sceneRef, paths[1])
+				if (paths.length === 3) return refSceneLayerEffect(layerRef, paths[2])
+				return layerRef
+			}
+		} else if (path.includes('Transitions')) {
+			const paths = splitPath(
+				path.slice(1), // Omit 'SCENES'
+				'Transitions'
+			)
+			const sceneRef = refScene(paths[0])
+			if (paths.length === 2) {
+				if (paths[1].length >= 1) {
+					const transitionRef = refSceneTransition(sceneRef, [paths[1][0]])
+					if (paths[1].length >= 2) {
+						const transitionMixRef = refSceneTransitionMix(transitionRef, [paths[1][1]])
+						if (paths[1].length === 3) return refSceneTransitionMixEffect(transitionMixRef, [paths[1][2]])
+						return transitionMixRef
+					}
+					return transitionRef
+				}
+			}
+		} else if (path.includes('Snapshots')) {
+			const paths = splitPath(
+				path.slice(1), // Omit 'SCENES'
+				'Snapshots'
+			)
+			const sceneRef = refScene(paths[0])
+			if (paths.length === 2) {
+				return refSceneSnapshot(sceneRef, paths[1])
+			}
+		} else {
+			return refScene(
+				path.slice(1) // Omit 'SCENES'
+			)
+		}
+	} else if (path[0] === 'MEDIA') {
+		if (path[1] === 'clips') {
+			return refMediaClip(path.slice(2))
+		} else if (path[1] === 'stills') {
+			return refMediaStill(path.slice(2))
+		} else if (path[1] === 'ramrec') {
+			return refMediaRamRec(path.slice(2))
+		} else if (path[1] === 'images') {
+			return refMediaImage(path.slice(2))
+		} else if (path[1] === 'sounds') {
+			return refMediaSound(path.slice(2))
+		}
+	} else if (path[0] === 'MACROS') {
+		return refMacro(path.slice(1))
+	} else if (path[0].startsWith('RR')) {
+		if (path.length === 1) {
+			const path0 = path[0] as RamRecorderRef['path'][0]
+			if (
+				path0 === 'RR1' ||
+				path0 === 'RR2' ||
+				path0 === 'RR3' ||
+				path0 === 'RR4' ||
+				path0 === 'RR5' ||
+				path0 === 'RR6' ||
+				path0 === 'RR7' ||
+				path0 === 'RR8'
+			) {
+				return refRamRecorder([path0])
+			} else {
+				assertNever(path0)
+			}
+		}
+	} else if (path[0].startsWith('CP')) {
+		if (path.length === 1) {
+			const path0 = path[0] as ClipPlayerRef['path'][0]
+			if (path0 === 'CP1' || path0 === 'CP2') {
+				return refClipPlayer([path0])
+			} else {
+				assertNever(path0)
+			}
+		}
+	} else if (path[0].startsWith('IS')) {
+		if (path.length === 1) {
+			const path0 = path[0] as ImageStoreRef['path'][0]
+			if (
+				path0 === 'IS1' ||
+				path0 === 'IS2' ||
+				path0 === 'IS3' ||
+				path0 === 'IS4' ||
+				path0 === 'IS5' ||
+				path0 === 'IS6' ||
+				path0 === 'IS7' ||
+				path0 === 'IS8'
+			) {
+				return refImageStore([path0])
+			} else {
+				assertNever(path0)
+			}
+		}
+	} else if (path[0] === 'BLACK' || path[0] === 'WHITE') {
+		return refSourceBase([path[0]])
+	} else if (path[0] === 'INTSOURCES') {
+		if (path.length === 2) {
+			const path1 = path[1] as SourceIntRef['path'][0]
+			if (
+				path1 === 'ColorBar' ||
+				path1 === 'ColorCircle' ||
+				path1 === 'MV1' ||
+				path1 === 'MV2' ||
+				path1 === 'MV3' ||
+				path1 === 'MV4'
+			) {
+				return refSourceInt([path1])
+			} else {
+				assertNever(path1)
+			}
+		}
+	}
+	// If nothing else matched, return the original string
+	return ref
 }
 
 /**
@@ -124,6 +310,51 @@ export function refSceneSnapshot(sceneRef: SceneRef, snapshotPath: RefPath): Sce
 	return { realm: 'scene-snapshot', scenePath: sceneRef.scenePath, snapshotPath }
 }
 
+export type SceneTransitionRef = {
+	realm: 'scene-transition'
+	scenePath: RefPath
+	transitionPath: RefPathSingle
+}
+export function refSceneTransition(sceneRef: SceneRef, transitionPath: RefPathSingle): SceneTransitionRef {
+	return { realm: 'scene-transition', scenePath: sceneRef.scenePath, transitionPath }
+}
+export type SceneTransitionMixRef = {
+	realm: 'scene-transition-mix'
+	scenePath: RefPath
+	transitionPath: RefPathSingle
+	mixPath: RefPathSingle
+}
+export function refSceneTransitionMix(
+	transitionRef: SceneTransitionRef,
+	mixPath: RefPathSingle
+): SceneTransitionMixRef {
+	return {
+		realm: 'scene-transition-mix',
+		scenePath: transitionRef.scenePath,
+		transitionPath: transitionRef.transitionPath,
+		mixPath,
+	}
+}
+export type SceneTransitionMixEffectRef = {
+	realm: 'scene-transition-mix-effect'
+	scenePath: RefPath
+	transitionPath: RefPathSingle
+	mixPath: RefPathSingle
+	effectPath: RefPathSingle
+}
+export function refSceneTransitionMixEffect(
+	mixRef: SceneTransitionMixRef,
+	effectPath: RefPathSingle
+): SceneTransitionMixEffectRef {
+	return {
+		realm: 'scene-transition-mix-effect',
+		scenePath: mixRef.scenePath,
+		transitionPath: mixRef.transitionPath,
+		mixPath: mixRef.mixPath,
+		effectPath,
+	}
+}
+
 // ---------------------------- MEDIA -----------------------------
 
 export type MediaClipRef = {
@@ -169,4 +400,48 @@ export type MacroRef = {
 }
 export function refMacro(macroPath: RefPath): MacroRef {
 	return { realm: 'macro', macroPath }
+}
+
+// ---------------------------- RAMRECORDERS ---------------------------
+export type RamRecorderRef = {
+	realm: 'ramRecorder'
+	path: ['RR1' | 'RR2' | 'RR3' | 'RR4' | 'RR5' | 'RR6' | 'RR7' | 'RR8']
+}
+export function refRamRecorder(path: RamRecorderRef['path']): RamRecorderRef {
+	return { realm: 'ramRecorder', path }
+}
+// ---------------------------- PLAYERS --------------------------------
+
+export type ClipPlayerRef = {
+	realm: 'clipPlayer'
+	path: ['CP1' | 'CP2']
+}
+export function refClipPlayer(path: ClipPlayerRef['path']): ClipPlayerRef {
+	return { realm: 'clipPlayer', path }
+}
+// ---------------------------- IMAGESTORES ----------------------------
+export type ImageStoreRef = {
+	realm: 'imageStore'
+	path: ['IS1' | 'IS2' | 'IS3' | 'IS4' | 'IS5' | 'IS6' | 'IS7' | 'IS8']
+}
+export function refImageStore(path: ImageStoreRef['path']): ImageStoreRef {
+	return { realm: 'imageStore', path }
+}
+
+// ---------------------------- INTSOURCES -----------------------------
+
+export type SourceBaseRef = {
+	realm: 'source-base'
+	path: ['BLACK' | 'WHITE']
+}
+export function refSourceBase(path: SourceBaseRef['path']): SourceBaseRef {
+	return { realm: 'source-base', path }
+}
+
+export type SourceIntRef = {
+	realm: 'source-int'
+	path: ['ColorBar' | 'ColorCircle' | 'MV1' | 'MV2' | 'MV3' | 'MV4']
+}
+export function refSourceInt(path: SourceIntRef['path']): SourceIntRef {
+	return { realm: 'source-int', path }
 }
