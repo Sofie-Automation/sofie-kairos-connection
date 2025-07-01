@@ -1,21 +1,14 @@
 import {
-	parseBoolean,
-	parseCommaSeparated,
-	parseEnum,
-	parseInteger,
-	parseFloatValue,
 	stringifyBoolean,
 	stringifyCommaSeparated,
 	stringifyEnum,
 	stringifyFloat,
 	stringifyInteger,
 	stringifyPos3Df,
-	parseColorRGB,
 	stringifyColorRGB,
 	stringifyPos2D,
 	stringifyPos2Df,
 	stringifySourceRef,
-	parseSceneTransitionRef,
 	stringifySceneTransitionRef,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
@@ -76,12 +69,10 @@ import {
 	UpdateSceneLayerEffectVirtualPTZObject,
 	UpdateSceneLayerEffectYUVCorrectionObject,
 	SceneSnapshotObject,
-	SceneSnapshotStatus,
 	SceneCurve,
 	SceneSnapshotPriorityRecall,
 	UpdateSceneSnapshotObject,
 	MacroObject,
-	MacroStatus,
 	UpdateMacroObject,
 	SceneTransitionObject,
 	UpdateSceneTransitionObject,
@@ -108,6 +99,7 @@ import {
 	getProtocolAttributeNames,
 	ObjectEncodingDefinition,
 	ObjectValueEncodingDefinition,
+	SceneObjectEncodingDefinition,
 	SceneLayerObjectEncodingDefinition,
 	SceneLayerEffectCropObjectEncodingDefinition,
 	SceneLayerEffectTransform2DObjectEncodingDefinition,
@@ -125,6 +117,12 @@ import {
 	SceneLayerEffectPCropObjectEncodingDefinition,
 	SceneLayerEffectFilmLookObjectEncodingDefinition,
 	SceneLayerEffectGlowEffectObjectEncodingDefinition,
+	SceneTransitionObjectEncodingDefinition,
+	SceneTransitionMixEffectObjectEncodingDefinition,
+	SceneSnapshotObjectEncodingDefinition,
+	MacroObjectEncodingDefinition,
+	ClipPlayerObjectEncodingDefinition,
+	MediaObjectEncodingDefinition,
 } from './object-encoding/index.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -186,40 +184,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 	async getScene(sceneRef: SceneRef): Promise<SceneObject> {
-		const values = await this.getAttributes(refToPath(sceneRef), [
-			'advanced_resolution_control',
-			'resolution_x',
-			'resolution_y',
-			'tally',
-			'color',
-			'resolution',
-			'next_transition',
-			'all_duration',
-			'all_fader',
-			'next_transition_type',
-			'fader_reverse',
-			'fader_sync',
-			'limit_off_action',
-			'limit_return_time',
-			'key_preview',
-		])
-		return {
-			advancedResolutionControl: parseBoolean(values.advanced_resolution_control),
-			resolutionX: parseInteger(values.resolution_x),
-			resolutionY: parseInteger(values.resolution_y),
-			tally: parseInteger(values.tally),
-			color: parseColorRGB(values.color),
-			resolution: parseEnum<SceneResolution>(values.resolution, SceneResolution),
-			nextTransition: parseCommaSeparated(values.next_transition).map((o) => parseSceneTransitionRef(o)),
-			allDuration: parseInteger(values.all_duration),
-			allFader: parseFloatValue(values.all_fader),
-			nextTransitionType: values.next_transition_type,
-			faderReverse: parseBoolean(values.fader_reverse),
-			faderSync: parseBoolean(values.fader_sync),
-			limitOffAction: parseEnum<SceneLimitOffAction>(values.limit_off_action, SceneLimitOffAction),
-			limitReturnTime: parseInteger(values.limit_return_time),
-			keyPreview: values.key_preview,
-		}
+		return this.#getObject(refToPath(sceneRef), SceneObjectEncodingDefinition)
 	}
 	async updateScene(sceneRef: SceneRef, props: Partial<UpdateSceneObject>): Promise<void> {
 		await this.setAttributes(refToPath(sceneRef), [
@@ -871,17 +836,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		)
 	}
 	async getSceneTransition(sceneTransitionRef: SceneTransitionRef): Promise<SceneTransitionObject> {
-		const values = await this.getAttributes(refToPath(sceneTransitionRef), [
-			'progress',
-			'progressFrames', // note: _not_ snake_case in docs!
-			'duration',
-		])
-
-		return {
-			progress: parseFloatValue(values.progress),
-			progressFrames: parseInteger(values.progressFrames),
-			duration: parseInteger(values.duration),
-		}
+		return this.#getObject(refToPath(sceneTransitionRef), SceneTransitionObjectEncodingDefinition)
 	}
 	async updateSceneTransition(
 		sceneTransitionRef: SceneTransitionRef,
@@ -902,13 +857,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getSceneTransitionMixEffect(
 		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef
 	): Promise<SceneTransitionMixEffectObject> {
-		const values = await this.getAttributes(refToPath(sceneTransitionMixEffectRef), ['curve', 'effect', 'effect_name'])
-
-		return {
-			curve: parseEnum<SceneCurve>(values.curve, SceneCurve),
-			effect: values.effect,
-			effectName: values.effect_name,
-		}
+		return this.#getObject(refToPath(sceneTransitionMixEffectRef), SceneTransitionMixEffectObjectEncodingDefinition)
 	}
 	async updateSceneTransitionMixEffect(
 		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef,
@@ -941,23 +890,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 	async getSceneSnapshot(snapshotRef: SceneSnapshotRef): Promise<SceneSnapshotObject> {
-		const values = await this.getAttributes(refToPath(snapshotRef), [
-			'status',
-			'color',
-			'dissolve_time',
-			'enable_curve',
-			'curve',
-			'priority_recall',
-		])
-
-		return {
-			status: parseEnum<SceneSnapshotStatus>(values.status, SceneSnapshotStatus),
-			color: parseColorRGB(values.color),
-			dissolveTime: parseInteger(values.dissolve_time),
-			enableCurve: parseBoolean(values.enable_curve),
-			curve: parseEnum<SceneCurve>(values.curve, SceneCurve),
-			priorityRecall: parseEnum<SceneSnapshotPriorityRecall>(values.priority_recall, SceneSnapshotPriorityRecall),
-		}
+		return this.#getObject(refToPath(snapshotRef), SceneSnapshotObjectEncodingDefinition)
 	}
 
 	async updateSceneSnapshot(snapshotRef: SceneSnapshotRef, props: Partial<UpdateSceneSnapshotObject>): Promise<void> {
@@ -1021,31 +954,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	RR<1-8>
 	async getRamRecorder(ramRecorderId: number): Promise<ClipPlayerObject> {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
-
-		const values = await this.getAttributes(`RR${ramRecorderId}`, [
-			'color_overwrite',
-			'color',
-			'timecode',
-			'remaining_time',
-			'position',
-			'repeat',
-			'tms',
-			'clip',
-			'tally',
-			'autoplay',
-		])
-		return {
-			colorOverwrite: parseBoolean(values.color_overwrite),
-			color: parseColorRGB(values.color),
-			timecode: values.timecode,
-			remainingTime: values.remaining_time,
-			position: parseInteger(values.position),
-			repeat: parseBoolean(values.repeat),
-			tms: parseEnum(values.tms, ClipPlayerTMS),
-			clip: values.clip,
-			tally: parseInteger(values.tally),
-			autoplay: parseBoolean(values.autoplay),
-		}
+		return this.#getObject(`RR${ramRecorderId}`, ClipPlayerObjectEncodingDefinition)
 	}
 	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
@@ -1133,31 +1042,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	CP<1-2>
 	async getClipPlayer(playerId: number): Promise<ClipPlayerObject> {
 		this._assertPlayerIdIsValid(playerId)
-
-		const values = await this.getAttributes(`CP${playerId}`, [
-			'color_overwrite',
-			'color',
-			'timecode',
-			'remaining_time',
-			'position',
-			'repeat',
-			'tms',
-			'clip',
-			'tally',
-			'autoplay',
-		])
-		return {
-			colorOverwrite: parseBoolean(values.color_overwrite),
-			color: parseColorRGB(values.color),
-			timecode: values.timecode,
-			remainingTime: values.remaining_time,
-			position: parseInteger(values.position),
-			repeat: parseBoolean(values.repeat),
-			tms: parseEnum<ClipPlayerTMS>(values.tms, ClipPlayerTMS),
-			clip: values.clip,
-			tally: parseInteger(values.tally),
-			autoplay: parseBoolean(values.autoplay),
-		}
+		return this.#getObject(`CP${playerId}`, ClipPlayerObjectEncodingDefinition)
 	}
 	async updateClipPlayer(playerId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
 		this._assertPlayerIdIsValid(playerId)
@@ -1286,14 +1171,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	private async _getMediaObject(basePath: string, mediaName: string): Promise<MediaObject | undefined> {
-		try {
-			const values = await this.getAttributes(`${basePath}.${mediaName}`, ['name', 'status', 'load_progress'])
-			return {
-				name: values.name,
-				status: parseInteger(values.status),
-				loadProgress: parseFloatValue(values.load_progress),
-			}
-		} catch (error) {
+		return this.#getObject(`${basePath}.${mediaName}`, MediaObjectEncodingDefinition).catch(async (error) => {
 			if (error instanceof ResponseError) {
 				// Check if the clip exists, or there actually was an error:
 				const objectList = await this.getList(basePath)
@@ -1303,7 +1181,7 @@ export class KairosConnection extends MinimalKairosConnection {
 				}
 			}
 			throw error
-		}
+		})
 	}
 
 	// TRANSLIB
@@ -1422,12 +1300,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 	async getMacro(macroRef: MacroRef): Promise<MacroObject> {
-		const values = await this.getAttributes(refToPath(macroRef), ['status', 'color'])
-
-		return {
-			status: parseEnum<MacroStatus>(values.status, MacroStatus),
-			color: parseColorRGB(values.color),
-		}
+		return this.#getObject(refToPath(macroRef), MacroObjectEncodingDefinition)
 	}
 
 	async updateMacro(macroRef: MacroRef, props: Partial<UpdateMacroObject>): Promise<void> {
