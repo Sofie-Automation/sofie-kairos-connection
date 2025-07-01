@@ -2,10 +2,8 @@
 import EventEmitter, { addAbortListener } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
-import { ResponseError, TerminateSubscriptionError, UnknownResponseError } from './errors.js'
-import { assertNever } from '../lib/lib.js'
-
-const MAX_LIST_LENGTH = 1000 // Maximum number of items in a list before we consider it too large to be plausible
+import { TerminateSubscriptionError } from './errors.js'
+import { ExpectedResponseType, InternalRequest, parseResponseForCommand } from './parser.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -16,25 +14,6 @@ export interface Options {
 	timeoutTime?: number
 	/** Immediately connects after instantiating the class, defaults to false */
 	autoConnect?: boolean
-}
-
-enum ExpectedResponseType {
-	OK = 'OK',
-	Query = 'Query',
-	List = 'List',
-}
-
-interface InternalRequest {
-	serializedCommand: string
-	expectedResponse: ExpectedResponseType
-	expectedResponsePath: string | null // If this is a query/list_ex, the path expected in the response line
-
-	resolve: (response: any) => void
-	reject: (error: Error) => void
-
-	processed: boolean
-	processedTime?: number
-	sentTime?: number
 }
 
 export type KairosConnectionEvents = {
@@ -121,26 +100,15 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				this.emit('reset')
 				continue
 			}
-			// Example of replies:
-			// list_ex:SCENES.Main.Snapshots=
-			// SCENES.Main.Snapshots.SNP1
-			// SCENES.Main.Snapshots.SNP1.dissolve_time=0
-			// RR1.timecode=00:00:00:00
-			// OK
-			// Error
-			// Permission Error
 
-			const pendingCommand = this._requestQueue[0] as InternalRequest | undefined
+			const pendingCommand = this._requestQueue[0]?.sentTime ? this._requestQueue[0] : undefined
 
-			// First try treating the line as a query value, which could satisfy a subscription and/or the first command in the queue
-			const equalsIndex = firstLine.indexOf('=')
-			if (
-				equalsIndex !== -1 &&
-				!firstLine.startsWith('list_ex:') // Not a response to a list_ex
-			) {
-				// This looks like a response to a subscription or a query
-				const path = firstLine.slice(0, equalsIndex)
-				const value = firstLine.slice(equalsIndex + 1)
+			const parsedResponse = parseResponseForCommand(this._unprocessedLines, pendingCommand)
+			this._unprocessedLines = parsedResponse.remainingLines
+
+			if (parsedResponse.subscriptionValue) {
+				// This is a response to a subscription or a query
+				const { path, value } = parsedResponse.subscriptionValue
 
 				const subscription = this._subscriptions.get(path)
 				if (subscription) {
@@ -148,108 +116,23 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 					this.#emitToAllSubscribers(subscription.subscribers, path, null, value)
 				}
-
-				// If the first command in the queue is a query for this value, we can resolve it
-				if (
-					pendingCommand &&
-					pendingCommand.sentTime &&
-					pendingCommand.expectedResponse === ExpectedResponseType.Query &&
-					pendingCommand.expectedResponsePath === path
-				) {
-					pendingCommand.resolve(value)
-
-					this._requestQueue.shift() // Remove the command from the queue after processing
-				}
-
-				// This does not match the command, so must just be for a subscription
-				this._unprocessedLines.shift() // Remove the line from the queue after processing
-				continue
 			}
 
-			if (pendingCommand && pendingCommand.sentTime) {
-				// command has been sent, we can match the response to it
+			if (parsedResponse.connectionError) {
+				this.emit('error', parsedResponse.connectionError)
+			}
 
-				// If an error was received, reject the command
-				if (
-					firstLine === 'Error' ||
-					firstLine.endsWith(' Error') // matches "Permission Error"
-				) {
-					pendingCommand.reject(new ResponseError(pendingCommand.serializedCommand, firstLine))
+			if (parsedResponse.commandResponse) {
+				this._requestQueue.shift() // Remove the command from the queue after processing
 
-					this._unprocessedLines.shift()
-					this._requestQueue.shift() // Remove the command from the queue after processing
-					continue
+				if (parsedResponse.commandResponse.type === 'error') {
+					pendingCommand?.reject(parsedResponse.commandResponse.error)
+				} else {
+					pendingCommand?.resolve(parsedResponse.commandResponse.value)
 				}
-
-				let handledOk = false
-
-				switch (pendingCommand.expectedResponse) {
-					case ExpectedResponseType.Query:
-						// Handled above, should never reach here
-						this.emit('error', new Error(`Internal Error: A Query responseType was NOT handled above`))
-						break
-					case ExpectedResponseType.OK:
-						// OK response, resolve the command
-						if (firstLine === 'OK') {
-							handledOk = true
-							pendingCommand.resolve(undefined)
-						}
-
-						break
-					case ExpectedResponseType.List:
-						if (
-							pendingCommand.expectedResponsePath &&
-							firstLine === `list_ex:${pendingCommand.expectedResponsePath}=`
-						) {
-							const emptyLineIndex = this._unprocessedLines.indexOf('')
-							if (emptyLineIndex !== -1) {
-								const listItems = this._unprocessedLines.slice(1, emptyLineIndex)
-
-								// Note: leave one behind for the shift at the bottom
-								this._unprocessedLines = this._unprocessedLines.slice(emptyLineIndex)
-
-								handledOk = true
-								pendingCommand.resolve(listItems)
-							} else if (this._unprocessedLines.length > MAX_LIST_LENGTH) {
-								// A safety net, to avoid getting stuck in an infinite loop
-								pendingCommand.reject(
-									new UnknownResponseError(
-										'No terminating line break received',
-										pendingCommand.serializedCommand,
-										// Log first and last 10 lines:
-										[...this._unprocessedLines.slice(0, 10), '[...]', ...this._unprocessedLines.slice(-10)].join('\n')
-									)
-								)
-								this._unprocessedLines = [] // clear the incoming queue
-							} else {
-								// Data not yet ready, stop processing lines
-								// To revisit later when a complete response has arrived
-								return // Abort the loop
-							}
-						}
-
-						break
-					default:
-						assertNever(pendingCommand.expectedResponse)
-						break
-				}
-
-				// Line and command have both been processed
-				this._unprocessedLines.shift()
-				this._requestQueue.shift()
-
-				if (!handledOk) {
-					// The response is weird / unhandled!
-					pendingCommand.reject(
-						new UnknownResponseError('Unknown response received', pendingCommand.serializedCommand, firstLine)
-					)
-				}
-			} else {
-				// Unexpected response, no command is in flight
-				this.emit('error', new Error(`Unexpected line received (no command is pending): ${firstLine}`))
-
-				// Unknown line, skip it so that we don't get stuck
-				this._unprocessedLines.shift()
+			} else if (!parsedResponse.subscriptionValue) {
+				// If this wasn't a subscription value, and command data is not yet ready, stop processing until this is handled
+				break
 			}
 		}
 	}

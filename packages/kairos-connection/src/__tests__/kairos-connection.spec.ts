@@ -49,6 +49,7 @@ import {
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { refMacro, refScene, refSceneLayer, refSceneLayerEffect, refSceneSnapshot, SceneRef } from '../lib/reference.js'
+import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -96,7 +97,8 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 				}
 				async executeCommand<TRes>(
 					commandStr: string,
-					deserializer: Parameters<InstanceType<typeof KairosConnection>['executeCommand']>[1]
+					expectedResponse: ExpectedResponseType,
+					expectedResponsePath: string | null
 				): Promise<TRes> {
 					const orgError = new Error()
 					try {
@@ -106,10 +108,26 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 							throw new ResponseError(commandStr, replyLines[0])
 						}
 
-						const reply = deserializer(replyLines)
-						if (reply === null) throw new Error(`No reply received for command: ${commandStr}`)
+						const response = parseResponseForCommand(replyLines, {
+							serializedCommand: commandStr,
+							expectedResponse,
+							expectedResponsePath,
+						})
+						if (response.remainingLines.length > 0) {
+							throw new Error('Mock error: Unexpected remaining lines: ' + response.remainingLines.join(', '))
+						}
+						if (response.connectionError) {
+							this.emit('error', response.connectionError)
+						}
 
-						return reply.response as TRes
+						if (!response.commandResponse) {
+							throw new Error(`No reply received for command: ${commandStr}`)
+						}
+						if (response.commandResponse.type === 'error') {
+							throw response.commandResponse.error
+						} else {
+							return response.commandResponse.value as TRes
+						}
 					} catch (e) {
 						if (e instanceof Error) {
 							// Append context to error message:
