@@ -15,10 +15,11 @@ export class ResponseError extends Error {
  */
 export class UnknownResponseError extends Error {
 	constructor(
+		message: string,
 		public readonly sentCommand: string,
 		public readonly response: string
 	) {
-		super(`Unknown response received: ${response} in response to "${sentCommand}`)
+		super(`${message}: ${response} in response to "${sentCommand}`)
 		this.name = 'UnknownResponseError'
 	}
 }

@@ -4,6 +4,8 @@ import { Connection } from './connection.js'
 import { ResponseError, TerminateSubscriptionError, UnknownResponseError } from './errors.js'
 import { assertNever } from '../lib/lib.js'
 
+const MAX_LIST_LENGTH = 1000 // Maximum number of items in a list before we consider it too large to be plausible
+
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
 	host?: string
@@ -89,16 +91,20 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		this._connection.on('error', (e) => this.emit('error', e))
 
 		this._connection.on('lines', (lines) => {
-			this._unprocessedLines.push(...lines)
-
-			this._processResponses().catch((e) => this.emit('error', e))
+			try {
+				this._processResponses(lines)
+			} catch (e) {
+				this.emit('error', e as Error)
+			}
 		})
 
 		this._timeoutTime = options?.timeoutTime || 5000
 		this._timeoutTimer = setInterval(() => this._checkTimeouts(), this._timeoutTime)
 	}
 
-	private async _processResponses(): Promise<void> {
+	private _processResponses(newLines: string[]): void {
+		this._unprocessedLines.push(...newLines)
+
 		while (this._unprocessedLines.length > 0) {
 			const firstLine = this._unprocessedLines[0]
 
@@ -203,9 +209,21 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 								handledOk = true
 								pendingCommand.resolve(listItems)
+							} else if (this._unprocessedLines.length > MAX_LIST_LENGTH) {
+								// A safety net, to avoid getting stuck in an infinite loop
+								pendingCommand.reject(
+									new UnknownResponseError(
+										'No terminating line break received',
+										pendingCommand.serializedCommand,
+										// Log first and last 10 lines:
+										[...this._unprocessedLines.slice(0, 10), '[...]', ...this._unprocessedLines.slice(-10)].join('\n')
+									)
+								)
+								this._unprocessedLines = [] // clear the incoming queue
 							} else {
-								// Data not yet ready, stop processing
-								return
+								// Data not yet ready, stop processing lines
+								// To revisit later when a complete response has arrived
+								return // Abort the loop
 							}
 						}
 
@@ -221,7 +239,9 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 				if (!handledOk) {
 					// The response is weird / unhandled!
-					pendingCommand.reject(new UnknownResponseError(pendingCommand.serializedCommand, firstLine))
+					pendingCommand.reject(
+						new UnknownResponseError('Unknown response received', pendingCommand.serializedCommand, firstLine)
+					)
 				}
 			} else {
 				// Unexpected response, no command is in flight
