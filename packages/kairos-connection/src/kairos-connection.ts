@@ -97,12 +97,16 @@ import {
 	splitPath,
 } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath } from './lib/encode-decode.js'
-import { getAttributeNames, ObjectEncodingDefinition, ObjectValueEncodingDefinition } from './object-encoding/types.js'
+import {
+	getProtocolAttributeNames,
+	ObjectEncodingDefinition,
+	ObjectValueEncodingDefinition,
+} from './object-encoding/types.js'
 import { SceneLayerObjectEncodingDefinition } from './object-encoding/scene.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
-		const attributeNames = getAttributeNames(definition)
+		const attributeNames = getProtocolAttributeNames(definition)
 
 		const values = await this.getAttributes(pathPrefix, attributeNames)
 
@@ -123,11 +127,13 @@ export class KairosConnection extends MinimalKairosConnection {
 		signal: AbortSignal,
 		callback: (error: Error | null, value: TObj | null) => void
 	): void {
-		const attributeNames = getAttributeNames(definition)
-		const pendingValues = new Set<string>(attributeNames)
-		const valueObject: TObj = {} as any // TODO - fill with defaults?
+		const attributeNames = getProtocolAttributeNames(definition)
+		const pendingAttributes = new Set<string>(attributeNames)
+		const valueObject: TObj = {} as any // This will be fully populated by the time the callback is first called
 
+		// Create a combined signal, that will abort if either the original signal or the localAbort signal is aborted
 		const localAbort = new AbortController()
+		const combinedSignal = AbortSignal.any([signal, localAbort.signal])
 
 		const updateValueCallback: SubscriptionCallback<string> = (path, error, value) => {
 			if (localAbort.signal.aborted) return
@@ -159,16 +165,14 @@ export class KairosConnection extends MinimalKairosConnection {
 			valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
 
 			// Check if the object has been fully populated
-			pendingValues.delete(attributeName)
-			if (pendingValues.size === 0) {
+			pendingAttributes.delete(attributeName)
+			if (pendingAttributes.size === 0) {
 				// Future: Maybe this should be debounced, to avoid calling multiple times in a row. But that is easy enough for consumers to do themselves.
 				callback(null, valueObject)
 			}
 		}
 
-		// Create a combined signal, that will abort if either the original signal or the localAbort signal is aborted
-		const combinedSignal = AbortSignal.any([signal, localAbort.signal])
-
+		// Start the subscription for each attribute
 		for (const attributeName of attributeNames) {
 			const path = `${pathPrefix}.${attributeName}`
 			this.subscribeValue(path, combinedSignal, updateValueCallback)
@@ -312,17 +316,11 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	subscribeSceneLayer(
-		sceneName: string,
-		layerName: string,
+		layerRef: SceneLayerRef,
 		signal: AbortSignal,
 		callback: (error: Error | null, value: SceneLayerObject | null) => void
 	): void {
-		return this.#subscribeObject(
-			`SCENES.${sceneName}.Layers.${layerName}`,
-			SceneLayerObjectEncodingDefinition,
-			signal,
-			callback
-		)
+		return this.#subscribeObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition, signal, callback)
 	}
 
 	async updateSceneLayer(layerRef: SceneLayerRef, props: Partial<UpdateSceneLayerObject>): Promise<void> {

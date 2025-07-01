@@ -6,6 +6,6 @@ export type ObjectValueEncodingDefinition<TObj, TKey extends keyof TObj> = {
 	parser: (value: string) => TObj[TKey]
 }
 
-export function getAttributeNames<TObj>(definition: ObjectEncodingDefinition<TObj>): string[] {
+export function getProtocolAttributeNames<TObj>(definition: ObjectEncodingDefinition<TObj>): string[] {
 	return Object.values<ObjectValueEncodingDefinition<TObj, any>>(definition).map((attr) => attr.protocolName)
 }

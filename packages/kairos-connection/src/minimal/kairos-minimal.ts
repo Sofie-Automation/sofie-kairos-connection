@@ -1,7 +1,7 @@
 import EventEmitter, { addAbortListener } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
-import { ResponseError, TerminateSubscriptionError } from './errors.js'
+import { ResponseError, TerminateSubscriptionError, UnknownResponseError } from './errors.js'
 import { assertNever } from '../lib/lib.js'
 
 export interface Options {
@@ -114,14 +114,22 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				this.emit('reset')
 				continue
 			}
+			// Example of replies:
+			// list_ex:SCENES.Main.Snapshots=
+			// SCENES.Main.Snapshots.SNP1
+			// SCENES.Main.Snapshots.SNP1.dissolve_time=0
+			// RR1.timecode=00:00:00:00
+			// OK
+			// Error
+			// Permission Error
 
-			const nextCommand = this._requestQueue[0] as InternalRequest | undefined
+			const pendingCommand = this._requestQueue[0] as InternalRequest | undefined
 
 			// First try treating the line as a query value, which could satisfy a subscription and/or the first command in the queue
 			const equalsIndex = firstLine.indexOf('=')
 			if (
 				equalsIndex !== -1 &&
-				firstLine.indexOf(':') === -1 // Not a response to a list/info
+				!firstLine.startsWith('list_ex:') // Not a response to a list_ex
 			) {
 				// This looks like a response to a subscription or a query
 				const path = firstLine.slice(0, equalsIndex)
@@ -136,26 +144,30 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 				// If the first command in the queue is a query for this value, we can resolve it
 				if (
-					nextCommand &&
-					nextCommand.sentTime &&
-					nextCommand.expectedResponse === ExpectedResponseType.Query &&
-					nextCommand.expectedResponsePath === path
+					pendingCommand &&
+					pendingCommand.sentTime &&
+					pendingCommand.expectedResponse === ExpectedResponseType.Query &&
+					pendingCommand.expectedResponsePath === path
 				) {
-					nextCommand.resolve(value)
+					pendingCommand.resolve(value)
 
 					this._requestQueue.shift() // Remove the command from the queue after processing
 				}
 
+				// This does not match the command, so must just be for a subscription
 				this._unprocessedLines.shift() // Remove the line from the queue after processing
 				continue
 			}
 
-			if (nextCommand && nextCommand.sentTime) {
+			if (pendingCommand && pendingCommand.sentTime) {
 				// command has been sent, we can match the response to it
 
 				// If an error was received, reject the command
-				if (firstLine.startsWith('Error')) {
-					nextCommand.reject(new ResponseError(nextCommand.serializedCommand, firstLine))
+				if (
+					firstLine === 'Error' ||
+					firstLine.endsWith(' Error') // matches "Permission Error"
+				) {
+					pendingCommand.reject(new ResponseError(pendingCommand.serializedCommand, firstLine))
 
 					this._unprocessedLines.shift()
 					this._requestQueue.shift() // Remove the command from the queue after processing
@@ -164,20 +176,24 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 				let handledOk = false
 
-				switch (nextCommand.expectedResponse) {
+				switch (pendingCommand.expectedResponse) {
 					case ExpectedResponseType.Query:
 						// Handled above, should never reach here
+						this.emit('error', new Error(`Internal Error: A Query responseType was NOT handled above`))
 						break
 					case ExpectedResponseType.OK:
 						// OK response, resolve the command
 						if (firstLine === 'OK') {
 							handledOk = true
-							nextCommand.resolve(undefined)
+							pendingCommand.resolve(undefined)
 						}
 
 						break
 					case ExpectedResponseType.List:
-						if (nextCommand.expectedResponsePath && firstLine === `list_ex:${nextCommand.expectedResponsePath}=`) {
+						if (
+							pendingCommand.expectedResponsePath &&
+							firstLine === `list_ex:${pendingCommand.expectedResponsePath}=`
+						) {
 							const emptyLineIndex = this._unprocessedLines.indexOf('')
 							if (emptyLineIndex !== -1) {
 								const listItems = this._unprocessedLines.slice(1, emptyLineIndex)
@@ -186,7 +202,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 								this._unprocessedLines = this._unprocessedLines.slice(emptyLineIndex)
 
 								handledOk = true
-								nextCommand.resolve(listItems)
+								pendingCommand.resolve(listItems)
 							} else {
 								// Data not yet ready, stop processing
 								return
@@ -195,7 +211,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 						break
 					default:
-						assertNever(nextCommand.expectedResponse)
+						assertNever(pendingCommand.expectedResponse)
 						break
 				}
 
@@ -204,31 +220,12 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				this._requestQueue.shift()
 
 				if (!handledOk) {
-					nextCommand.reject(new ResponseError(nextCommand.serializedCommand, firstLine))
+					// The response is weird / unhandled!
+					pendingCommand.reject(new UnknownResponseError(pendingCommand.serializedCommand, firstLine))
 				}
-
-				// try {
-				// 	const res = nextCommand.deserializer(this._unprocessedLines)
-				// 	if (!res) {
-				// 		// Data not yet ready, stop processing
-				// 		return
-				// 	}
-
-				// 	this._unprocessedLines = res.remainingLines
-				// 	nextCommand.resolve(res.response)
-
-				// 	this._requestQueue.shift() // Remove the command from the queue after processing
-				// } catch (e: unknown) {
-				// 	nextCommand.reject(e as Error)
-
-				// 	// Unknown line, skip it so that we don't get stuck
-				// 	this._unprocessedLines.shift()
-
-				// 	this._requestQueue.shift() // Remove the command from the queue after processing
-				// }
 			} else {
 				// Unexpected response, no command is in flight
-				this.emit('error', new Error(`Unknown line received: ${firstLine}`))
+				this.emit('error', new Error(`Unexpected line received (no command is pending): ${firstLine}`))
 
 				// Unknown line, skip it so that we don't get stuck
 				this._unprocessedLines.shift()
@@ -474,6 +471,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		path: string,
 		abort: AbortSignal,
 		rawCallback: SubscriptionCallback<string>,
+		/** Whether to query for an initial value. If false, will only subscribe to future values */
 		fetchCurrentValue = true
 	): void {
 		if (!this._canSendCommands) throw new Error('Cannot send commands, not connected to KAIROS')
@@ -481,6 +479,8 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 		const subscriberId = randomUUID()
 
+		// Create a local abort, to be used when we abort the subscription internally:
+		// ( Since we can't abort the external AbortSignal. )
 		const localAbort = new AbortController()
 		const combinedAbortSignal = AbortSignal.any([abort, localAbort.signal])
 
