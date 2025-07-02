@@ -58,13 +58,15 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 			this._processQueue().catch((e) => this.emit('error', e))
 		})
 		this._connection.on('disconnect', () => {
+			this._canSendCommands = false
 			this._unprocessedLines = []
-			this.#terminateAllSubscriptions('Disconnected from KAIROS')
 
 			this._requestQueue.forEach((r) => {
 				r.reject(new Error('Disconnected before response was received'))
 			})
 			this._requestQueue = []
+
+			this.#terminateAllSubscriptions('Disconnected from KAIROS')
 
 			this.emit('disconnect')
 		})

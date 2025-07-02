@@ -465,4 +465,564 @@ describe('MinimalKairosConnection', () => {
 			expect(mockConnection.disconnect).toHaveBeenCalled()
 		})
 	})
+
+	describe('subscribeValue', () => {
+		beforeEach(() => {
+			connection = new MinimalKairosConnection({ autoConnect: false })
+		})
+
+		test('should create subscription and query initial value', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback, true)
+
+			// Process the queue to send commands
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should send subscribe command and query command
+			expect(mockConnection.sendCommand).toHaveBeenCalledWith(`subscribe:${path}`)
+			expect(mockConnection.sendCommand).toHaveBeenCalledWith(path)
+			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(2)
+
+			// Simulate receiving subscribe OK and query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called with the initial value
+			expect(callback).toHaveBeenCalledWith(path, null, 'IP1')
+			expect(callback).toHaveBeenCalledTimes(1)
+		})
+
+		test('should create subscription without querying initial value when fetchCurrentValue is false', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription without fetching current value
+			connection.subscribeValue(path, abortController.signal, callback, false)
+
+			// Process the queue to send commands
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should only send subscribe command, not query
+			expect(mockConnection.sendCommand).toHaveBeenCalledWith(`subscribe:${path}`)
+			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(1)
+
+			// Simulate receiving subscribe OK
+			mockConnection.emit('lines', ['OK'])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should not be called yet
+			expect(callback).not.toHaveBeenCalled()
+		})
+
+		test('should reuse existing subscription and return cached value', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController1 = new AbortController()
+			const abortController2 = new AbortController()
+			const callback1 = vi.fn()
+			const callback2 = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start first subscription
+			connection.subscribeValue(path, abortController1.signal, callback1)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK and query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Clear mock calls for clarity
+			vi.clearAllMocks()
+
+			// Start second subscription to same path
+			connection.subscribeValue(path, abortController2.signal, callback2)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should not send new subscribe command since subscription already exists
+			expect(mockConnection.sendCommand).not.toHaveBeenCalled()
+
+			// Second callback should be called immediately with cached value
+			expect(callback2).toHaveBeenCalledWith(path, null, 'IP1')
+			expect(callback2).toHaveBeenCalledTimes(1)
+		})
+
+		test('should notify all subscribers of value updates', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController1 = new AbortController()
+			const abortController2 = new AbortController()
+			const callback1 = vi.fn()
+			const callback2 = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start first subscription
+			connection.subscribeValue(path, abortController1.signal, callback1)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK and initial query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Now start second subscription - it should reuse the subscription and get cached value
+			connection.subscribeValue(path, abortController2.signal, callback2)
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Second subscriber should get cached value immediately
+			expect(callback2).toHaveBeenCalledWith(path, null, 'IP1')
+
+			// Should have sent: subscribe, query (2 commands total)
+			expect(mockConnection.sendCommand).toHaveBeenCalledWith(`subscribe:${path}`)
+			expect(mockConnection.sendCommand).toHaveBeenCalledWith(path)
+			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(2)
+
+			// Clear calls for clarity
+			callback1.mockClear()
+			callback2.mockClear()
+
+			// Simulate receiving subscription value update
+			mockConnection.emit('lines', [`${path}=IP2`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Both callbacks should be called with new value
+			expect(callback1).toHaveBeenCalledWith(path, null, 'IP2')
+			expect(callback2).toHaveBeenCalledWith(path, null, 'IP2')
+		})
+
+		test('should unsubscribe when last subscriber aborts', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK
+			mockConnection.emit('lines', ['OK'])
+
+			// Clear mock calls for clarity
+			vi.clearAllMocks()
+
+			// Abort the subscription
+			abortController.abort()
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should send unsubscribe command
+			expect(mockConnection.sendCommand).toHaveBeenCalledWith(`unsubscribe:${path}`)
+			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(1)
+		})
+
+		test('should not unsubscribe when one of multiple subscribers aborts', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController1 = new AbortController()
+			const abortController2 = new AbortController()
+			const callback1 = vi.fn()
+			const callback2 = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start first subscription
+			connection.subscribeValue(path, abortController1.signal, callback1)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK and initial query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Start second subscription - should get cached value
+			connection.subscribeValue(path, abortController2.signal, callback2)
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Clear mock calls for clarity
+			vi.clearAllMocks()
+
+			// Abort only the first subscription
+			abortController1.abort()
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should not send unsubscribe command since there's still one subscriber
+			expect(mockConnection.sendCommand).not.toHaveBeenCalled()
+
+			// Simulate receiving subscription value update
+			mockConnection.emit('lines', [`${path}=IP2`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Only second callback should be called (first was aborted)
+			expect(callback1).not.toHaveBeenCalled()
+			expect(callback2).toHaveBeenCalledWith(path, null, 'IP2')
+		})
+
+		test('should handle subscription command failure', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving error response to subscribe command
+			mockConnection.emit('lines', [`Error:Subscribe failed`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called with error
+			expect(callback).toHaveBeenCalledWith(path, expect.any(Error), null)
+			const callArgs = callback.mock.calls[0]
+			expect(callArgs[1].message).toContain('Subscribe failed')
+		})
+
+		test('should handle query command failure', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK, and failed query
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`Error`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called with error
+			expect(callback).toHaveBeenCalledWith(path, expect.any(Error), null)
+			const callArgs = callback.mock.calls[0]
+			expect(callArgs[1].message).toContain('Error response received')
+		})
+
+		test('should terminate all subscriptions on disconnect', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController1 = new AbortController()
+			const abortController2 = new AbortController()
+			const callback1 = vi.fn()
+			const callback2 = vi.fn()
+			const path1 = 'SCENES.Main.Layers.PGM.source_pgm'
+			const path2 = 'SCENES.Main.Layers.PST.source_pst'
+
+			// Start subscriptions on different paths
+			connection.subscribeValue(path1, abortController1.signal, callback1)
+			connection.subscribeValue(path2, abortController2.signal, callback2)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK for both
+			mockConnection.emit('lines', ['OK', `${path1}=1`])
+			mockConnection.emit('lines', ['OK', `${path2}=2`])
+
+			// Process initial commands
+			await vi.runOnlyPendingTimersAsync()
+
+			// Clear mock calls
+			callback1.mockClear()
+			callback2.mockClear()
+
+			// Simulate disconnect
+			mockConnection.emit('disconnect')
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Both callbacks should be called with TerminateSubscriptionError
+			expect(callback1).toHaveBeenCalledWith(path1, expect.any(Error), null)
+			expect(callback2).toHaveBeenCalledWith(path2, expect.any(Error), null)
+
+			const error1 = callback1.mock.calls[0][1]
+			const error2 = callback2.mock.calls[0][1]
+			expect(error1.name).toBe('TerminateSubscriptionError')
+			expect(error1.message).toContain('Disconnected from KAIROS')
+			expect(error2.name).toBe('TerminateSubscriptionError')
+			expect(error2.message).toContain('Disconnected from KAIROS')
+		})
+
+		test('should terminate all subscriptions on application reset', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK
+			mockConnection.emit('lines', ['OK'])
+
+			// Clear mock calls
+			callback.mockClear()
+
+			// Simulate application reset
+			mockConnection.emit('lines', ['APPLICATION:Reset'])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called with TerminateSubscriptionError
+			expect(callback).toHaveBeenCalledWith(path, expect.any(Error), null)
+
+			const error = callback.mock.calls[0][1]
+			expect(error.name).toBe('TerminateSubscriptionError')
+			expect(error.message).toContain('Application reset')
+		})
+
+		test('should not call callback after abort signal is triggered', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK and initial query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Clear calls
+			callback.mockClear()
+
+			// Abort the subscription
+			abortController.abort()
+
+			// Simulate receiving subscription value update after abort
+			mockConnection.emit('lines', [`${path}=IP2`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should not be called since it was aborted
+			expect(callback).not.toHaveBeenCalled()
+		})
+
+		test('should reject subscription when not connected', () => {
+			// Don't emit connect event
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Should throw error when not connected
+			expect(() => {
+				connection.subscribeValue(path, abortController.signal, callback)
+			}).toThrow('Cannot send commands, not connected to KAIROS')
+		})
+
+		test('should reject subscription when abort signal is already aborted', () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			abortController.abort() // Abort before subscribing
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Should throw error when abort signal is already aborted
+			expect(() => {
+				connection.subscribeValue(path, abortController.signal, callback)
+			}).toThrow('Cannot subscribe, abort signal is already aborted')
+		})
+
+		test('should not call callback after subscription receives error', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK and initial query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Clear calls
+			callback.mockClear()
+
+			// Now send another getAttribute to create a pending command, then send error
+			const errorPromise = connection.getAttribute('another.path').catch(() => null) // Catch to prevent unhandled rejection
+
+			// Process to send the command
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving error response (which will be attributed to the getAttribute command)
+			mockConnection.emit('lines', [`Error`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// The error should be for the getAttribute command, not the subscription
+			await expect(errorPromise).resolves.toBeNull() // The catch should have caught the error
+
+			// Now simulate receiving subscription value update
+			mockConnection.emit('lines', [`${path}=IP2`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Subscription callback should still work since it wasn't the one that failed
+			expect(callback).toHaveBeenCalledWith(path, null, 'IP2')
+		})
+
+		test('should handle callback throwing error gracefully', async () => {
+			mockConnection.sendCommand.mockResolvedValue(undefined)
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn(() => {
+				throw new Error('Callback error')
+			})
+			const errorSpy = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+
+			// Listen for error events
+			connection.on('error', errorSpy)
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK and initial query response
+			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', [`${path}=IP1`])
+
+			// Process async callbacks
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called
+			expect(callback).toHaveBeenCalledWith(path, null, 'IP1')
+
+			// Error event should be emitted for the callback error
+			expect(errorSpy).toHaveBeenCalledWith(expect.any(Error))
+			const emittedError = errorSpy.mock.calls[0][0]
+			expect(emittedError.message).toBe('Callback error')
+		})
+
+		test('should handle unsubscribe command failure gracefully', async () => {
+			mockConnection.sendCommand
+				.mockResolvedValueOnce(undefined) // subscribe command succeeds
+				.mockResolvedValueOnce(undefined) // query command succeeds
+				.mockResolvedValueOnce(new Error('Unsubscribe failed')) // unsubscribe command fails
+
+			mockConnection.emit('connect') // Simulate connection
+
+			const abortController = new AbortController()
+			const callback = vi.fn()
+			const path = 'SCENES.Main.Layers.PGM.source_pgm'
+			const warnSpy = vi.fn()
+
+			// Listen for warn events
+			connection.on('warn', warnSpy)
+
+			// Start subscription
+			connection.subscribeValue(path, abortController.signal, callback)
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Simulate receiving subscribe OK
+			mockConnection.emit('lines', ['OK'])
+
+			// Abort the subscription to trigger unsubscribe
+			abortController.abort()
+
+			// Process the queue
+			await vi.runOnlyPendingTimersAsync()
+
+			// Warn event should be emitted for the unsubscribe failure
+			expect(warnSpy).toHaveBeenCalledWith(expect.any(Error))
+			const warnError = warnSpy.mock.calls[0][0]
+			expect(warnError.message).toContain('Unsubscribe failed')
+		})
+	})
 })
