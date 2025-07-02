@@ -11,7 +11,7 @@ import {
 	stringifySourceRef,
 	stringifySceneTransitionRef,
 } from './lib/data-parsers.js'
-import { MinimalKairosConnection } from './minimal/kairos-minimal.js'
+import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
 	type MediaObject,
 	type UpdateSceneObject,
@@ -142,6 +142,64 @@ export class KairosConnection extends MinimalKairosConnection {
 		) as TObj
 	}
 
+	#subscribeObject<TObj>(
+		pathPrefix: string,
+		definition: ObjectEncodingDefinition<TObj>,
+		signal: AbortSignal,
+		callback: (error: Error | null, value: TObj | null) => void
+	): void {
+		const attributeNames = getProtocolAttributeNames(definition)
+		const pendingAttributes = new Set<string>(attributeNames)
+		const valueObject: TObj = {} as any // This will be fully populated by the time the callback is first called
+
+		// Create a combined signal, that will abort if either the original signal or the localAbort signal is aborted
+		const localAbort = new AbortController()
+		const combinedSignal = AbortSignal.any([signal, localAbort.signal])
+
+		const updateValueCallback: SubscriptionCallback<string> = (path, error, value) => {
+			if (localAbort.signal.aborted) return
+
+			if (!error && value === null) error = new Error(`Received null value for path: ${path}. This is unexpected.`)
+
+			if (error) {
+				// Terminate other subscriptions and stop this callback from being called again
+				localAbort.abort()
+
+				callback(error, null)
+				return
+			}
+
+			if (!path.startsWith(pathPrefix)) return // This shouldn't happen, but just in case
+			const attributeName = path.slice(pathPrefix.length + 1)
+
+			const transferDefinition = Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).find(
+				([_id, def]) => def.protocolName === attributeName
+			)
+			if (!transferDefinition) {
+				// Terminate other subscriptions and stop this callback from being called again
+				localAbort.abort()
+
+				callback(new Error('Got value for unknown attribute: ' + attributeName), null)
+				return
+			}
+
+			valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
+
+			// Check if the object has been fully populated
+			pendingAttributes.delete(attributeName)
+			if (pendingAttributes.size === 0) {
+				// Future: Maybe this should be debounced, to avoid calling multiple times in a row. But that is easy enough for consumers to do themselves.
+				callback(null, valueObject)
+			}
+		}
+
+		// Start the subscription for each attribute
+		for (const attributeName of attributeNames) {
+			const path = `${pathPrefix}.${attributeName}`
+			this.subscribeValue(path, combinedSignal, updateValueCallback)
+		}
+	}
+
 	// SYS
 	// INTSOURCES
 	// 	BLACK
@@ -246,6 +304,14 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async getSceneLayer(layerRef: SceneLayerRef): Promise<SceneLayerObject> {
 		return this.#getObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition)
+	}
+
+	subscribeSceneLayer(
+		layerRef: SceneLayerRef,
+		signal: AbortSignal,
+		callback: (error: Error | null, value: SceneLayerObject | null) => void
+	): void {
+		return this.#subscribeObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition, signal, callback)
 	}
 
 	async updateSceneLayer(layerRef: SceneLayerRef, props: Partial<UpdateSceneLayerObject>): Promise<void> {
