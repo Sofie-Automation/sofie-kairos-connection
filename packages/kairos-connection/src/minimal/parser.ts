@@ -7,6 +7,7 @@ export enum ExpectedResponseType {
 	OK = 'OK',
 	Query = 'Query',
 	List = 'List',
+	NakedList = 'NakedList',
 }
 
 export interface InternalRequest {
@@ -123,6 +124,17 @@ export function parseResponseForCommand(
 						},
 					}
 				}
+			case ExpectedResponseType.NakedList: {
+				const emptyLineIndex = unprocessedLines.indexOf('')
+
+				const value = unprocessedLines.slice(0, emptyLineIndex)
+
+				return {
+					remainingLines: unprocessedLines.slice(emptyLineIndex + 1),
+					subscriptionValue: null,
+					commandResponse: { type: 'ok', value },
+				}
+			}
 			case ExpectedResponseType.List: {
 				if (!pendingCommand.expectedResponsePath || firstLine !== `list_ex:${pendingCommand.expectedResponsePath}=`) {
 					return {
