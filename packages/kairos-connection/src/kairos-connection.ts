@@ -84,6 +84,7 @@ import {
 	GfxSceneItemObject,
 	UpdateGfxSceneItemObject,
 	UpdateGfxSceneHTMLElementItemObject,
+	GfxSceneHTMLElementItemObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import {
@@ -134,6 +135,7 @@ import {
 	GfxChannelObjectEncodingDefinition,
 	GfxSceneObjectEncodingDefinition,
 	GfxSceneItemObjectEncodingDefinition,
+	GfxSceneHTMLElementItemObjectEncodingDefinition,
 } from './object-encoding/index.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -1521,6 +1523,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'height', value: stringifyInteger(props.height) },
 			{ attribute: 'position', value: stringifyPos2D(props.position) },
 		])
+	}
+	async getGfxSceneHTMLElementItem(gfxSceneItemRef: GfxSceneItemRef): Promise<GfxSceneHTMLElementItemObject> {
+		return await this.#getObject(refToPath(gfxSceneItemRef), GfxSceneHTMLElementItemObjectEncodingDefinition)
 	}
 	async updateGfxSceneHTMLElementItem(
 		gfxSceneItemRef: MacroRef,
