@@ -22,6 +22,7 @@ export type AnyRef =
 	| SourceIntRef
 	| GfxChannelRef
 	| GfxSceneRef
+	| GfxSceneItemRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -119,7 +120,11 @@ export function refToPath(ref: AnyRef): string {
 		case 'gfxChannel':
 			return [...ref.path].join('.')
 		case 'gfxScene':
-			return ['GFXSCENES', ...ref.scenePath].join('.')
+			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr)].join('.')
+		case 'gfxScene-item':
+			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr), ...ref.sceneItemPath.map(protocolEncodeStr)].join(
+				'.'
+			)
 		default:
 			assertNever(ref)
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
@@ -448,8 +453,16 @@ export type GfxSceneRef = {
 	realm: 'gfxScene'
 	scenePath: RefPath
 }
+export type GfxSceneItemRef = {
+	realm: 'gfxScene-item'
+	scenePath: RefPath
+	sceneItemPath: RefPath
+}
 export function refGfxScene(scenePath: RefPath): GfxSceneRef {
 	return { realm: 'gfxScene', scenePath }
+}
+export function refGfxSceneItem(scenePath: GfxSceneRef, sceneItemPath: RefPath): GfxSceneItemRef {
+	return { realm: 'gfxScene-item', scenePath: scenePath.scenePath, sceneItemPath }
 }
 
 // ---------------------------- INTSOURCES -----------------------------

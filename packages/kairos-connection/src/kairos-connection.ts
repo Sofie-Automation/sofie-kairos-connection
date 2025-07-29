@@ -78,10 +78,18 @@ import {
 	UpdateSceneTransitionObject,
 	SceneTransitionMixEffectObject,
 	UpdateSceneTransitionMixEffectObject,
+	GfxChannelObject,
+	UpdateGfxChannelObject,
+	GfxSceneObject,
+	GfxSceneItemObject,
+	UpdateGfxSceneItemObject,
+	UpdateGfxSceneHTMLElementItemObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import {
 	AnyRef,
+	GfxSceneItemRef,
+	GfxSceneRef,
 	isRef,
 	MacroRef,
 	refToPath,
@@ -123,6 +131,9 @@ import {
 	MacroObjectEncodingDefinition,
 	ClipPlayerObjectEncodingDefinition,
 	MediaObjectEncodingDefinition,
+	GfxChannelObjectEncodingDefinition,
+	GfxSceneObjectEncodingDefinition,
+	GfxSceneItemObjectEncodingDefinition,
 } from './object-encoding/index.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -1461,8 +1472,65 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			<1-36>
 	// GFXCHANNELS
 	// 	GFX<1-2>
+	async getGfxChannel(gfxChannelId: number): Promise<GfxChannelObject> {
+		this._assertGfxChannelIdIsValid(gfxChannelId)
+		return this.#getObject(`GFX${gfxChannelId}`, GfxChannelObjectEncodingDefinition)
+	}
+	async updateGfxChannel(gfxChannelId: number, props: Partial<UpdateGfxChannelObject>): Promise<void> {
+		this._assertGfxChannelIdIsValid(gfxChannelId)
+		await this.setAttributes(`GFX${gfxChannelId}`, [{ attribute: 'scene', value: props.scene }])
+	}
+	private _assertGfxChannelIdIsValid(gfxChannelId: number): void {
+		if (typeof gfxChannelId !== 'number' || gfxChannelId < 1 || gfxChannelId > 2) {
+			throw new Error(`Invalid gfxChannelId: ${gfxChannelId}. Must be between 1 and 2.`)
+		}
+	}
 	// GFXSCENES
 	// 	GfxScene
+	async listGfxScenes(
+		gfxSceneRef: GfxSceneRef = { realm: 'gfxScene', scenePath: [] },
+		deep?: boolean
+	): Promise<(GfxSceneRef & { name: string })[]> {
+		return (await this._listDeep(gfxSceneRef, [], deep)).map((itemPath) => {
+			return {
+				realm: 'gfxScene',
+				name: itemPath[itemPath.length - 1],
+				scenePath: itemPath.slice(1), // remove the "GFXSCENES" part
+			}
+		})
+	}
+	async getGfxScene(gfxSceneRef: GfxSceneRef): Promise<GfxSceneObject> {
+		return this.#getObject(refToPath(gfxSceneRef), GfxSceneObjectEncodingDefinition)
+	}
+	async listGfxSceneItems(gfxSceneRef: GfxSceneRef): Promise<(GfxSceneItemRef & { name: string })[]> {
+		return (await this._listDeep(refToPath(gfxSceneRef), [], false)).map((itemPath) => {
+			return {
+				realm: 'gfxScene-item',
+				name: itemPath[itemPath.length - 1],
+				scenePath: gfxSceneRef.scenePath,
+				sceneItemPath: itemPath,
+			}
+		})
+	}
+	async getGfxSceneItem(gfxSceneItemRef: GfxSceneItemRef): Promise<GfxSceneItemObject> {
+		return await this.#getObject(refToPath(gfxSceneItemRef), GfxSceneItemObjectEncodingDefinition)
+	}
+	async updateGfxSceneItem(gfxSceneItemRef: MacroRef, props: Partial<UpdateGfxSceneItemObject>): Promise<void> {
+		await this.setAttributes(refToPath(gfxSceneItemRef), [
+			{ attribute: 'width', value: stringifyInteger(props.width) },
+			{ attribute: 'height', value: stringifyInteger(props.height) },
+			{ attribute: 'position', value: stringifyPos2D(props.position) },
+		])
+	}
+	async updateGfxSceneHTMLElementItem(
+		gfxSceneItemRef: MacroRef,
+		props: Partial<UpdateGfxSceneHTMLElementItemObject>
+	): Promise<void> {
+		await Promise.all([
+			this.updateGfxSceneItem(gfxSceneItemRef, props),
+			this.setAttributes(refToPath(gfxSceneItemRef), [{ attribute: 'url', value: props.url }]),
+		])
+	}
 	// 		Text
 	// 		TextBox
 	// 		Counter

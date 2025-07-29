@@ -32,6 +32,8 @@ conn.addListener('disconnect', () => println('Disconnected'))
 conn.addListener('error', () => println('Error'))
 conn.addListener('reset', () => println('Application Reset'))
 
+const subs = []
+
 rl.addListener('line', (input) => {
 	const [command, arg] = input.split(' ', 2)
 	if (command === 'list') {
@@ -59,6 +61,39 @@ rl.addListener('line', (input) => {
 		const [arg0, arg1] = arg.split(' ', 2)
 		conn
 			.setAttribute(arg0, arg1)
+			.then(() => {
+				println('OK')
+			})
+			.catch(handleError)
+	} else if (command === 'sub') {
+		const abort = new AbortController()
+		conn.subscribeValue(
+			arg,
+			abort.signal,
+			(path, error, value) => {
+				if (error) {
+					println('Subscription Error: ' + error.message)
+					return
+				}
+				println(`${path}=` + String(value))
+			},
+			false
+		)
+		const index = subs.push(abort) - 1
+		println(`Subscribed as #${index}`)
+	} else if (command === 'unsub') {
+		const index = parseInt(arg)
+		const abort = subs[index]
+		if (!abort) {
+			println(`Unknown subscription: #${arg}`)
+			return
+		}
+		abort.abort()
+		println(`Unsubscribed #${index}`)
+	} else if (command === 'do') {
+		const [func, ...args] = arg.split(' ')
+		conn
+			.executeFunction(func, ...args)
 			.then(() => {
 				println('OK')
 			})

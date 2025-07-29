@@ -1,5 +1,6 @@
 import { expect, test, describe, beforeEach, afterEach, vi } from 'vitest'
 import { MinimalKairosConnection, Options } from '../kairos-minimal.js'
+import { ExpectedResponseType } from '../parser.js'
 
 // Mock the Connection class
 vi.mock(import('../connection.js'), async (original) => {
@@ -347,27 +348,31 @@ describe('MinimalKairosConnection', () => {
 
 			// Execute the commands (they will not resolve until we send responses)
 			const promise1 = connection.setAttribute('path1', 'value1')
-			const promise2 = connection.getAttribute('path2')
-			const promise3 = connection.getList('path3')
+			const promise2 = connection.executeCommand('info:path1', ExpectedResponseType.NakedList, null)
+			const promise3 = connection.getAttribute('path2')
+			const promise4 = connection.getList('path3')
 
 			// Process the queue to send the commands
 			await vi.runOnlyPendingTimersAsync()
 
 			// Verify all commands were sent with correct serialization
 			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(1, 'path1=value1')
-			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(2, 'path2')
-			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(3, 'list_ex:path3')
-			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(3)
+			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(2, 'info:path1')
+			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(3, 'path2')
+			expect(mockConnection.sendCommand).toHaveBeenNthCalledWith(4, 'list_ex:path3')
+			expect(mockConnection.sendCommand).toHaveBeenCalledTimes(4)
 
 			// Simulate receiving responses from the connection
 			mockConnection.emit('lines', ['OK'])
+			mockConnection.emit('lines', ['path1.item1', 'path1.item2', 'path1.item3', ''])
 			mockConnection.emit('lines', ['path2=test_value'])
 			mockConnection.emit('lines', ['list_ex:path3=', 'item1', 'item2', ''])
 
 			// Now all promises should resolve
 			await expect(promise1).resolves.toBeUndefined()
-			await expect(promise2).resolves.toBe('test_value')
-			await expect(promise3).resolves.toEqual(['item1', 'item2'])
+			await expect(promise2).resolves.toEqual(['path1.item1', 'path1.item2', 'path1.item3'])
+			await expect(promise3).resolves.toBe('test_value')
+			await expect(promise4).resolves.toEqual(['item1', 'item2'])
 		})
 
 		test('should return error when sendCommand fails', async () => {
