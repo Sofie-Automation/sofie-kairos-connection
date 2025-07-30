@@ -88,7 +88,7 @@ import {
 	GfxSceneHTMLElementItemObject,
 	UpdateGfxSceneObject,
 } from './kairos-types/main.js'
-import { ResponseError } from './minimal/errors.js'
+import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
 	AnyRef,
 	GfxSceneItemRef,
@@ -198,7 +198,15 @@ export class KairosConnection extends MinimalKairosConnection {
 				return
 			}
 
-			valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
+			try {
+				valueObject[transferDefinition[0] as keyof TObj] = transferDefinition[1].parser(value as string)
+			} catch (e) {
+				// Terminate the subscription and stop this callback from being called again
+				localAbort.abort()
+
+				callback(new TerminateSubscriptionError(`Failed to parse value for attribute "${attributeName}": ${e}`), null)
+				return
+			}
 
 			// Check if the object has been fully populated
 			pendingAttributes.delete(attributeName)
@@ -210,6 +218,9 @@ export class KairosConnection extends MinimalKairosConnection {
 
 		// Start the subscription for each attribute
 		for (const attributeName of attributeNames) {
+			// Check if the signal is already aborted before creating more subscriptions
+			if (combinedSignal.aborted) break
+
 			const path = `${pathPrefix}.${attributeName}`
 			this.subscribeValue(path, combinedSignal, updateValueCallback)
 		}

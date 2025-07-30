@@ -53,6 +53,7 @@ import {
 	GfxSceneItemObject,
 	GfxSceneHTMLElementItemObject,
 	GfxSceneObject,
+	SubscriptionCallback,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
@@ -101,6 +102,14 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 				private _mockConnected = false
 				private _replyHandler: (message: string) => Promise<string[]> = () => {
 					throw new Error('No reply handler set')
+				}
+				private _mockSubscribeValue: (
+					path: string,
+					abort: AbortSignal,
+					callback: SubscriptionCallback<string>,
+					fetchCurrentValue: boolean
+				) => void = () => {
+					throw new Error('No subscribe handler set')
 				}
 
 				public isAMock = true
@@ -175,6 +184,22 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 				public mockSetReplyHandler(handler: (message: string) => Promise<string[]>) {
 					this._replyHandler = handler
 				}
+
+				public mockSetSubscribeValue(
+					handler: (path: string, abort: AbortSignal, callback: SubscriptionCallback<string>) => void
+				) {
+					this._mockSubscribeValue = handler
+				}
+
+				// Override subscribeValue to use mock if set
+				subscribeValue(
+					path: string,
+					abort: AbortSignal,
+					callback: SubscriptionCallback<string>,
+					fetchCurrentValue = true
+				): void {
+					this._mockSubscribeValue(path, abort, callback, fetchCurrentValue)
+				}
 			}
 			return MockKairosMinimalConnectionInstance
 		},
@@ -184,6 +209,7 @@ interface IMockMinimalKairosConnection extends MinimalKairosConnection {
 	isAMock: boolean
 
 	mockSetReplyHandler: (handler: (message: string) => Promise<string[]>) => void
+	mockSetSubscribeValue: (handler: (path: string, abort: AbortSignal, callback: any) => void) => void
 }
 
 type MockedKairosConnection = IMockMinimalKairosConnection & InstanceType<typeof KairosConnection>
@@ -227,6 +253,250 @@ describe('KairosConnection', () => {
 			expect(connection.port).toBe(3005)
 
 			expect(connection.isAMock).toBe(true)
+		})
+	})
+
+	describe('generic #subscribeObject', () => {
+		// These tests are using `subscribeSceneLayer` as a sample for testing the internal method, but are generic enough to apply to any of the subscriptions
+
+		const refMain = refScene(['Main'])
+		const testLayerRef = refSceneLayer(refMain, ['Background'])
+		const testLayerPath = 'SCENES.Main.Layers.Background'
+
+		test('should handle subscription error and call callback with error', async () => {
+			const mockCallback = vi.fn()
+			const abortController = new AbortController()
+
+			// Mock subscribeValue to simulate an error on the first subscription
+			let subscriptionCount = 0
+			connection.mockSetSubscribeValue((path: string, _abort: AbortSignal, callback: any) => {
+				subscriptionCount++
+				if (subscriptionCount === 1) {
+					// Simulate error on first subscription
+					setTimeout(() => {
+						callback(path, new Error('Subscription failed'), null)
+					}, 0)
+				}
+			})
+
+			// Start subscription
+			connection.subscribeSceneLayer(testLayerRef, abortController.signal, mockCallback)
+
+			// Process async operations
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called with error
+			expect(mockCallback).toHaveBeenCalledWith(expect.any(Error), null)
+			expect(mockCallback).toHaveBeenCalledTimes(1)
+			expect(mockCallback.mock.calls[0][0].message).toContain('Subscription failed')
+		})
+
+		test('should handle subscription abort signal', async () => {
+			const mockCallback = vi.fn()
+			const abortController = new AbortController()
+
+			// Track subscriptions
+			const subscriptions = new Map<string, AbortSignal>()
+
+			// Mock subscribeValue to track abort signals
+			connection.mockSetSubscribeValue((path: string, abort: AbortSignal, callback: any) => {
+				subscriptions.set(path, abort)
+
+				// Simulate delayed response
+				setTimeout(() => {
+					if (!abort.aborted) {
+						callback(path, null, 'somevalue')
+					}
+				}, 100)
+			})
+
+			// Start subscription
+			connection.subscribeSceneLayer(testLayerRef, abortController.signal, mockCallback)
+
+			// Abort before completion
+			abortController.abort()
+
+			// Process async operations
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should not be called after abort
+			expect(mockCallback).not.toHaveBeenCalled()
+
+			// Verify that all subscription abort signals are aborted
+			for (const [, signal] of subscriptions) {
+				expect(signal.aborted).toBe(true)
+			}
+		})
+
+		test('should handle updates to subscribed attributes', async () => {
+			const mockCallback = vi.fn()
+			const abortController = new AbortController()
+
+			// Track callbacks for each subscription
+			const callbacks = new Map<string, (path: string, error: Error | null, value: string | null) => void>()
+
+			// Mock subscribeValue with initial values
+			connection.mockSetSubscribeValue((path: string, _abort: AbortSignal, callback: any) => {
+				callbacks.set(path, callback)
+
+				// Provide initial values for all attributes
+				setTimeout(() => {
+					const initialValues: Record<string, string> = {
+						[`${testLayerPath}.opacity`]: '1.0',
+						[`${testLayerPath}.sourceA`]: 'BLACK',
+						[`${testLayerPath}.sourceB`]: 'BLACK',
+						[`${testLayerPath}.source_pgm`]: 'BLACK',
+						[`${testLayerPath}.source_pst`]: 'BLACK',
+						[`${testLayerPath}.active_bus`]: 'A-Bus',
+						[`${testLayerPath}.pgm_pst_mode`]: 'Swap',
+						[`${testLayerPath}.sourceOptions`]: 'BLACK',
+						[`${testLayerPath}.state`]: 'Off',
+						[`${testLayerPath}.mode`]: 'FitScene',
+						[`${testLayerPath}.fxEnabled`]: '0',
+						[`${testLayerPath}.preset_enabled`]: '0',
+						[`${testLayerPath}.color`]: 'rgb(0,0,0)',
+						[`${testLayerPath}.clean_mask`]: '0',
+						[`${testLayerPath}.source_clean_mask`]: '0',
+						[`${testLayerPath}.dissolve_enabled`]: '0',
+						[`${testLayerPath}.dissolve_time`]: '500',
+						[`${testLayerPath}.dissolve_mode`]: 'Normal',
+						[`${testLayerPath}.blend_mode`]: 'Normal',
+					}
+
+					const value = initialValues[path]
+					if (value !== undefined) {
+						callback(path, null, value)
+					}
+				}, 0)
+			})
+
+			// Start subscription
+			connection.subscribeSceneLayer(testLayerRef, abortController.signal, mockCallback)
+
+			// Process initial subscriptions
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should have initial callback
+			expect(mockCallback).toHaveBeenCalledTimes(1)
+			expect(mockCallback.mock.calls[0][1]).toMatchObject({
+				opacity: 1.0,
+				sourceA: refSourceBase(['BLACK']),
+				state: SceneLayerState.Off,
+			})
+
+			// Clear mock calls
+			mockCallback.mockClear()
+
+			// Simulate an update to opacity
+			const opacityCallback = callbacks.get(`${testLayerPath}.opacity`)
+			if (opacityCallback) {
+				opacityCallback(`${testLayerPath}.opacity`, null, '0.5')
+			}
+
+			// Process the update
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should have received updated callback
+			expect(mockCallback).toHaveBeenCalledTimes(1)
+			expect(mockCallback.mock.calls[0][1]).toMatchObject({
+				opacity: 0.5, // Updated value
+				sourceA: refSourceBase(['BLACK']), // Unchanged value
+			})
+		})
+
+		test('should handle parser exceptions properly', async () => {
+			const mockCallback = vi.fn()
+			const abortController = new AbortController()
+
+			// Mock subscribeValue to provide invalid data that will cause parser to throw
+			connection.mockSetSubscribeValue((path: string, _abort: AbortSignal, callback: any) => {
+				setTimeout(() => {
+					// Provide invalid data for opacity parser (expects number, give invalid string)
+					if (path === `${testLayerPath}.opacity`) {
+						callback(path, null, 'invalid_number_format')
+					} else {
+						// Provide normal values for other attributes to ensure they get processed first
+						const responses: Record<string, string> = {
+							[`${testLayerPath}.sourceA`]: 'BLACK',
+							[`${testLayerPath}.sourceB`]: 'WHITE',
+							[`${testLayerPath}.source_pgm`]: 'BLACK',
+							[`${testLayerPath}.source_pst`]: 'WHITE',
+							[`${testLayerPath}.active_bus`]: 'A-Bus',
+							[`${testLayerPath}.pgm_pst_mode`]: 'Swap',
+							[`${testLayerPath}.sourceOptions`]: 'BLACK,CP1,CP2',
+							[`${testLayerPath}.state`]: 'On',
+							[`${testLayerPath}.mode`]: 'FitScene',
+							[`${testLayerPath}.fxEnabled`]: '1',
+							[`${testLayerPath}.preset_enabled`]: '1',
+							[`${testLayerPath}.color`]: 'rgb(255,128,64)',
+							[`${testLayerPath}.clean_mask`]: '1',
+							[`${testLayerPath}.source_clean_mask`]: '2',
+							[`${testLayerPath}.dissolve_enabled`]: '0',
+							[`${testLayerPath}.dissolve_time`]: '1000',
+							[`${testLayerPath}.dissolve_mode`]: 'Normal',
+							[`${testLayerPath}.blend_mode`]: 'Normal',
+						}
+
+						const value = responses[path]
+						if (value !== undefined) {
+							callback(path, null, value)
+						}
+					}
+				}, 0)
+			})
+
+			// Start subscription
+			connection.subscribeSceneLayer(testLayerRef, abortController.signal, mockCallback)
+
+			// Process async operations
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should call callback with error due to parsing failure
+			expect(mockCallback).toHaveBeenCalledTimes(1)
+			const [error, value] = mockCallback.mock.calls[0]
+			expect(error).toBeInstanceOf(Error)
+			expect(error.message).toMatch(/Failed to parse|invalid_number_format|NaN/)
+			expect(value).toBeNull()
+		})
+
+		test('should not leak subscriptions when aborted early', async () => {
+			const mockCallback = vi.fn()
+			const abortController = new AbortController()
+
+			let subscriptionCount = 0
+			const subscriptions = new Set<string>()
+
+			// Mock subscribeValue to track subscriptions and abort early
+			connection.mockSetSubscribeValue((path: string, abort: AbortSignal, callback: any) => {
+				subscriptionCount++
+				subscriptions.add(path)
+
+				// Abort after a few subscriptions
+				if (subscriptionCount === 3) {
+					abortController.abort()
+				}
+
+				// Check if abort happened before callback
+				if (!abort.aborted) {
+					setTimeout(() => {
+						if (!abort.aborted) {
+							callback(path, null, 'value')
+						}
+					}, 0)
+				}
+			})
+
+			// Start subscription
+			connection.subscribeSceneLayer(testLayerRef, abortController.signal, mockCallback)
+
+			// Process subscriptions
+			await vi.runOnlyPendingTimersAsync()
+
+			// Should not call callback when aborted during setup
+			expect(mockCallback).not.toHaveBeenCalled()
+			expect(subscriptionCount).toBeGreaterThan(0)
+			// Should should only have been created up to the abort point
+			expect(subscriptionCount).toEqual(3)
 		})
 	})
 
@@ -2948,5 +3218,88 @@ describe('KairosConnection', () => {
 		// IMAGESTORES
 		// 	IS<1-8>
 		// SPANELPROFILES
+	})
+
+	describe('subscriptions', () => {
+		const refMain = refScene(['Main'])
+
+		test('subscribeSceneLayer', async () => {
+			const mockCallback = vi.fn()
+			const abortController = new AbortController()
+
+			const testLayerRef = refSceneLayer(refMain, ['Background'])
+			const testLayerPath = 'SCENES.Main.Layers.Background'
+
+			// Track subscribed paths and their callbacks
+			const subscriptions = new Map<string, (path: string, error: Error | null, value: string | null) => void>()
+
+			// Mock subscribeValue to simulate successful subscriptions
+			connection.mockSetSubscribeValue((path: string, _abort: AbortSignal, callback: any) => {
+				subscriptions.set(path, callback)
+
+				// Simulate immediate responses with test data
+				setTimeout(() => {
+					const responses: Record<string, string> = {
+						[`${testLayerPath}.opacity`]: '0.75',
+						[`${testLayerPath}.sourceA`]: 'BLACK',
+						[`${testLayerPath}.sourceB`]: 'WHITE',
+						[`${testLayerPath}.source_pgm`]: 'BLACK',
+						[`${testLayerPath}.source_pst`]: 'WHITE',
+						[`${testLayerPath}.active_bus`]: 'A-Bus',
+						[`${testLayerPath}.pgm_pst_mode`]: 'Swap',
+						[`${testLayerPath}.sourceOptions`]: 'BLACK,CP1,CP2',
+						[`${testLayerPath}.state`]: 'On',
+						[`${testLayerPath}.mode`]: 'FitScene',
+						[`${testLayerPath}.fxEnabled`]: '1',
+						[`${testLayerPath}.preset_enabled`]: '1',
+						[`${testLayerPath}.color`]: 'rgb(255,128,64)',
+						[`${testLayerPath}.clean_mask`]: '1',
+						[`${testLayerPath}.source_clean_mask`]: '2',
+						[`${testLayerPath}.dissolve_enabled`]: '0',
+						[`${testLayerPath}.dissolve_time`]: '1000',
+						[`${testLayerPath}.dissolve_mode`]: 'Normal',
+						[`${testLayerPath}.blend_mode`]: 'Normal',
+					}
+
+					const value = responses[path]
+					if (value !== undefined) {
+						callback(path, null, value)
+					}
+				}, 0)
+			})
+
+			// Start subscription
+			connection.subscribeSceneLayer(testLayerRef, abortController.signal, mockCallback)
+
+			// Process async operations
+			await vi.runOnlyPendingTimersAsync()
+
+			// Callback should be called with complete SceneLayerObject
+			expect(mockCallback).toHaveBeenCalledWith(null, {
+				opacity: 0.75,
+				sourceA: refSourceBase(['BLACK']),
+				sourceB: refSourceBase(['WHITE']),
+				sourcePgm: refSourceBase(['BLACK']),
+				sourcePst: refSourceBase(['WHITE']),
+				activeBus: SceneLayerActiveBus.ABus,
+				pgmPstMode: SceneLayerPgmPstMode.Swap,
+				sourceOptions: [refSourceBase(['BLACK']), refClipPlayer(['CP1']), refClipPlayer(['CP2'])],
+				state: SceneLayerState.On,
+				mode: SceneLayerMode.FitScene,
+				fxEnabled: true,
+				presetEnabled: true,
+				color: { red: 255, green: 128, blue: 64 },
+				cleanMask: 1,
+				sourceCleanMask: 2,
+				dissolveEnabled: false,
+				dissolveTime: 1000,
+				dissolveMode: SceneLayerDissolveMode.Normal,
+				blendMode: SceneLayerBlendMode.Normal,
+			})
+			expect(mockCallback).toHaveBeenCalledTimes(1)
+
+			// Verify all expected attributes were subscribed to
+			expect(subscriptions.size).toBe(19) // Number of attributes in SceneLayerObject
+		})
 	})
 })
