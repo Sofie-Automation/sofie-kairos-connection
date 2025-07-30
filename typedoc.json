@@ -1,6 +1,6 @@
 {
 	"entryPointStrategy": "packages",
-	"entryPoints": ["packages/*"],
+	"entryPoints": ["packages/kairos-state", "packages/kairos-connection"],
 	"packageOptions": {
 		"entryPoints": ["src/main.ts"],
 		"compilerOptions": {
