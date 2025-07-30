@@ -20,7 +20,6 @@ export type AnyRef =
 	| ImageStoreRef
 	| SourceBaseRef
 	| SourceIntRef
-	| GfxChannelRef
 	| GfxSceneRef
 	| GfxSceneItemRef
 
@@ -116,8 +115,6 @@ export function refToPath(ref: AnyRef): string {
 		case 'clipPlayer':
 			return [...ref.path].join('.')
 		case 'imageStore':
-			return [...ref.path].join('.')
-		case 'gfxChannel':
 			return [...ref.path].join('.')
 		case 'gfxScene':
 			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr)].join('.')
@@ -255,6 +252,8 @@ export function pathRoRef(ref: string): AnyRef | string {
 				assertNever(path1)
 			}
 		}
+	} else if (path[0] === 'GFXSCENES') {
+		return refGfxScene(path.slice(1))
 	}
 	// If nothing else matched, return the original string
 	return ref
@@ -437,15 +436,6 @@ export type ImageStoreRef = {
 }
 export function refImageStore(path: ImageStoreRef['path']): ImageStoreRef {
 	return { realm: 'imageStore', path }
-}
-
-// ---------------------------- GFXCHANNELS ----------------------------
-export type GfxChannelRef = {
-	realm: 'gfxChannel'
-	path: ['GFX1' | 'GFX2']
-}
-export function refGfxChannel(path: GfxChannelRef['path']): GfxChannelRef {
-	return { realm: 'gfxChannel', path }
 }
 
 // ---------------------------- GFXSCENES ------------------------------

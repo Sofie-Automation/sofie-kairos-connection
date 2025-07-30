@@ -1,5 +1,5 @@
 import { Pos3Df, Pos2Df, Pos2D, ColorRGB } from '../kairos-types/main.js'
-import { isRef, isSourceRef, pathRoRef, refToPath, SceneTransitionRef, SourceRef } from './reference.js'
+import { GfxSceneRef, isRef, isSourceRef, pathRoRef, refToPath, SceneTransitionRef, SourceRef } from './reference.js'
 
 export function parseBoolean(value: string): boolean {
 	if (value === '1') return true
@@ -187,6 +187,28 @@ export function stringifySceneTransitionRef(ref: SceneTransitionRef | string): s
 export function stringifySceneTransitionRef(ref: SceneTransitionRef | string | undefined): string | undefined
 export function stringifySceneTransitionRef(ref: SceneTransitionRef | string | undefined): string | undefined {
 	if (ref === undefined) return undefined
+	if (typeof ref === 'string') return ref
+
+	return refToPath(ref)
+}
+
+export function parseGfxSceneRef(value: string): GfxSceneRef {
+	const ref = pathRoRef(value)
+
+	if (!isRef(ref)) throw new Error(`Unable to parse GfxSceneRef from string: "${value}"`)
+	if (ref.realm !== 'gfxScene') throw new Error(`Unable to parse GfxSceneRef, is a "${ref.realm}" (value: "${value}")`)
+
+	return ref
+}
+
+export function stringifyGfxSceneRef(ref: undefined): undefined
+export function stringifyGfxSceneRef(ref: string): string
+export function stringifyGfxSceneRef(ref: GfxSceneRef): string
+export function stringifyGfxSceneRef(ref: GfxSceneRef | string): string
+export function stringifyGfxSceneRef(ref: GfxSceneRef | string | undefined): string | undefined
+export function stringifyGfxSceneRef(ref: GfxSceneRef | string | null | undefined): string | undefined {
+	if (ref === undefined) return undefined
+	if (ref === null) return '<unknown>'
 	if (typeof ref === 'string') return ref
 
 	return refToPath(ref)

@@ -10,6 +10,7 @@ import {
 	stringifyPos2Df,
 	stringifySourceRef,
 	stringifySceneTransitionRef,
+	stringifyGfxSceneRef,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -1480,7 +1481,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async updateGfxChannel(gfxChannelId: number, props: Partial<UpdateGfxChannelObject>): Promise<void> {
 		this._assertGfxChannelIdIsValid(gfxChannelId)
-		await this.setAttributes(`GFX${gfxChannelId}`, [{ attribute: 'scene', value: props.scene }])
+		await this.setAttributes(`GFX${gfxChannelId}`, [{ attribute: 'scene', value: stringifyGfxSceneRef(props.scene) }])
 	}
 	private _assertGfxChannelIdIsValid(gfxChannelId: number): void {
 		if (typeof gfxChannelId !== 'number' || gfxChannelId < 1 || gfxChannelId > 2) {

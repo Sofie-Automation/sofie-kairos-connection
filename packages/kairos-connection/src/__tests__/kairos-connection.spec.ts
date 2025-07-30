@@ -49,11 +49,13 @@ import {
 	SceneTransition,
 	SceneTransitionObject,
 	SceneTransitionMixEffectObject,
+	GfxChannelObject,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
 import {
 	refClipPlayer,
+	refGfxScene,
 	refImageStore,
 	refMacro,
 	refRamRecorder,
@@ -2825,6 +2827,25 @@ describe('KairosConnection', () => {
 		// 			<1-36>
 		// GFXCHANNELS
 		// 	GFX<1-2>
+		test('GFXCHANNELS commands', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'GFX1.scene': ['GFX1.scene=GFXSCENES.Old'],
+					'GFX1.scene=GFXSCENES.New': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.getGfxChannel(1)).toStrictEqual({
+				scene: refGfxScene(['Old']),
+			} satisfies GfxChannelObject)
+			expect(
+				await connection.updateGfxChannel(1, {
+					scene: refGfxScene(['New']),
+				})
+			).toBeUndefined()
+		})
 		// GFXSCENES
 		// 	GfxScene
 		// 		Text
