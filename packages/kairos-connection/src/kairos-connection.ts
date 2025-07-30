@@ -86,6 +86,7 @@ import {
 	UpdateGfxSceneItemObject,
 	UpdateGfxSceneHTMLElementItemObject,
 	GfxSceneHTMLElementItemObject,
+	UpdateGfxSceneObject,
 } from './kairos-types/main.js'
 import { ResponseError } from './minimal/errors.js'
 import {
@@ -1505,6 +1506,11 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getGfxScene(gfxSceneRef: GfxSceneRef): Promise<GfxSceneObject> {
 		return this.#getObject(refToPath(gfxSceneRef), GfxSceneObjectEncodingDefinition)
 	}
+	async updateGfxScene(gfxSceneRef: GfxSceneRef, props: Partial<UpdateGfxSceneObject>): Promise<void> {
+		await this.setAttributes(refToPath(gfxSceneRef), [
+			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
+		])
+	}
 	async listGfxSceneItems(gfxSceneRef: GfxSceneRef): Promise<(GfxSceneItemRef & { name: string })[]> {
 		return (await this._listDeep(refToPath(gfxSceneRef), [], false)).map((itemPath) => {
 			return {
@@ -1518,7 +1524,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getGfxSceneItem(gfxSceneItemRef: GfxSceneItemRef): Promise<GfxSceneItemObject> {
 		return await this.#getObject(refToPath(gfxSceneItemRef), GfxSceneItemObjectEncodingDefinition)
 	}
-	async updateGfxSceneItem(gfxSceneItemRef: MacroRef, props: Partial<UpdateGfxSceneItemObject>): Promise<void> {
+	async updateGfxSceneItem(gfxSceneItemRef: GfxSceneItemRef, props: Partial<UpdateGfxSceneItemObject>): Promise<void> {
 		await this.setAttributes(refToPath(gfxSceneItemRef), [
 			{ attribute: 'width', value: stringifyInteger(props.width) },
 			{ attribute: 'height', value: stringifyInteger(props.height) },
@@ -1529,7 +1535,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		return await this.#getObject(refToPath(gfxSceneItemRef), GfxSceneHTMLElementItemObjectEncodingDefinition)
 	}
 	async updateGfxSceneHTMLElementItem(
-		gfxSceneItemRef: MacroRef,
+		gfxSceneItemRef: GfxSceneItemRef,
 		props: Partial<UpdateGfxSceneHTMLElementItemObject>
 	): Promise<void> {
 		await Promise.all([

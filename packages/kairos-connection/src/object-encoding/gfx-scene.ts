@@ -16,7 +16,7 @@ const GfxSceneItemObjectBaseEncodingDefinition = {
 		parser: (value: string) => parseInteger(value),
 	},
 	width: {
-		protocolName: 'height',
+		protocolName: 'width',
 		parser: (value: string) => parseInteger(value),
 	},
 	position: {

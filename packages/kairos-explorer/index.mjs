@@ -35,7 +35,8 @@ conn.addListener('reset', () => println('Application Reset'))
 const subs = []
 
 rl.addListener('line', (input) => {
-	const [command, arg] = input.split(' ', 2)
+	const [command, ...args] = input.split(' ')
+	const arg = args.join(' ')
 	if (command === 'list') {
 		conn
 			.getList(arg)
@@ -58,7 +59,7 @@ rl.addListener('line', (input) => {
 			})
 			.catch(handleError)
 	} else if (command === 'set') {
-		const [arg0, arg1] = arg.split(' ', 2)
+		const [arg0, arg1] = arg.split(' ')
 		conn
 			.setAttribute(arg0, arg1)
 			.then(() => {
