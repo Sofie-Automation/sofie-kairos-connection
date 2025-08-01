@@ -1,0 +1,23 @@
+{
+	"name": "kairos-explorer",
+	"version": "0.0.1",
+	"license": "MIT",
+	"packageManager": "yarn@4.9.1",
+	"main": "./index.mjs",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Sofie-Automation/sofie-kairos-connection.git",
+		"directory": "packages/kairos-cli"
+	},
+	"bugs": {
+		"url": "https://github.com/Sofie-Automation/sofie-kairos-connection/issues"
+	},
+	"homepage": "https://github.com/Sofie-Automation/sofie-kairos-connection#readme",
+	"engines": {
+		"node": ">= 20.5"
+	},
+	"dependencies": {
+		"kairos-connection": "*",
+		"tslib": "^2.8.1"
+	}
+}

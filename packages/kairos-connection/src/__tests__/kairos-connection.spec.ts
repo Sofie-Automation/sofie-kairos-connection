@@ -49,12 +49,19 @@ import {
 	SceneTransition,
 	SceneTransitionObject,
 	SceneTransitionMixEffectObject,
+	GfxChannelObject,
+	GfxSceneItemObject,
+	GfxSceneHTMLElementItemObject,
+	GfxSceneObject,
 	SubscriptionCallback,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
 import {
+	GfxSceneRef,
 	refClipPlayer,
+	refGfxScene,
+	refGfxSceneItem,
 	refImageStore,
 	refMacro,
 	refRamRecorder,
@@ -3095,8 +3102,99 @@ describe('KairosConnection', () => {
 		// 			<1-36>
 		// GFXCHANNELS
 		// 	GFX<1-2>
+		test('GFXCHANNELS commands', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'GFX1.scene': ['GFX1.scene=GFXSCENES.Old'],
+					'GFX1.scene=GFXSCENES.Subfolder.New': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.getGfxChannel(1)).toStrictEqual({
+				scene: refGfxScene(['Old']),
+			} satisfies GfxChannelObject)
+			expect(
+				await connection.updateGfxChannel(1, {
+					scene: refGfxScene(['Subfolder', 'New']),
+				})
+			).toBeUndefined()
+		})
 		// GFXSCENES
 		// 	GfxScene
+		test('GFXSCENES commands', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:GFXSCENES': ['list_ex:GFXSCENES=', 'GFXSCENES.Test', ''],
+					'list_ex:GFXSCENES.Test': ['list_ex:GFXSCENES.Test=', ''],
+					'GFXSCENES.Test.resolution': ['GFXSCENES.Test.resolution=1920x1080'],
+					'GFXSCENES.Test.resolution=1280x720': ['OK'],
+					'GFXSCENES.Test.Renderer.width': ['GFXSCENES.Test.Renderer.width=1920'],
+					'GFXSCENES.Test.Renderer.height': ['GFXSCENES.Test.Renderer.height=1080'],
+					'GFXSCENES.Test.Renderer.position': ['GFXSCENES.Test.Renderer.position=0/0'],
+					'GFXSCENES.Test.Renderer.url': ['GFXSCENES.Test.Renderer.url=https://www.nrk.no/'],
+					'GFXSCENES.Test.Renderer.url=https://10.0.0.1/test': ['OK'],
+					'GFXSCENES.Test.Renderer.width=100': ['OK'],
+					'GFXSCENES.Test.Renderer.height=200': ['OK'],
+					'GFXSCENES.Test.Renderer.position=10/20': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.listGfxScenes()).toStrictEqual([
+				{
+					realm: 'gfxScene',
+					scenePath: ['Test'],
+					name: 'Test',
+				} satisfies GfxSceneRef & {
+					name: string
+				},
+			])
+			expect(await connection.getGfxScene(refGfxScene(['Test']))).toStrictEqual({
+				resolution: SceneResolution.Resolution1920x1080,
+			} satisfies GfxSceneObject)
+			expect(
+				await connection.updateGfxScene(refGfxScene(['Test']), {
+					resolution: SceneResolution.Resolution1280x720,
+				})
+			).toBeUndefined()
+			expect(await connection.getGfxSceneItem(refGfxSceneItem(refGfxScene(['Test']), ['Renderer']))).toStrictEqual({
+				height: 1080,
+				width: 1920,
+				position: {
+					x: 0,
+					y: 0,
+				},
+			} satisfies GfxSceneItemObject)
+			expect(
+				await connection.updateGfxSceneItem(refGfxSceneItem(refGfxScene(['Test']), ['Renderer']), {
+					height: 200,
+					width: 100,
+					position: {
+						x: 10,
+						y: 20,
+					},
+				})
+			).toBeUndefined()
+			expect(
+				await connection.getGfxSceneHTMLElementItem(refGfxSceneItem(refGfxScene(['Test']), ['Renderer']))
+			).toStrictEqual({
+				height: 1080,
+				width: 1920,
+				position: {
+					x: 0,
+					y: 0,
+				},
+				url: 'https://www.nrk.no/',
+			} satisfies GfxSceneHTMLElementItemObject)
+			expect(
+				await connection.updateGfxSceneHTMLElementItem(refGfxSceneItem(refGfxScene(['Test']), ['Renderer']), {
+					url: 'https://10.0.0.1/test',
+				})
+			).toBeUndefined()
+		})
 		// 		Text
 		// 		TextBox
 		// 		Counter

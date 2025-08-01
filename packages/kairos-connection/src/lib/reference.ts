@@ -20,6 +20,8 @@ export type AnyRef =
 	| ImageStoreRef
 	| SourceBaseRef
 	| SourceIntRef
+	| GfxSceneRef
+	| GfxSceneItemRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -114,6 +116,12 @@ export function refToPath(ref: AnyRef): string {
 			return [...ref.path].join('.')
 		case 'imageStore':
 			return [...ref.path].join('.')
+		case 'gfxScene':
+			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr)].join('.')
+		case 'gfxScene-item':
+			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr), ...ref.sceneItemPath.map(protocolEncodeStr)].join(
+				'.'
+			)
 		default:
 			assertNever(ref)
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
@@ -244,6 +252,8 @@ export function pathRoRef(ref: string): AnyRef | string {
 				assertNever(path1)
 			}
 		}
+	} else if (path[0] === 'GFXSCENES') {
+		return refGfxScene(path.slice(1))
 	}
 	// If nothing else matched, return the original string
 	return ref
@@ -426,6 +436,23 @@ export type ImageStoreRef = {
 }
 export function refImageStore(path: ImageStoreRef['path']): ImageStoreRef {
 	return { realm: 'imageStore', path }
+}
+
+// ---------------------------- GFXSCENES ------------------------------
+export type GfxSceneRef = {
+	realm: 'gfxScene'
+	scenePath: RefPath
+}
+export type GfxSceneItemRef = {
+	realm: 'gfxScene-item'
+	scenePath: RefPath
+	sceneItemPath: RefPath
+}
+export function refGfxScene(scenePath: RefPath): GfxSceneRef {
+	return { realm: 'gfxScene', scenePath }
+}
+export function refGfxSceneItem(scenePath: GfxSceneRef, sceneItemPath: RefPath): GfxSceneItemRef {
+	return { realm: 'gfxScene-item', scenePath: scenePath.scenePath, sceneItemPath }
 }
 
 // ---------------------------- INTSOURCES -----------------------------
