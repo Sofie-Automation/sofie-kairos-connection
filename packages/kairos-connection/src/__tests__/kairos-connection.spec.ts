@@ -3208,14 +3208,14 @@ describe('KairosConnection', () => {
 		test('AUDIOPLAYERS commands', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
-					'AP1.timecode': ['CP1.timecode=00:00:00:00'],
-					'AP1.remaining_time': ['CP1.remaining_time=00:00:00:00'],
-					'AP1.position': ['CP1.position=0'],
-					'AP1.repeat': ['CP1.repeat=0'],
-					'AP1.tms': ['CP1.tms=Stop'],
-					'AP1.clip': ['CP1.clip=<unknown>'],
-					'AP1.tally': ['CP1.tally=0'],
-					'AP1.autoplay': ['CP1.autoplay=0'],
+					'AP1.timecode': ['AP1.timecode=00:00:00:00'],
+					'AP1.remaining_time': ['AP1.remaining_time=00:00:00:00'],
+					'AP1.position': ['AP1.position=0'],
+					'AP1.repeat': ['AP1.repeat=0'],
+					'AP1.tms': ['AP1.tms=Stop'],
+					'AP1.clip': ['AP1.clip=<unknown>'],
+					'AP1.tally': ['AP1.tally=0'],
+					'AP1.autoplay': ['AP1.autoplay=0'],
 					'AP1.position=0': ['OK'],
 					'AP1.repeat=0': ['OK'],
 					'AP1.tms=NaN': ['Enum Error'],
@@ -3261,20 +3261,20 @@ describe('KairosConnection', () => {
 				tms: ClipPlayerTMS.Stop,
 			} satisfies AudioPlayerObject)
 
-			expect(await connection.clipPlayerBegin(1)).toBeUndefined()
-			expect(await connection.clipPlayerRewind(1)).toBeUndefined()
-			expect(await connection.clipPlayerStepBack(1)).toBeUndefined()
-			expect(await connection.clipPlayerReverse(1)).toBeUndefined()
-			expect(await connection.clipPlayerPlay(1)).toBeUndefined()
-			expect(await connection.clipPlayerPause(1)).toBeUndefined()
-			expect(await connection.clipPlayerStop(1)).toBeUndefined()
-			expect(await connection.clipPlayerStepForward(1)).toBeUndefined()
-			expect(await connection.clipPlayerFastForward(1)).toBeUndefined()
-			expect(await connection.clipPlayerEnd(1)).toBeUndefined()
-			expect(await connection.clipPlayerPlaylistBegin(1)).toBeUndefined()
-			expect(await connection.clipPlayerPlaylistBack(1)).toBeUndefined()
-			expect(await connection.clipPlayerPlaylistNext(1)).toBeUndefined()
-			expect(await connection.clipPlayerPlaylistEnd(1)).toBeUndefined()
+			expect(await connection.audioPlayerBegin(1)).toBeUndefined()
+			expect(await connection.audioPlayerRewind(1)).toBeUndefined()
+			expect(await connection.audioPlayerStepBack(1)).toBeUndefined()
+			expect(await connection.audioPlayerReverse(1)).toBeUndefined()
+			expect(await connection.audioPlayerPlay(1)).toBeUndefined()
+			expect(await connection.audioPlayerPause(1)).toBeUndefined()
+			expect(await connection.audioPlayerStop(1)).toBeUndefined()
+			expect(await connection.audioPlayerStepForward(1)).toBeUndefined()
+			expect(await connection.audioPlayerFastForward(1)).toBeUndefined()
+			expect(await connection.audioPlayerEnd(1)).toBeUndefined()
+			expect(await connection.audioPlayerPlaylistBegin(1)).toBeUndefined()
+			expect(await connection.audioPlayerPlaylistBack(1)).toBeUndefined()
+			expect(await connection.audioPlayerPlaylistNext(1)).toBeUndefined()
+			expect(await connection.audioPlayerPlaylistEnd(1)).toBeUndefined()
 		})
 		// AUDIOMIXERS
 		// 	AUDIOMIXER
