@@ -139,6 +139,8 @@ import {
 	GfxSceneItemObjectEncodingDefinition,
 	GfxSceneHTMLElementItemObjectEncodingDefinition,
 } from './object-encoding/index.js'
+import { AudioPlayerObject, UpdateAudioPlayerObject } from './kairos-types/audio-player.js'
+import { AudioPlayerObjectEncodingDefinition } from './object-encoding/audio-players.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -1563,6 +1565,85 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	GEN<1-2>
 	// AUDIOPLAYERS
 	// 	AP<1-4>
+	async getAudioPlayer(playerId: number): Promise<AudioPlayerObject> {
+		this._assertPlayerIdIsValid(playerId)
+		return this.#getObject(`AP${playerId}`, AudioPlayerObjectEncodingDefinition)
+	}
+	async updateAudioPlayer(playerId: number, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
+		this._assertPlayerIdIsValid(playerId)
+		await this.setAttributes(`AP${playerId}`, [
+			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'timecode', value: props.timecode },
+			{ attribute: 'remaining_time', value: props.remainingTime },
+			{ attribute: 'position', value: stringifyInteger(props.position) },
+			{ attribute: 'repeat', value: stringifyBoolean(props.repeat) },
+			{ attribute: 'tms', value: stringifyEnum<ClipPlayerTMS>(props.tms, ClipPlayerTMS) },
+			{ attribute: 'autoplay', value: stringifyBoolean(props.autoplay) },
+			// 'tally' is read-only, so can't be set
+		])
+	}
+	async audioPlayerBegin(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.begin`)
+	}
+	async audioPlayerRewind(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.rewind`)
+	}
+	async audioPlayerStepBack(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.step_back`)
+	}
+	async audioPlayerReverse(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.reverse`)
+	}
+	async audioPlayerPlay(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.play`)
+	}
+	async audioPlayerPause(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.pause`)
+	}
+	async audioPlayerStop(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.stop`)
+	}
+	async audioPlayerStepForward(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.step_forward`)
+	}
+	async audioPlayerFastForward(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.fast_forward`)
+	}
+	async audioPlayerEnd(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.end`)
+	}
+	async audioPlayerPlaylistBegin(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.playlist_begin`)
+	}
+	async audioPlayerPlaylistBack(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.playlist_back`)
+	}
+	async audioPlayerPlaylistNext(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.playlist_next`)
+	}
+	async audioPlayerPlaylistEnd(playerId: number): Promise<void> {
+		this._assertAudioPlayerIdIsValid(playerId)
+		return this.executeFunction(`AP${playerId}.playlist_end`)
+	}
+
+	private _assertAudioPlayerIdIsValid(playerId: number): void {
+		if (typeof playerId !== 'number' || playerId < 1 || playerId > 4) {
+			throw new Error(`Invalid playerId: ${playerId}. Must be 1, 2, 3 or 4.`)
+		}
+	}
 	// AUDIOMIXERS
 	// 	AUDIOMIXER
 	// 		Channel <1-16>
