@@ -42,6 +42,9 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 	private _unprocessedLines: string[] = []
 
+	/** Maximum combined size in bytes for commands awaiting responses */
+	private static readonly MAX_PENDING_BYTES = 1500
+
 	constructor(options?: Options) {
 		super()
 
@@ -132,6 +135,9 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				} else {
 					pendingCommand?.resolve(parsedResponse.commandResponse.value)
 				}
+
+				// Process more commands from the queue now that we have capacity
+				this._processQueue().catch((e) => this.emit('error', e))
 			} else if (!parsedResponse.subscriptionValue) {
 				// If this wasn't a subscription value, and command data is not yet ready, stop processing until this is handled
 				break
@@ -247,8 +253,21 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	private async _processQueue(): Promise<void> {
 		if (this._requestQueue.length < 1) return
 
+		let currentPendingBytes = 0
+
 		for (const r of this._requestQueue) {
+			currentPendingBytes += r.serializedCommand.length
+
 			if (r.processed) continue
+
+			// Check if sending this command would exceed the in flight byte limit
+			// Note: This is a temporary limit, as sending too many commands at once causes the KAIROS to skip some.
+			// This limit is a guess and may not be most optimal for performance, but it is good enough for testing until
+			// this is resolved in the KAIROS.
+			if (currentPendingBytes > MinimalKairosConnection.MAX_PENDING_BYTES) {
+				// If we have too many pending bytes, stop processing
+				break
+			}
 
 			r.processed = true
 			r.processedTime = Date.now()
