@@ -20,6 +20,7 @@ import {
 	ImageStoreRef,
 	SourceBaseRef,
 	SourceIntRef,
+	MattesRef,
 } from '../reference.js'
 
 describe('Reference', () => {
@@ -290,6 +291,28 @@ describe('ref conversions', () => {
 				realm: 'source-int',
 				path: ['MV4'],
 			} satisfies SourceIntRef)
+		})
+
+		test('MattesRef', () => {
+			expect(pathRoRef('MATTES.Matte1')).toStrictEqual({
+				realm: 'mattes',
+				path: ['Matte1'],
+			} satisfies MattesRef)
+
+			expect(pathRoRef('MATTES.Group.CustomMatte')).toStrictEqual({
+				realm: 'mattes',
+				path: ['Group', 'CustomMatte'],
+			} satisfies MattesRef)
+
+			expect(pathRoRef('MATTES.Special&#46;Matte')).toStrictEqual({
+				realm: 'mattes',
+				path: ['Special.Matte'],
+			} satisfies MattesRef)
+
+			expect(pathRoRef('MATTES.Folder.Subfolder.AlphaMatte')).toStrictEqual({
+				realm: 'mattes',
+				path: ['Folder', 'Subfolder', 'AlphaMatte'],
+			} satisfies MattesRef)
 		})
 
 		test('Unknown paths return original string', () => {
