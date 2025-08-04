@@ -22,6 +22,7 @@ export type AnyRef =
 	| SourceIntRef
 	| GfxSceneRef
 	| GfxSceneItemRef
+	| MattesRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -30,7 +31,14 @@ export function isRef(ref: unknown): ref is AnyRef {
 }
 
 /** Any refs that can be used as sources */
-export type SourceRef = RamRecorderRef | ClipPlayerRef | ImageStoreRef | SourceBaseRef | SourceIntRef | SceneRef
+export type SourceRef =
+	| RamRecorderRef
+	| ClipPlayerRef
+	| ImageStoreRef
+	| SourceBaseRef
+	| SourceIntRef
+	| SceneRef
+	| MattesRef
 
 export function isSourceRef(ref: AnyRef): ref is SourceRef {
 	return (
@@ -39,7 +47,8 @@ export function isSourceRef(ref: AnyRef): ref is SourceRef {
 		ref.realm === 'imageStore' ||
 		ref.realm === 'source-base' ||
 		ref.realm === 'source-int' ||
-		ref.realm === 'scene'
+		ref.realm === 'scene' ||
+		ref.realm === 'mattes'
 	)
 }
 
@@ -122,6 +131,8 @@ export function refToPath(ref: AnyRef): string {
 			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr), ...ref.sceneItemPath.map(protocolEncodeStr)].join(
 				'.'
 			)
+		case 'mattes':
+			return ['MATTES', ...ref.path.map(protocolEncodeStr)].join('.')
 		default:
 			assertNever(ref)
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
@@ -252,6 +263,8 @@ export function pathRoRef(ref: string): AnyRef | string {
 				assertNever(path1)
 			}
 		}
+	} else if (path[0] === 'MATTES') {
+		return refMattes(path.slice(1))
 	} else if (path[0] === 'GFXSCENES') {
 		return refGfxScene(path.slice(1))
 	}
@@ -471,4 +484,12 @@ export type SourceIntRef = {
 }
 export function refSourceInt(path: SourceIntRef['path']): SourceIntRef {
 	return { realm: 'source-int', path }
+}
+
+export type MattesRef = {
+	realm: 'mattes'
+	path: RefPath
+}
+export function refMattes(path: MattesRef['path']): MattesRef {
+	return { realm: 'mattes', path }
 }
