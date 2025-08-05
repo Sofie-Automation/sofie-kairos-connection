@@ -55,11 +55,14 @@ import {
 	GfxSceneObject,
 	SubscriptionCallback,
 	AudioPlayerObject,
+	AudioMixerObject,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
 import {
+	AudioMixerChannelRef,
 	GfxSceneRef,
+	refAudioMixerChannel,
 	refClipPlayer,
 	refGfxScene,
 	refGfxSceneItem,
@@ -3279,6 +3282,61 @@ describe('KairosConnection', () => {
 		// AUDIOMIXERS
 		// 	AUDIOMIXER
 		// 		Channel <1-16>
+		test('AUDIOMIXER commands', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'AUDIOMIXER.volume': ['AUDIOMIXER.volume=0'],
+					'AUDIOMIXER.mute': ['AUDIOMIXER.mute=0'],
+					'list_ex:AUDIOMIXER': ['list_ex:AUDIOMIXER=', 'AUDIOMIXER.Channel 1', 'AUDIOMIXER.Channel 2', ''],
+					'AUDIOMIXER.Channel 1.volume': ['AUDIOMIXER.Channel 1.volume=0.2'],
+					'AUDIOMIXER.Channel 1.mute': ['AUDIOMIXER.Channel 1.mute=1'],
+					'AUDIOMIXER.volume=-1': ['OK'],
+					'AUDIOMIXER.mute=1': ['OK'],
+					'AUDIOMIXER.Channel 1.volume=-1': ['OK'],
+					'AUDIOMIXER.Channel 1.mute=1': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(await connection.listAudioMixerChannels()).toStrictEqual([
+				{
+					realm: 'audioMixer-channel',
+					channelPath: ['Channel 1'],
+					name: 'Channel 1',
+				} satisfies AudioMixerChannelRef & {
+					name: string
+				},
+				{
+					realm: 'audioMixer-channel',
+					channelPath: ['Channel 2'],
+					name: 'Channel 2',
+				} satisfies AudioMixerChannelRef & {
+					name: string
+				},
+			])
+			expect(
+				await connection.updateAudioMixerMainBus({
+					mute: true,
+					volume: -1,
+				})
+			).toBeUndefined()
+			expect(await connection.getAudioMixerMainBus()).toStrictEqual({
+				volume: 0,
+				mute: false,
+			} satisfies AudioMixerObject)
+			expect(
+				await connection.updateAudioMixerChannel(refAudioMixerChannel(['Channel 1']), {
+					mute: true,
+					volume: -1,
+				})
+			).toBeUndefined()
+			expect(await connection.getAudioMixerChannel(refAudioMixerChannel(['Channel 1']))).toStrictEqual({
+				volume: 0.2,
+				mute: true,
+			} satisfies AudioMixerObject)
+		})
 		// 	AUDIOMONITOR
 		// 	MIXOUT<1-8>
 		// AUDIOOUTPUTS
