@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
 import { TerminateSubscriptionError } from './errors.js'
 import { ExpectedResponseType, InternalRequest, parseResponseForCommand } from './parser.js'
+import type { AttributeUpdates } from '../object-encoding/types.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -317,10 +318,7 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 	 * @param attributes Array of the attributes on the path to set.
 	 * @returns void
 	 */
-	async setAttributes(
-		path: string,
-		attributes: Array<{ attribute: string; value: string | undefined }>
-	): Promise<void> {
+	async setAttributes(path: string, attributes: AttributeUpdates): Promise<void> {
 		await Promise.all(
 			attributes.map(
 				async (attr) => attr.value !== undefined && this.setAttribute(`${path}.${attr.attribute}`, attr.value)

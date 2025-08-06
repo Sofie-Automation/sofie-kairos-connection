@@ -9,3 +9,5 @@ export type ObjectValueEncodingDefinition<TObj, TKey extends keyof TObj> = {
 export function getProtocolAttributeNames<TObj>(definition: ObjectEncodingDefinition<TObj>): string[] {
 	return Object.values<ObjectValueEncodingDefinition<TObj, any>>(definition).map((attr) => attr.protocolName)
 }
+
+export type AttributeUpdates = Array<{ attribute: string; value: string | undefined }>
