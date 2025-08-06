@@ -4,10 +4,8 @@ import {
 	stringifyEnum,
 	stringifyFloat,
 	stringifyInteger,
-	stringifyPos3Df,
 	stringifyColorRGB,
 	stringifyPos2D,
-	stringifyPos2Df,
 	stringifySourceRef,
 	stringifySceneTransitionRef,
 	stringifyGfxSceneRef,
@@ -32,26 +30,20 @@ import {
 	UpdateEffectCropObject,
 	EffectTransform2DObject,
 	UpdateEffectTransform2DObject,
-	EffectTransform2DType,
 	EffectLuminanceKeyObject,
 	UpdateEffectLuminanceKeyObject,
 	EffectLuminanceKeyBlendMode,
 	EffectChromaKeyObject,
 	UpdateEffectChromaKeyObject,
 	EffectChromaKeyEdgeSmoothingSize,
-	EffectFilmLookColorMode,
 	EffectFilmLookObject,
 	EffectGlowEffectObject,
 	EffectLinearKeyBlendMode,
 	EffectLinearKeyObject,
-	EffectLUTCorrectionColorspace,
-	EffectLUTCorrectionIndex,
 	EffectLUTCorrectionObject,
-	EffectLUTCorrectionRange,
 	EffectMatrixCorrectionObject,
 	EffectPCropObject,
 	EffectPositionObject,
-	EffectPositionRotate,
 	EffectRGBCorrectionObject,
 	EffectTemperatureCorrectionObject,
 	EffectToneCurveCorrectionObject,
@@ -87,14 +79,21 @@ import {
 	UpdateGfxSceneHTMLElementItemObject,
 	GfxSceneHTMLElementItemObject,
 	UpdateGfxSceneObject,
+	AuxObject,
+	UpdateAuxObject,
+	AudioAuxObject,
+	UpdateAudioAuxObject,
 } from './kairos-types/main.js'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
 	AnyRef,
+	AuxEffectRef,
+	AuxRef,
 	GfxSceneItemRef,
 	GfxSceneRef,
 	isRef,
 	MacroRef,
+	pathRoRef,
 	refToPath,
 	SceneLayerEffectRef,
 	SceneLayerRef,
@@ -138,9 +137,23 @@ import {
 	GfxSceneObjectEncodingDefinition,
 	GfxSceneItemObjectEncodingDefinition,
 	GfxSceneHTMLElementItemObjectEncodingDefinition,
+	EncodeUpdateEffectCropObject,
+	EncodeUpdateEffectTransform2DObject,
+	EncodeUpdateEffectPositionObject,
+	EncodeUpdateEffectVirtualPTZObject,
+	EncodeUpdateEffectPCropObject,
+	EncodeUpdateEffectYUVCorrectionObject,
+	EncodeUpdateEffectLUTCorrectionObject,
+	EncodeUpdateEffectRGBCorrectionObject,
+	EncodeUpdateEffectToneCurveCorrectionObject,
+	EncodeUpdateEffectMatrixCorrectionObject,
+	EncodeUpdateEffectTemperatureCorrectionObject,
+	EncodeUpdateEffectFilmLookObject,
+	EncodeUpdateEffectGlowEffectObject,
 } from './object-encoding/index.js'
 import { AudioPlayerObject, UpdateAudioPlayerObject } from './kairos-types/audio-player.js'
 import { AudioPlayerObjectEncodingDefinition } from './object-encoding/audio-players.js'
+import { AudioAuxObjectEncodingDefinition, AuxObjectEncodingDefinition } from './object-encoding/aux.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -428,17 +441,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectCropObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'top', value: stringifyFloat(props.top) },
-			{ attribute: 'left', value: stringifyFloat(props.left) },
-			{ attribute: 'right', value: stringifyFloat(props.right) },
-			{ attribute: 'bottom', value: stringifyFloat(props.bottom) },
-			{ attribute: 'softness', value: stringifyFloat(props.softness) },
-			{ attribute: 'rounded_corners', value: stringifyFloat(props.roundedCorners) },
-			{ attribute: 'global_softness', value: stringifyBoolean(props.globalSoftness) },
-			// softness_top, softness_left, softness_right, softness_bottom are read-only
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectCropObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -451,23 +454,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectTransform2DObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{
-				attribute: 'type',
-				value: stringifyEnum<EffectTransform2DType>(props.type, EffectTransform2DType),
-			},
-			{ attribute: 'scale', value: stringifyFloat(props.scale) },
-			{ attribute: 'rotation_x', value: stringifyFloat(props.rotationX) },
-			{ attribute: 'rotation_y', value: stringifyFloat(props.rotationY) },
-			{ attribute: 'rotation_z', value: stringifyFloat(props.rotationZ) },
-			{ attribute: 'rotation_origin', value: stringifyPos3Df(props.rotationOrigin) },
-			{ attribute: 'position', value: stringifyPos3Df(props.position) },
-			{ attribute: 'cubic_interpolation', value: stringifyBoolean(props.cubicInterpolation) },
-			{ attribute: 'hide_backside', value: stringifyBoolean(props.hideBackside) },
-			{ attribute: 'stretch_h', value: stringifyFloat(props.stretchH) },
-			{ attribute: 'stretch_v', value: stringifyFloat(props.stretchV) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectTransform2DObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -550,19 +537,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectYUVCorrectionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'pedestal', value: stringifyFloat(props.pedestal) },
-			{ attribute: 'luminance_lift', value: stringifyFloat(props.luminanceLift) },
-			{ attribute: 'luminance_gain', value: stringifyFloat(props.luminanceGain) },
-			{ attribute: 'luminance_gamma', value: stringifyFloat(props.luminanceGamma) },
-			{ attribute: 'contrast', value: stringifyFloat(props.contrast) },
-			{ attribute: 'saturation', value: stringifyFloat(props.saturation) },
-			{ attribute: 'UV_rotation', value: stringifyFloat(props.uvRotation) },
-			{ attribute: 'cyan_red', value: stringifyFloat(props.cyanRed) },
-			{ attribute: 'magenta_green', value: stringifyFloat(props.magentaGreen) },
-			{ attribute: 'yellow_blue', value: stringifyFloat(props.yellowBlue) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectYUVCorrectionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -575,21 +550,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectRGBCorrectionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'pedestal_red', value: stringifyFloat(props.pedestalRed) },
-			{ attribute: 'pedestal_green', value: stringifyFloat(props.pedestalGreen) },
-			{ attribute: 'pedestal_blue', value: stringifyFloat(props.pedestalBlue) },
-			{ attribute: 'lift_red', value: stringifyFloat(props.liftRed) },
-			{ attribute: 'lift_green', value: stringifyFloat(props.liftGreen) },
-			{ attribute: 'lift_blue', value: stringifyFloat(props.liftBlue) },
-			{ attribute: 'gain_red', value: stringifyFloat(props.gainRed) },
-			{ attribute: 'gain_green', value: stringifyFloat(props.gainGreen) },
-			{ attribute: 'gain_blue', value: stringifyFloat(props.gainBlue) },
-			{ attribute: 'gamma_red', value: stringifyFloat(props.gammaRed) },
-			{ attribute: 'gamma_green', value: stringifyFloat(props.gammaGreen) },
-			{ attribute: 'gamma_blue', value: stringifyFloat(props.gammaBlue) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectRGBCorrectionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -602,30 +563,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectLUTCorrectionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{
-				attribute: 'index',
-				value: stringifyEnum<EffectLUTCorrectionIndex>(props.index, EffectLUTCorrectionIndex),
-			},
-			{
-				attribute: 'input_colorspace',
-				value: stringifyEnum<EffectLUTCorrectionColorspace>(props.inputColorspace, EffectLUTCorrectionColorspace),
-			},
-			{
-				attribute: 'output_colorspace',
-				value: stringifyEnum<EffectLUTCorrectionColorspace>(props.outputColorspace, EffectLUTCorrectionColorspace),
-			},
-			{
-				attribute: 'input_range',
-				value: stringifyEnum<EffectLUTCorrectionRange>(props.inputRange, EffectLUTCorrectionRange),
-			},
-			{
-				attribute: 'output_range',
-				value: stringifyEnum<EffectLUTCorrectionRange>(props.outputRange, EffectLUTCorrectionRange),
-			},
-			{ attribute: 'color_space_conversion', value: stringifyBoolean(props.colorSpaceConversion) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectLUTCorrectionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -638,11 +576,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectVirtualPTZObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'position', value: stringifyPos2Df(props.position) },
-			{ attribute: 'zoom', value: stringifyFloat(props.zoom) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectVirtualPTZObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -657,21 +591,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectToneCurveCorrectionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'black_red', value: stringifyFloat(props.blackRed) },
-			{ attribute: 'black_green', value: stringifyFloat(props.blackGreen) },
-			{ attribute: 'black_blue', value: stringifyFloat(props.blackBlue) },
-			{ attribute: 'gray_low_red', value: stringifyFloat(props.grayLowRed) },
-			{ attribute: 'gray_low_green', value: stringifyFloat(props.grayLowGreen) },
-			{ attribute: 'gray_low_blue', value: stringifyFloat(props.grayLowBlue) },
-			{ attribute: 'gray_high_red', value: stringifyFloat(props.grayHighRed) },
-			{ attribute: 'gray_high_green', value: stringifyFloat(props.grayHighGreen) },
-			{ attribute: 'gray_high_blue', value: stringifyFloat(props.grayHighBlue) },
-			{ attribute: 'white_red', value: stringifyFloat(props.whiteRed) },
-			{ attribute: 'white_green', value: stringifyFloat(props.whiteGreen) },
-			{ attribute: 'white_blue', value: stringifyFloat(props.whiteBlue) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectToneCurveCorrectionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -684,33 +604,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectMatrixCorrectionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'r-g_n', value: stringifyFloat(props.rgN) },
-			{ attribute: 'r-g_p', value: stringifyFloat(props.rgP) },
-			{ attribute: 'r-b_n', value: stringifyFloat(props.rbN) },
-			{ attribute: 'r-b_p', value: stringifyFloat(props.rbP) },
-			{ attribute: 'g-r_n', value: stringifyFloat(props.grN) },
-			{ attribute: 'g-r_p', value: stringifyFloat(props.grP) },
-			{ attribute: 'g-b_n', value: stringifyFloat(props.gbN) },
-			{ attribute: 'g-b_p', value: stringifyFloat(props.gbP) },
-			{ attribute: 'b-r_n', value: stringifyFloat(props.brN) },
-			{ attribute: 'b-r_p', value: stringifyFloat(props.brP) },
-			{ attribute: 'b-g_n', value: stringifyFloat(props.bgN) },
-			{ attribute: 'b-g_p', value: stringifyFloat(props.bgP) },
-			{ attribute: 'red_phase', value: stringifyFloat(props.redPhase) },
-			{ attribute: 'red_level', value: stringifyFloat(props.redLevel) },
-			{ attribute: 'yellow_phase', value: stringifyFloat(props.yellowPhase) },
-			{ attribute: 'yellow_level', value: stringifyFloat(props.yellowLevel) },
-			{ attribute: 'green_phase', value: stringifyFloat(props.greenPhase) },
-			{ attribute: 'green_level', value: stringifyFloat(props.greenLevel) },
-			{ attribute: 'cyan_phase', value: stringifyFloat(props.cyanPhase) },
-			{ attribute: 'cyan_level', value: stringifyFloat(props.cyanLevel) },
-			{ attribute: 'blue_phase', value: stringifyFloat(props.bluePhase) },
-			{ attribute: 'blue_level', value: stringifyFloat(props.blueLevel) },
-			{ attribute: 'magenta_phase', value: stringifyFloat(props.magentaPhase) },
-			{ attribute: 'magenta_level', value: stringifyFloat(props.magentaLevel) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectMatrixCorrectionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -725,12 +619,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectTemperatureCorrectionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'temperature', value: stringifyInteger(props.temperature) },
-			{ attribute: 'tint', value: stringifyFloat(props.tint) },
-			{ attribute: 'keep_luminance', value: stringifyBoolean(props.keepLuminance) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectTemperatureCorrectionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -764,17 +653,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectPositionObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'position', value: stringifyPos2D(props.position) },
-			// { attribute: 'size', value: stringifyInteger(props.size) },
-			{ attribute: 'width', value: stringifyInteger(props.width) },
-			{ attribute: 'height', value: stringifyInteger(props.height) },
-			{
-				attribute: 'rotate',
-				value: stringifyEnum<EffectPositionRotate>(props.rotate, EffectPositionRotate),
-			},
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectPositionObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -787,13 +666,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectPCropObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'left', value: stringifyInteger(props.left) },
-			{ attribute: 'right', value: stringifyInteger(props.right) },
-			{ attribute: 'top', value: stringifyInteger(props.top) },
-			{ attribute: 'bottom', value: stringifyInteger(props.bottom) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectPCropObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -806,18 +679,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectFilmLookObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			{ attribute: 'crack', value: stringifyFloat(props.crack) },
-			{ attribute: 'spots', value: stringifyFloat(props.spots) },
-			{ attribute: 'grain', value: stringifyFloat(props.grain) },
-			{ attribute: 'shake', value: stringifyFloat(props.shake) },
-			{ attribute: 'shadow', value: stringifyFloat(props.shadow) },
-			{
-				attribute: 'color mode',
-				value: stringifyEnum<EffectFilmLookColorMode>(props.colorMode, EffectFilmLookColorMode),
-			},
-			{ attribute: 'color strength', value: stringifyFloat(props.colorStrength) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectFilmLookObject(props))
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
@@ -830,13 +692,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		effectRef: SceneLayerEffectRef,
 		props: Partial<UpdateEffectGlowEffectObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(effectRef), [
-			// { attribute: 'enabled', value: stringifyBoolean(props.enabled) },
-			{ attribute: 'clip', value: stringifyFloat(props.clip) },
-			{ attribute: 'gain', value: stringifyFloat(props.gain) },
-			{ attribute: 'softness', value: stringifyFloat(props.softness) },
-			{ attribute: 'glow color', value: stringifyColorRGB(props.glowColor) },
-		])
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectGlowEffectObject(props))
 	}
 
 	// Scene.Layers.Layer
@@ -1462,7 +1318,219 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	async listAuxes(): Promise<AuxRef[]> {
+		const rawAuxes = await this.getList('AUX')
+
+		const auxes: AuxRef[] = []
+
+		for (const auxPath of rawAuxes) {
+			const ref = pathRoRef(auxPath)
+			if (!isRef(ref) || ref.realm !== 'aux') {
+				throw new Error(`Invalid aux path: ${auxPath}. Expected realm "aux".`)
+			}
+
+			auxes.push(ref)
+		}
+
+		return auxes
+	}
+	async getAux(auxRef: AuxRef): Promise<AuxObject> {
+		return this.#getObject(refToPath(auxRef), AuxObjectEncodingDefinition)
+	}
+	async updateAux(auxRef: AuxRef, props: Partial<UpdateAuxObject>): Promise<void> {
+		await this.setAttributes(refToPath(auxRef), [
+			{ attribute: 'name', value: props.name },
+			{
+				attribute: 'sourceOptions',
+				value: stringifyCommaSeparated(props.sourceOptions?.map((o) => stringifySourceRef(o))),
+			},
+			{ attribute: 'source', value: stringifySourceRef(props.source) },
+			{ attribute: 'tally_root', value: stringifyInteger(props.tallyRoot) },
+			// recordingStatus and available are read-only
+		])
+	}
+
+	async auxRecord(auxRef: AuxRef, frameCount = -1, filename?: string): Promise<void> {
+		const args: string[] = []
+		if (frameCount >= 0) {
+			args.push(frameCount.toString())
+		}
+		if (filename) {
+			args.push(filename)
+		}
+
+		return this.executeFunction(`${refToPath(auxRef)}.record`, ...args)
+	}
+
+	async auxRecordLoop(auxRef: AuxRef, frameCount = -1, filename?: string): Promise<void> {
+		const args: string[] = []
+		if (frameCount >= 0) {
+			args.push(frameCount.toString())
+		}
+		if (filename) {
+			args.push(filename)
+		}
+
+		return this.executeFunction(`${refToPath(auxRef)}.record_loop`, ...args)
+	}
+
+	async auxRecordStop(auxRef: AuxRef): Promise<void> {
+		return this.executeFunction(`${refToPath(auxRef)}.stop_record`)
+	}
+
+	async auxGrabStill(auxRef: AuxRef, filename?: string): Promise<void> {
+		const args: string[] = []
+		if (filename) {
+			args.push(filename)
+		}
+
+		return this.executeFunction(`${refToPath(auxRef)}.grab`, ...args)
+	}
+
+	async listAuxEffects(auxRef: AuxRef, deep?: boolean): Promise<(AuxEffectRef & { name: string })[]> {
+		return (await this._listDeep(`${refToPath(auxRef)}.Effects`, [], deep)).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Effects')
+			if (paths.length !== 2)
+				throw new Error(
+					`Invalid Aux.Effects path: "${JSON.stringify(paths)}" ("Aux" or "Effects" missing) (${JSON.stringify(itemPath)})`
+				)
+
+			return {
+				realm: 'aux-effect',
+				name: paths[1][paths[1].length - 1],
+				auxPath: auxRef.path,
+				auxPathIsName: auxRef.pathIsName,
+				effectPath: paths[1],
+			}
+		})
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectCrop(effectRef: AuxEffectRef): Promise<EffectCropObject> {
+		return this.#getObject(refToPath(effectRef), EffectCropObjectEncodingDefinition)
+	}
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectCrop(effectRef: AuxEffectRef, props: Partial<UpdateEffectCropObject>): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectCropObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectYUVCorrection(effectRef: AuxEffectRef): Promise<EffectYUVCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectYUVCorrectionObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectYUVCorrection(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectYUVCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectYUVCorrectionObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectRGBCorrection(effectRef: AuxEffectRef): Promise<EffectRGBCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectRGBCorrectionObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectRGBCorrection(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectRGBCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectRGBCorrectionObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectLUTCorrection(effectRef: AuxEffectRef): Promise<EffectLUTCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectLUTCorrectionObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectLUTCorrection(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectLUTCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectLUTCorrectionObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectToneCurveCorrection(effectRef: AuxEffectRef): Promise<EffectToneCurveCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectToneCurveCorrectionObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectToneCurveCorrection(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectToneCurveCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectToneCurveCorrectionObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectMatrixCorrection(effectRef: AuxEffectRef): Promise<EffectMatrixCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectMatrixCorrectionObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectMatrixCorrection(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectMatrixCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectMatrixCorrectionObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectTemperatureCorrection(effectRef: AuxEffectRef): Promise<EffectTemperatureCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectTemperatureCorrectionObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectTemperatureCorrection(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectTemperatureCorrectionObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectTemperatureCorrectionObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectFilmLook(effectRef: AuxEffectRef): Promise<EffectFilmLookObject> {
+		return this.#getObject(refToPath(effectRef), EffectFilmLookObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectFilmLook(effectRef: AuxEffectRef, props: Partial<UpdateEffectFilmLookObject>): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectFilmLookObject(props))
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async getAuxEffectGlowEffect(effectRef: AuxEffectRef): Promise<EffectGlowEffectObject> {
+		return this.#getObject(refToPath(effectRef), EffectGlowEffectObjectEncodingDefinition)
+	}
+
+	/** Note: This Effect is only available if listed using listAuxEffects() */
+	async updateAuxEffectGlowEffect(
+		effectRef: AuxEffectRef,
+		props: Partial<UpdateEffectGlowEffectObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(effectRef), EncodeUpdateEffectGlowEffectObject(props))
+	}
+
 	// 	AUDIO-AUX<1-8>
+	async getAudioAux(auxRef: AuxRef): Promise<AudioAuxObject> {
+		return this.#getObject(refToPath(auxRef), AudioAuxObjectEncodingDefinition)
+	}
+	async updateAudioAux(auxRef: AuxRef, props: Partial<UpdateAudioAuxObject>): Promise<void> {
+		await this.setAttributes(refToPath(auxRef), [
+			{ attribute: 'name', value: props.name },
+			{
+				attribute: 'sourceOptions',
+				value: stringifyCommaSeparated(props.sourceOptions?.map((o) => stringifySourceRef(o))),
+			},
+			{ attribute: 'source', value: stringifySourceRef(props.source) },
+			// available is read-only
+		])
+	}
+
 	// INPUTS
 	// 	IP<1-48>
 	// 	NDI<1-2>

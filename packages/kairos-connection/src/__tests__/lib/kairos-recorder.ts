@@ -2,6 +2,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import * as MinimalImport from '../../minimal/kairos-minimal.js'
 import { ResponseError } from '../../minimal/errors.js'
+import { ExpectedResponseType } from '../../minimal/parser.js'
+import { assertNever } from '../../lib/lib.js'
 
 /**
  * This class connects to a Kairos ( /emulator), sends messages to it and stores the replies in a cache on disk.
@@ -13,7 +15,7 @@ export class KairosRecorder {
 
 	private _onlineOnly = false
 
-	connection: any
+	connection: MinimalImport.MinimalKairosConnection
 	constructor(emulatorIp: string) {
 		let MinimalKairosConnection = MinimalImport.MinimalKairosConnection
 		// This is a hack to access the original, unmocked class:
@@ -71,17 +73,45 @@ export class KairosRecorder {
 	}
 
 	/** */
-	async doCommand(message: string): Promise<string[] | null> {
+	async doCommand(
+		message: string,
+		expectedResponse: ExpectedResponseType,
+		expectedResponsePath: string | null
+	): Promise<string[]> {
 		const cached = this._storedReplies[message]
 		if (cached) return cached
 
 		// Execute the commands in synchronous order:
 		try {
 			const reply = await this.waitForSynchronousQueue(async () => {
-				return this.connection.executeCommand(message, (response: any) => ({
-					remainingLines: [],
-					response,
-				}))
+				if (expectedResponse === ExpectedResponseType.List) {
+					expectedResponse = ExpectedResponseType.NakedList
+				}
+				let res = (await this.connection.executeCommand(message, expectedResponse, expectedResponsePath)) as string[]
+
+				// if (expectedResponse === ExpectedResponseType.List) {
+				// 	res.unshift(`list_ex:${expectedResponsePath}=`) // Add the expected response path to the start of the list
+				// }
+
+				switch (expectedResponse) {
+					case ExpectedResponseType.NakedList:
+						// case ExpectedResponseType.List:
+						res.push('')
+						break
+					case ExpectedResponseType.Query:
+						res = [`${expectedResponsePath}=${res as any as string}`]
+						break
+					case ExpectedResponseType.OK:
+						res = ['OK']
+						break
+					default:
+						// For other expected responses, we assume the response is already in the correct format
+						assertNever(expectedResponse)
+						break
+				}
+
+				console.log('produce response', res)
+				return res
 			})
 			if (reply) {
 				this._storedReplies[message] = reply

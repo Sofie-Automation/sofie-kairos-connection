@@ -1,4 +1,4 @@
-import type { ObjectEncodingDefinition } from './types.js'
+import type { AttributeUpdates, ObjectEncodingDefinition } from './types.js'
 import {
 	EffectYUVCorrectionObject,
 	EffectRGBCorrectionObject,
@@ -9,8 +9,23 @@ import {
 	EffectToneCurveCorrectionObject,
 	EffectMatrixCorrectionObject,
 	EffectTemperatureCorrectionObject,
+	UpdateEffectTemperatureCorrectionObject,
+	UpdateEffectLUTCorrectionObject,
+	UpdateEffectMatrixCorrectionObject,
+	UpdateEffectRGBCorrectionObject,
+	UpdateEffectToneCurveCorrectionObject,
+	UpdateEffectYUVCorrectionObject,
 } from '../kairos-types/effects.js'
-import { parseBoolean, parseEnum, parseInteger, parseFloatValue } from '../lib/data-parsers.js'
+import {
+	parseBoolean,
+	parseEnum,
+	parseInteger,
+	parseFloatValue,
+	stringifyBoolean,
+	stringifyInteger,
+	stringifyEnum,
+	stringifyFloat,
+} from '../lib/data-parsers.js'
 
 export const EffectYUVCorrectionObjectEncodingDefinition: ObjectEncodingDefinition<EffectYUVCorrectionObject> = {
 	enabled: { protocolName: 'enabled', parser: parseBoolean },
@@ -24,6 +39,24 @@ export const EffectYUVCorrectionObjectEncodingDefinition: ObjectEncodingDefiniti
 	cyanRed: { protocolName: 'cyan_red', parser: parseFloatValue },
 	magentaGreen: { protocolName: 'magenta_green', parser: parseFloatValue },
 	yellowBlue: { protocolName: 'yellow_blue', parser: parseFloatValue },
+}
+
+export function EncodeUpdateEffectYUVCorrectionObject(
+	props: Partial<UpdateEffectYUVCorrectionObject>
+): AttributeUpdates {
+	return [
+		{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+		{ attribute: 'pedestal', value: stringifyFloat(props.pedestal) },
+		{ attribute: 'luminance_lift', value: stringifyFloat(props.luminanceLift) },
+		{ attribute: 'luminance_gain', value: stringifyFloat(props.luminanceGain) },
+		{ attribute: 'luminance_gamma', value: stringifyFloat(props.luminanceGamma) },
+		{ attribute: 'contrast', value: stringifyFloat(props.contrast) },
+		{ attribute: 'saturation', value: stringifyFloat(props.saturation) },
+		{ attribute: 'UV_rotation', value: stringifyFloat(props.uvRotation) },
+		{ attribute: 'cyan_red', value: stringifyFloat(props.cyanRed) },
+		{ attribute: 'magenta_green', value: stringifyFloat(props.magentaGreen) },
+		{ attribute: 'yellow_blue', value: stringifyFloat(props.yellowBlue) },
+	]
 }
 
 export const EffectRGBCorrectionObjectEncodingDefinition: ObjectEncodingDefinition<EffectRGBCorrectionObject> = {
@@ -40,6 +73,26 @@ export const EffectRGBCorrectionObjectEncodingDefinition: ObjectEncodingDefiniti
 	gammaRed: { protocolName: 'gamma_red', parser: parseFloatValue },
 	gammaGreen: { protocolName: 'gamma_green', parser: parseFloatValue },
 	gammaBlue: { protocolName: 'gamma_blue', parser: parseFloatValue },
+}
+
+export function EncodeUpdateEffectRGBCorrectionObject(
+	props: Partial<UpdateEffectRGBCorrectionObject>
+): AttributeUpdates {
+	return [
+		{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+		{ attribute: 'pedestal_red', value: stringifyFloat(props.pedestalRed) },
+		{ attribute: 'pedestal_green', value: stringifyFloat(props.pedestalGreen) },
+		{ attribute: 'pedestal_blue', value: stringifyFloat(props.pedestalBlue) },
+		{ attribute: 'lift_red', value: stringifyFloat(props.liftRed) },
+		{ attribute: 'lift_green', value: stringifyFloat(props.liftGreen) },
+		{ attribute: 'lift_blue', value: stringifyFloat(props.liftBlue) },
+		{ attribute: 'gain_red', value: stringifyFloat(props.gainRed) },
+		{ attribute: 'gain_green', value: stringifyFloat(props.gainGreen) },
+		{ attribute: 'gain_blue', value: stringifyFloat(props.gainBlue) },
+		{ attribute: 'gamma_red', value: stringifyFloat(props.gammaRed) },
+		{ attribute: 'gamma_green', value: stringifyFloat(props.gammaGreen) },
+		{ attribute: 'gamma_blue', value: stringifyFloat(props.gammaBlue) },
+	]
 }
 
 export const EffectLUTCorrectionObjectEncodingDefinition: ObjectEncodingDefinition<EffectLUTCorrectionObject> = {
@@ -67,6 +120,35 @@ export const EffectLUTCorrectionObjectEncodingDefinition: ObjectEncodingDefiniti
 	colorSpaceConversion: { protocolName: 'color_space_conversion', parser: parseBoolean },
 }
 
+export function EncodeUpdateEffectLUTCorrectionObject(
+	props: Partial<UpdateEffectLUTCorrectionObject>
+): AttributeUpdates {
+	return [
+		{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+		{
+			attribute: 'index',
+			value: stringifyEnum<EffectLUTCorrectionIndex>(props.index, EffectLUTCorrectionIndex),
+		},
+		{
+			attribute: 'input_colorspace',
+			value: stringifyEnum<EffectLUTCorrectionColorspace>(props.inputColorspace, EffectLUTCorrectionColorspace),
+		},
+		{
+			attribute: 'output_colorspace',
+			value: stringifyEnum<EffectLUTCorrectionColorspace>(props.outputColorspace, EffectLUTCorrectionColorspace),
+		},
+		{
+			attribute: 'input_range',
+			value: stringifyEnum<EffectLUTCorrectionRange>(props.inputRange, EffectLUTCorrectionRange),
+		},
+		{
+			attribute: 'output_range',
+			value: stringifyEnum<EffectLUTCorrectionRange>(props.outputRange, EffectLUTCorrectionRange),
+		},
+		{ attribute: 'color_space_conversion', value: stringifyBoolean(props.colorSpaceConversion) },
+	]
+}
+
 export const EffectToneCurveCorrectionObjectEncodingDefinition: ObjectEncodingDefinition<EffectToneCurveCorrectionObject> =
 	{
 		enabled: { protocolName: 'enabled', parser: parseBoolean },
@@ -83,6 +165,26 @@ export const EffectToneCurveCorrectionObjectEncodingDefinition: ObjectEncodingDe
 		whiteGreen: { protocolName: 'white_green', parser: parseFloatValue },
 		whiteBlue: { protocolName: 'white_blue', parser: parseFloatValue },
 	}
+
+export function EncodeUpdateEffectToneCurveCorrectionObject(
+	props: Partial<UpdateEffectToneCurveCorrectionObject>
+): AttributeUpdates {
+	return [
+		{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+		{ attribute: 'black_red', value: stringifyFloat(props.blackRed) },
+		{ attribute: 'black_green', value: stringifyFloat(props.blackGreen) },
+		{ attribute: 'black_blue', value: stringifyFloat(props.blackBlue) },
+		{ attribute: 'gray_low_red', value: stringifyFloat(props.grayLowRed) },
+		{ attribute: 'gray_low_green', value: stringifyFloat(props.grayLowGreen) },
+		{ attribute: 'gray_low_blue', value: stringifyFloat(props.grayLowBlue) },
+		{ attribute: 'gray_high_red', value: stringifyFloat(props.grayHighRed) },
+		{ attribute: 'gray_high_green', value: stringifyFloat(props.grayHighGreen) },
+		{ attribute: 'gray_high_blue', value: stringifyFloat(props.grayHighBlue) },
+		{ attribute: 'white_red', value: stringifyFloat(props.whiteRed) },
+		{ attribute: 'white_green', value: stringifyFloat(props.whiteGreen) },
+		{ attribute: 'white_blue', value: stringifyFloat(props.whiteBlue) },
+	]
+}
 
 export const EffectMatrixCorrectionObjectEncodingDefinition: ObjectEncodingDefinition<EffectMatrixCorrectionObject> = {
 	enabled: { protocolName: 'enabled', parser: parseBoolean },
@@ -112,6 +214,38 @@ export const EffectMatrixCorrectionObjectEncodingDefinition: ObjectEncodingDefin
 	magentaLevel: { protocolName: 'magenta_level', parser: parseFloatValue },
 }
 
+export function EncodeUpdateEffectMatrixCorrectionObject(
+	props: Partial<UpdateEffectMatrixCorrectionObject>
+): AttributeUpdates {
+	return [
+		{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+		{ attribute: 'r-g_n', value: stringifyFloat(props.rgN) },
+		{ attribute: 'r-g_p', value: stringifyFloat(props.rgP) },
+		{ attribute: 'r-b_n', value: stringifyFloat(props.rbN) },
+		{ attribute: 'r-b_p', value: stringifyFloat(props.rbP) },
+		{ attribute: 'g-r_n', value: stringifyFloat(props.grN) },
+		{ attribute: 'g-r_p', value: stringifyFloat(props.grP) },
+		{ attribute: 'g-b_n', value: stringifyFloat(props.gbN) },
+		{ attribute: 'g-b_p', value: stringifyFloat(props.gbP) },
+		{ attribute: 'b-r_n', value: stringifyFloat(props.brN) },
+		{ attribute: 'b-r_p', value: stringifyFloat(props.brP) },
+		{ attribute: 'b-g_n', value: stringifyFloat(props.bgN) },
+		{ attribute: 'b-g_p', value: stringifyFloat(props.bgP) },
+		{ attribute: 'red_phase', value: stringifyFloat(props.redPhase) },
+		{ attribute: 'red_level', value: stringifyFloat(props.redLevel) },
+		{ attribute: 'yellow_phase', value: stringifyFloat(props.yellowPhase) },
+		{ attribute: 'yellow_level', value: stringifyFloat(props.yellowLevel) },
+		{ attribute: 'green_phase', value: stringifyFloat(props.greenPhase) },
+		{ attribute: 'green_level', value: stringifyFloat(props.greenLevel) },
+		{ attribute: 'cyan_phase', value: stringifyFloat(props.cyanPhase) },
+		{ attribute: 'cyan_level', value: stringifyFloat(props.cyanLevel) },
+		{ attribute: 'blue_phase', value: stringifyFloat(props.bluePhase) },
+		{ attribute: 'blue_level', value: stringifyFloat(props.blueLevel) },
+		{ attribute: 'magenta_phase', value: stringifyFloat(props.magentaPhase) },
+		{ attribute: 'magenta_level', value: stringifyFloat(props.magentaLevel) },
+	]
+}
+
 export const EffectTemperatureCorrectionObjectEncodingDefinition: ObjectEncodingDefinition<EffectTemperatureCorrectionObject> =
 	{
 		enabled: { protocolName: 'enabled', parser: parseBoolean },
@@ -119,3 +253,14 @@ export const EffectTemperatureCorrectionObjectEncodingDefinition: ObjectEncoding
 		tint: { protocolName: 'tint', parser: parseFloatValue },
 		keepLuminance: { protocolName: 'keep_luminance', parser: parseBoolean },
 	}
+
+export function EncodeUpdateEffectTemperatureCorrectionObject(
+	props: Partial<UpdateEffectTemperatureCorrectionObject>
+): AttributeUpdates {
+	return [
+		{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
+		{ attribute: 'temperature', value: stringifyInteger(props.temperature) },
+		{ attribute: 'tint', value: stringifyFloat(props.tint) },
+		{ attribute: 'keep_luminance', value: stringifyBoolean(props.keepLuminance) },
+	]
+}
