@@ -10,31 +10,31 @@ import {
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
 	SceneLayerDissolveMode,
-	SceneLayerEffectChromaKeyEdgeSmoothingSize,
-	SceneLayerEffectChromaKeyObject,
-	SceneLayerEffectCropObject,
-	SceneLayerEffectFilmLookColorMode,
-	SceneLayerEffectFilmLookObject,
-	SceneLayerEffectGlowEffectObject,
-	SceneLayerEffectLinearKeyBlendMode,
-	SceneLayerEffectLinearKeyObject,
-	SceneLayerEffectLuminanceKeyBlendMode,
-	SceneLayerEffectLuminanceKeyObject,
-	SceneLayerEffectLUTCorrectionColorspace,
-	SceneLayerEffectLUTCorrectionIndex,
-	SceneLayerEffectLUTCorrectionObject,
-	SceneLayerEffectLUTCorrectionRange,
-	SceneLayerEffectMatrixCorrectionObject,
-	SceneLayerEffectPCropObject,
-	SceneLayerEffectPositionObject,
-	SceneLayerEffectPositionRotate,
-	SceneLayerEffectRGBCorrectionObject,
-	SceneLayerEffectTemperatureCorrectionObject,
-	SceneLayerEffectToneCurveCorrectionObject,
-	SceneLayerEffectTransform2DObject,
-	SceneLayerEffectTransform2DType,
-	SceneLayerEffectVirtualPTZObject,
-	SceneLayerEffectYUVCorrectionObject,
+	EffectChromaKeyEdgeSmoothingSize,
+	EffectChromaKeyObject,
+	EffectCropObject,
+	EffectFilmLookColorMode,
+	EffectFilmLookObject,
+	EffectGlowEffectObject,
+	EffectLinearKeyBlendMode,
+	EffectLinearKeyObject,
+	EffectLuminanceKeyBlendMode,
+	EffectLuminanceKeyObject,
+	EffectLUTCorrectionColorspace,
+	EffectLUTCorrectionIndex,
+	EffectLUTCorrectionObject,
+	EffectLUTCorrectionRange,
+	EffectMatrixCorrectionObject,
+	EffectPCropObject,
+	EffectPositionObject,
+	EffectPositionRotate,
+	EffectRGBCorrectionObject,
+	EffectTemperatureCorrectionObject,
+	EffectToneCurveCorrectionObject,
+	EffectTransform2DObject,
+	EffectTransform2DType,
+	EffectVirtualPTZObject,
+	EffectYUVCorrectionObject,
 	SceneLayerMode,
 	SceneLayerObject,
 	SceneLayerPgmPstMode,
@@ -1175,7 +1175,7 @@ describe('KairosConnection', () => {
 					softnessRight: 0,
 					softnessTop: 0,
 					top: 0,
-				} satisfies SceneLayerEffectCropObject)
+				} satisfies EffectCropObject)
 			})
 			test('Transform2D', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1251,7 +1251,7 @@ describe('KairosConnection', () => {
 						scale: 1,
 						stretchH: 0,
 						stretchV: 0,
-						type: SceneLayerEffectTransform2DType.TwoD,
+						type: EffectTransform2DType.TwoD,
 					})
 				).toBeUndefined()
 				expect(
@@ -1276,8 +1276,8 @@ describe('KairosConnection', () => {
 					scale: 1,
 					stretchH: 0,
 					stretchV: 0,
-					type: SceneLayerEffectTransform2DType.TwoD,
-				} satisfies SceneLayerEffectTransform2DObject)
+					type: EffectTransform2DType.TwoD,
+				} satisfies EffectTransform2DObject)
 			})
 			test('LuminanceKey', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1321,7 +1321,7 @@ describe('KairosConnection', () => {
 				})
 				expect(
 					await connection.updateSceneLayerEffectLuminanceKey(refSceneLayerEffect(refBackground, ['LuminanceKey']), {
-						blendMode: SceneLayerEffectLuminanceKeyBlendMode.Auto,
+						blendMode: EffectLuminanceKeyBlendMode.Auto,
 						cleanup: 0,
 						clip: 0.5,
 						density: 0,
@@ -1334,7 +1334,7 @@ describe('KairosConnection', () => {
 				expect(
 					await connection.getSceneLayerEffectLuminanceKey(refSceneLayerEffect(refBackground, ['LuminanceKey']))
 				).toStrictEqual({
-					blendMode: SceneLayerEffectLuminanceKeyBlendMode.Auto,
+					blendMode: EffectLuminanceKeyBlendMode.Auto,
 					cleanup: 0,
 					clip: 0.5,
 					density: 0,
@@ -1342,7 +1342,7 @@ describe('KairosConnection', () => {
 					gain: 1,
 					invert: false,
 					sourceKey: null, // '<unknown>',
-				} satisfies SceneLayerEffectLuminanceKeyObject)
+				} satisfies EffectLuminanceKeyObject)
 
 				expect(
 					await connection.sceneLayerEffectLuminanceKeyAutoAdjust(refSceneLayerEffect(refBackground, ['LuminanceKey']))
@@ -1440,7 +1440,7 @@ describe('KairosConnection', () => {
 						cleanup: 0,
 						clip: 0.5,
 						density: 0,
-						edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize.Off,
+						edgeSmoothingSize: EffectChromaKeyEdgeSmoothingSize.Off,
 						enabled: false,
 						fgdFade: false,
 						gain: 1,
@@ -1464,7 +1464,7 @@ describe('KairosConnection', () => {
 					cleanup: 0,
 					clip: 0.5,
 					density: 0,
-					edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize.Off,
+					edgeSmoothingSize: EffectChromaKeyEdgeSmoothingSize.Off,
 					enabled: false,
 					fgdFade: false,
 					gain: 1,
@@ -1477,7 +1477,7 @@ describe('KairosConnection', () => {
 					spillSupression: 0.3,
 					spillSupressionLeft: 1,
 					spillSupressionRight: 1,
-				} satisfies SceneLayerEffectChromaKeyObject)
+				} satisfies EffectChromaKeyObject)
 				expect(
 					await connection.sceneLayerEffectChromaKeyAutoAdjust(refSceneLayerEffect(refBackground, ['ChromaKey']))
 				).toBeUndefined()
@@ -1566,7 +1566,7 @@ describe('KairosConnection', () => {
 					saturation: 1,
 					uvRotation: 0,
 					yellowBlue: 0,
-				} satisfies SceneLayerEffectYUVCorrectionObject)
+				} satisfies EffectYUVCorrectionObject)
 			})
 			test('RGBCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1663,7 +1663,7 @@ describe('KairosConnection', () => {
 					pedestalBlue: 0,
 					pedestalGreen: 0,
 					pedestalRed: 0,
-				} satisfies SceneLayerEffectRGBCorrectionObject)
+				} satisfies EffectRGBCorrectionObject)
 			})
 			test('LUTCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1706,11 +1706,11 @@ describe('KairosConnection', () => {
 						{
 							colorSpaceConversion: false,
 							enabled: false,
-							index: SceneLayerEffectLUTCorrectionIndex.Cinema,
-							inputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-							inputRange: SceneLayerEffectLUTCorrectionRange.Normal,
-							outputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-							outputRange: SceneLayerEffectLUTCorrectionRange.Normal,
+							index: EffectLUTCorrectionIndex.Cinema,
+							inputColorspace: EffectLUTCorrectionColorspace.BT709,
+							inputRange: EffectLUTCorrectionRange.Normal,
+							outputColorspace: EffectLUTCorrectionColorspace.BT709,
+							outputRange: EffectLUTCorrectionRange.Normal,
 						}
 					)
 				).toBeUndefined()
@@ -1719,12 +1719,12 @@ describe('KairosConnection', () => {
 				).toStrictEqual({
 					colorSpaceConversion: false,
 					enabled: false,
-					index: SceneLayerEffectLUTCorrectionIndex.Cinema,
-					inputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-					inputRange: SceneLayerEffectLUTCorrectionRange.Normal,
-					outputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-					outputRange: SceneLayerEffectLUTCorrectionRange.Normal,
-				} satisfies SceneLayerEffectLUTCorrectionObject)
+					index: EffectLUTCorrectionIndex.Cinema,
+					inputColorspace: EffectLUTCorrectionColorspace.BT709,
+					inputRange: EffectLUTCorrectionRange.Normal,
+					outputColorspace: EffectLUTCorrectionColorspace.BT709,
+					outputRange: EffectLUTCorrectionRange.Normal,
+				} satisfies EffectLUTCorrectionObject)
 			})
 			test('VirtualPTZ', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1764,7 +1764,7 @@ describe('KairosConnection', () => {
 						y: 0,
 					},
 					zoom: 1,
-				} satisfies SceneLayerEffectVirtualPTZObject)
+				} satisfies EffectVirtualPTZObject)
 			})
 			test('ToneCurveCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1863,7 +1863,7 @@ describe('KairosConnection', () => {
 					whiteBlue: 1,
 					whiteGreen: 1,
 					whiteRed: 1,
-				} satisfies SceneLayerEffectToneCurveCorrectionObject)
+				} satisfies EffectToneCurveCorrectionObject)
 			})
 			test('MatrixCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2034,7 +2034,7 @@ describe('KairosConnection', () => {
 					rgP: 0,
 					yellowLevel: 1,
 					yellowPhase: 0,
-				} satisfies SceneLayerEffectMatrixCorrectionObject)
+				} satisfies EffectMatrixCorrectionObject)
 			})
 			test('TemperatureCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2079,7 +2079,7 @@ describe('KairosConnection', () => {
 					keepLuminance: true,
 					temperature: 6600,
 					tint: 0,
-				} satisfies SceneLayerEffectTemperatureCorrectionObject)
+				} satisfies EffectTemperatureCorrectionObject)
 			})
 			test('LinearKey', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2107,7 +2107,7 @@ describe('KairosConnection', () => {
 				})
 				expect(
 					await connection.updateSceneLayerEffectLinearKey(refSceneLayerEffect(refBackground, ['LinearKey-1']), {
-						blendMode: SceneLayerEffectLinearKeyBlendMode.Auto,
+						blendMode: EffectLinearKeyBlendMode.Auto,
 						enabled: false,
 						invert: false,
 						keySource: refSourceBase(['BLACK']),
@@ -2116,11 +2116,11 @@ describe('KairosConnection', () => {
 				expect(
 					await connection.getSceneLayerEffectLinearKey(refSceneLayerEffect(refBackground, ['LinearKey-1']))
 				).toStrictEqual({
-					blendMode: SceneLayerEffectLinearKeyBlendMode.Auto,
+					blendMode: EffectLinearKeyBlendMode.Auto,
 					enabled: false,
 					invert: false,
 					keySource: null, // '<unknown>',
-				} satisfies SceneLayerEffectLinearKeyObject)
+				} satisfies EffectLinearKeyObject)
 			})
 			test('Position', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2156,7 +2156,7 @@ describe('KairosConnection', () => {
 							x: 0,
 							y: 0,
 						},
-						rotate: SceneLayerEffectPositionRotate.Rotate0,
+						rotate: EffectPositionRotate.Rotate0,
 					})
 				).toBeUndefined()
 				expect(
@@ -2169,8 +2169,8 @@ describe('KairosConnection', () => {
 						x: 0,
 						y: 0,
 					},
-					rotate: SceneLayerEffectPositionRotate.Rotate0,
-				} satisfies SceneLayerEffectPositionObject)
+					rotate: EffectPositionRotate.Rotate0,
+				} satisfies EffectPositionObject)
 			})
 			test('PCrop', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2216,7 +2216,7 @@ describe('KairosConnection', () => {
 					left: 0,
 					right: 0,
 					top: 0,
-				} satisfies SceneLayerEffectPCropObject)
+				} satisfies EffectPCropObject)
 			})
 			test('FilmLook', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2255,7 +2255,7 @@ describe('KairosConnection', () => {
 				})
 				expect(
 					await connection.updateSceneLayerEffectFilmLook(refSceneLayerEffect(refBackground, ['FilmLook-1']), {
-						colorMode: SceneLayerEffectFilmLookColorMode.Sepia,
+						colorMode: EffectFilmLookColorMode.Sepia,
 						colorStrength: 0.5,
 						crack: 0.5,
 						grain: 0.5,
@@ -2267,14 +2267,14 @@ describe('KairosConnection', () => {
 				expect(
 					await connection.getSceneLayerEffectFilmLook(refSceneLayerEffect(refBackground, ['FilmLook-1']))
 				).toStrictEqual({
-					colorMode: SceneLayerEffectFilmLookColorMode.Sepia,
+					colorMode: EffectFilmLookColorMode.Sepia,
 					colorStrength: 0.5,
 					crack: 0.5,
 					grain: 0.5,
 					shadow: 0.5,
 					shake: 0.5,
 					spots: 0.5,
-				} satisfies SceneLayerEffectFilmLookObject)
+				} satisfies EffectFilmLookObject)
 			})
 			test('GlowEffect', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2322,7 +2322,7 @@ describe('KairosConnection', () => {
 						red: 255,
 					},
 					softness: 0.5,
-				} satisfies SceneLayerEffectGlowEffectObject)
+				} satisfies EffectGlowEffectObject)
 			})
 		})
 		// SCENES.Scene

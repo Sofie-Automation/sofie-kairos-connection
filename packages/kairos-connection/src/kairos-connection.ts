@@ -28,47 +28,47 @@ import {
 	SceneLayerMode,
 	SceneLayerDissolveMode,
 	SceneLayerBlendMode,
-	SceneLayerEffectCropObject,
-	UpdateSceneLayerEffectCropObject,
-	SceneLayerEffectTransform2DObject,
-	UpdateSceneLayerEffectTransform2DObject,
-	SceneLayerEffectTransform2DType,
-	SceneLayerEffectLuminanceKeyObject,
-	UpdateSceneLayerEffectLuminanceKeyObject,
-	SceneLayerEffectLuminanceKeyBlendMode,
-	SceneLayerEffectChromaKeyObject,
-	UpdateSceneLayerEffectChromaKeyObject,
-	SceneLayerEffectChromaKeyEdgeSmoothingSize,
-	SceneLayerEffectFilmLookColorMode,
-	SceneLayerEffectFilmLookObject,
-	SceneLayerEffectGlowEffectObject,
-	SceneLayerEffectLinearKeyBlendMode,
-	SceneLayerEffectLinearKeyObject,
-	SceneLayerEffectLUTCorrectionColorspace,
-	SceneLayerEffectLUTCorrectionIndex,
-	SceneLayerEffectLUTCorrectionObject,
-	SceneLayerEffectLUTCorrectionRange,
-	SceneLayerEffectMatrixCorrectionObject,
-	SceneLayerEffectPCropObject,
-	SceneLayerEffectPositionObject,
-	SceneLayerEffectPositionRotate,
-	SceneLayerEffectRGBCorrectionObject,
-	SceneLayerEffectTemperatureCorrectionObject,
-	SceneLayerEffectToneCurveCorrectionObject,
-	SceneLayerEffectVirtualPTZObject,
-	SceneLayerEffectYUVCorrectionObject,
-	UpdateSceneLayerEffectFilmLookObject,
-	UpdateSceneLayerEffectGlowEffectObject,
-	UpdateSceneLayerEffectLinearKeyObject,
-	UpdateSceneLayerEffectLUTCorrectionObject,
-	UpdateSceneLayerEffectMatrixCorrectionObject,
-	UpdateSceneLayerEffectPCropObject,
-	UpdateSceneLayerEffectPositionObject,
-	UpdateSceneLayerEffectRGBCorrectionObject,
-	UpdateSceneLayerEffectTemperatureCorrectionObject,
-	UpdateSceneLayerEffectToneCurveCorrectionObject,
-	UpdateSceneLayerEffectVirtualPTZObject,
-	UpdateSceneLayerEffectYUVCorrectionObject,
+	EffectCropObject,
+	UpdateEffectCropObject,
+	EffectTransform2DObject,
+	UpdateEffectTransform2DObject,
+	EffectTransform2DType,
+	EffectLuminanceKeyObject,
+	UpdateEffectLuminanceKeyObject,
+	EffectLuminanceKeyBlendMode,
+	EffectChromaKeyObject,
+	UpdateEffectChromaKeyObject,
+	EffectChromaKeyEdgeSmoothingSize,
+	EffectFilmLookColorMode,
+	EffectFilmLookObject,
+	EffectGlowEffectObject,
+	EffectLinearKeyBlendMode,
+	EffectLinearKeyObject,
+	EffectLUTCorrectionColorspace,
+	EffectLUTCorrectionIndex,
+	EffectLUTCorrectionObject,
+	EffectLUTCorrectionRange,
+	EffectMatrixCorrectionObject,
+	EffectPCropObject,
+	EffectPositionObject,
+	EffectPositionRotate,
+	EffectRGBCorrectionObject,
+	EffectTemperatureCorrectionObject,
+	EffectToneCurveCorrectionObject,
+	EffectVirtualPTZObject,
+	EffectYUVCorrectionObject,
+	UpdateEffectFilmLookObject,
+	UpdateEffectGlowEffectObject,
+	UpdateEffectLinearKeyObject,
+	UpdateEffectLUTCorrectionObject,
+	UpdateEffectMatrixCorrectionObject,
+	UpdateEffectPCropObject,
+	UpdateEffectPositionObject,
+	UpdateEffectRGBCorrectionObject,
+	UpdateEffectTemperatureCorrectionObject,
+	UpdateEffectToneCurveCorrectionObject,
+	UpdateEffectVirtualPTZObject,
+	UpdateEffectYUVCorrectionObject,
 	SceneSnapshotObject,
 	SceneCurve,
 	SceneSnapshotPriorityRecall,
@@ -112,22 +112,22 @@ import {
 	ObjectValueEncodingDefinition,
 	SceneObjectEncodingDefinition,
 	SceneLayerObjectEncodingDefinition,
-	SceneLayerEffectCropObjectEncodingDefinition,
-	SceneLayerEffectTransform2DObjectEncodingDefinition,
-	SceneLayerEffectLuminanceKeyObjectEncodingDefinition,
-	SceneLayerEffectChromaKeyObjectEncodingDefinition,
-	SceneLayerEffectYUVCorrectionObjectEncodingDefinition,
-	SceneLayerEffectRGBCorrectionObjectEncodingDefinition,
-	SceneLayerEffectLUTCorrectionObjectEncodingDefinition,
-	SceneLayerEffectVirtualPTZObjectEncodingDefinition,
-	SceneLayerEffectToneCurveCorrectionObjectEncodingDefinition,
-	SceneLayerEffectMatrixCorrectionObjectEncodingDefinition,
-	SceneLayerEffectTemperatureCorrectionObjectEncodingDefinition,
-	SceneLayerEffectLinearKeyObjectEncodingDefinition,
-	SceneLayerEffectPositionObjectEncodingDefinition,
-	SceneLayerEffectPCropObjectEncodingDefinition,
-	SceneLayerEffectFilmLookObjectEncodingDefinition,
-	SceneLayerEffectGlowEffectObjectEncodingDefinition,
+	EffectCropObjectEncodingDefinition,
+	EffectTransform2DObjectEncodingDefinition,
+	EffectLuminanceKeyObjectEncodingDefinition,
+	EffectChromaKeyObjectEncodingDefinition,
+	EffectYUVCorrectionObjectEncodingDefinition,
+	EffectRGBCorrectionObjectEncodingDefinition,
+	EffectLUTCorrectionObjectEncodingDefinition,
+	EffectVirtualPTZObjectEncodingDefinition,
+	EffectToneCurveCorrectionObjectEncodingDefinition,
+	EffectMatrixCorrectionObjectEncodingDefinition,
+	EffectTemperatureCorrectionObjectEncodingDefinition,
+	EffectLinearKeyObjectEncodingDefinition,
+	EffectPositionObjectEncodingDefinition,
+	EffectPCropObjectEncodingDefinition,
+	EffectFilmLookObjectEncodingDefinition,
+	EffectGlowEffectObjectEncodingDefinition,
 	SceneTransitionObjectEncodingDefinition,
 	SceneTransitionMixEffectObjectEncodingDefinition,
 	SceneSnapshotObjectEncodingDefinition,
@@ -420,13 +420,13 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectCrop(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectCropObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectCropObjectEncodingDefinition)
+	async getSceneLayerEffectCrop(effectRef: SceneLayerEffectRef): Promise<EffectCropObject> {
+		return this.#getObject(refToPath(effectRef), EffectCropObjectEncodingDefinition)
 	}
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectCrop(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectCropObject>
+		props: Partial<UpdateEffectCropObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -442,20 +442,20 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectTransform2D(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectTransform2DObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectTransform2DObjectEncodingDefinition)
+	async getSceneLayerEffectTransform2D(effectRef: SceneLayerEffectRef): Promise<EffectTransform2DObject> {
+		return this.#getObject(refToPath(effectRef), EffectTransform2DObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectTransform2D(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectTransform2DObject>
+		props: Partial<UpdateEffectTransform2DObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
 			{
 				attribute: 'type',
-				value: stringifyEnum<SceneLayerEffectTransform2DType>(props.type, SceneLayerEffectTransform2DType),
+				value: stringifyEnum<EffectTransform2DType>(props.type, EffectTransform2DType),
 			},
 			{ attribute: 'scale', value: stringifyFloat(props.scale) },
 			{ attribute: 'rotation_x', value: stringifyFloat(props.rotationX) },
@@ -471,14 +471,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectLuminanceKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLuminanceKeyObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectLuminanceKeyObjectEncodingDefinition)
+	async getSceneLayerEffectLuminanceKey(effectRef: SceneLayerEffectRef): Promise<EffectLuminanceKeyObject> {
+		return this.#getObject(refToPath(effectRef), EffectLuminanceKeyObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectLuminanceKey(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectLuminanceKeyObject>
+		props: Partial<UpdateEffectLuminanceKeyObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -489,10 +489,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'invert', value: stringifyBoolean(props.invert) },
 			{
 				attribute: 'blend_mode',
-				value: stringifyEnum<SceneLayerEffectLuminanceKeyBlendMode>(
-					props.blendMode,
-					SceneLayerEffectLuminanceKeyBlendMode
-				),
+				value: stringifyEnum<EffectLuminanceKeyBlendMode>(props.blendMode, EffectLuminanceKeyBlendMode),
 			},
 			{ attribute: 'sourceKey', value: stringifySourceRef(props.sourceKey) },
 		])
@@ -502,14 +499,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectChromaKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectChromaKeyObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectChromaKeyObjectEncodingDefinition)
+	async getSceneLayerEffectChromaKey(effectRef: SceneLayerEffectRef): Promise<EffectChromaKeyObject> {
+		return this.#getObject(refToPath(effectRef), EffectChromaKeyObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectChromaKey(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectChromaKeyObject>
+		props: Partial<UpdateEffectChromaKeyObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -532,9 +529,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'auto_state', value: stringifyInteger(props.autoState) },
 			{
 				attribute: 'edge_smoothing_size',
-				value: stringifyEnum<SceneLayerEffectChromaKeyEdgeSmoothingSize>(
+				value: stringifyEnum<EffectChromaKeyEdgeSmoothingSize>(
 					props.edgeSmoothingSize,
-					SceneLayerEffectChromaKeyEdgeSmoothingSize
+					EffectChromaKeyEdgeSmoothingSize
 				),
 			},
 		])
@@ -544,14 +541,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectYUVCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectYUVCorrectionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectYUVCorrectionObjectEncodingDefinition)
+	async getSceneLayerEffectYUVCorrection(effectRef: SceneLayerEffectRef): Promise<EffectYUVCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectYUVCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectYUVCorrection(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectYUVCorrectionObject>
+		props: Partial<UpdateEffectYUVCorrectionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -569,14 +566,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectRGBCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectRGBCorrectionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectRGBCorrectionObjectEncodingDefinition)
+	async getSceneLayerEffectRGBCorrection(effectRef: SceneLayerEffectRef): Promise<EffectRGBCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectRGBCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectRGBCorrection(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectRGBCorrectionObject>
+		props: Partial<UpdateEffectRGBCorrectionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -596,56 +593,50 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectLUTCorrection(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLUTCorrectionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectLUTCorrectionObjectEncodingDefinition)
+	async getSceneLayerEffectLUTCorrection(effectRef: SceneLayerEffectRef): Promise<EffectLUTCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectLUTCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectLUTCorrection(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectLUTCorrectionObject>
+		props: Partial<UpdateEffectLUTCorrectionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
 			{
 				attribute: 'index',
-				value: stringifyEnum<SceneLayerEffectLUTCorrectionIndex>(props.index, SceneLayerEffectLUTCorrectionIndex),
+				value: stringifyEnum<EffectLUTCorrectionIndex>(props.index, EffectLUTCorrectionIndex),
 			},
 			{
 				attribute: 'input_colorspace',
-				value: stringifyEnum<SceneLayerEffectLUTCorrectionColorspace>(
-					props.inputColorspace,
-					SceneLayerEffectLUTCorrectionColorspace
-				),
+				value: stringifyEnum<EffectLUTCorrectionColorspace>(props.inputColorspace, EffectLUTCorrectionColorspace),
 			},
 			{
 				attribute: 'output_colorspace',
-				value: stringifyEnum<SceneLayerEffectLUTCorrectionColorspace>(
-					props.outputColorspace,
-					SceneLayerEffectLUTCorrectionColorspace
-				),
+				value: stringifyEnum<EffectLUTCorrectionColorspace>(props.outputColorspace, EffectLUTCorrectionColorspace),
 			},
 			{
 				attribute: 'input_range',
-				value: stringifyEnum<SceneLayerEffectLUTCorrectionRange>(props.inputRange, SceneLayerEffectLUTCorrectionRange),
+				value: stringifyEnum<EffectLUTCorrectionRange>(props.inputRange, EffectLUTCorrectionRange),
 			},
 			{
 				attribute: 'output_range',
-				value: stringifyEnum<SceneLayerEffectLUTCorrectionRange>(props.outputRange, SceneLayerEffectLUTCorrectionRange),
+				value: stringifyEnum<EffectLUTCorrectionRange>(props.outputRange, EffectLUTCorrectionRange),
 			},
 			{ attribute: 'color_space_conversion', value: stringifyBoolean(props.colorSpaceConversion) },
 		])
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectVirtualPTZ(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectVirtualPTZObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectVirtualPTZObjectEncodingDefinition)
+	async getSceneLayerEffectVirtualPTZ(effectRef: SceneLayerEffectRef): Promise<EffectVirtualPTZObject> {
+		return this.#getObject(refToPath(effectRef), EffectVirtualPTZObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectVirtualPTZ(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectVirtualPTZObject>
+		props: Partial<UpdateEffectVirtualPTZObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -657,14 +648,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectToneCurveCorrection(
 		effectRef: SceneLayerEffectRef
-	): Promise<SceneLayerEffectToneCurveCorrectionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectToneCurveCorrectionObjectEncodingDefinition)
+	): Promise<EffectToneCurveCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectToneCurveCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectToneCurveCorrection(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectToneCurveCorrectionObject>
+		props: Partial<UpdateEffectToneCurveCorrectionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -684,16 +675,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectMatrixCorrection(
-		effectRef: SceneLayerEffectRef
-	): Promise<SceneLayerEffectMatrixCorrectionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectMatrixCorrectionObjectEncodingDefinition)
+	async getSceneLayerEffectMatrixCorrection(effectRef: SceneLayerEffectRef): Promise<EffectMatrixCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectMatrixCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectMatrixCorrection(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectMatrixCorrectionObject>
+		props: Partial<UpdateEffectMatrixCorrectionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -727,14 +716,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async getSceneLayerEffectTemperatureCorrection(
 		effectRef: SceneLayerEffectRef
-	): Promise<SceneLayerEffectTemperatureCorrectionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectTemperatureCorrectionObjectEncodingDefinition)
+	): Promise<EffectTemperatureCorrectionObject> {
+		return this.#getObject(refToPath(effectRef), EffectTemperatureCorrectionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectTemperatureCorrection(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectTemperatureCorrectionObject>
+		props: Partial<UpdateEffectTemperatureCorrectionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -745,14 +734,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectLinearKey(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectLinearKeyObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectLinearKeyObjectEncodingDefinition)
+	async getSceneLayerEffectLinearKey(effectRef: SceneLayerEffectRef): Promise<EffectLinearKeyObject> {
+		return this.#getObject(refToPath(effectRef), EffectLinearKeyObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectLinearKey(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectLinearKeyObject>
+		props: Partial<UpdateEffectLinearKeyObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -760,20 +749,20 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'key_source', value: stringifySourceRef(props.keySource) },
 			{
 				attribute: 'blend_mode',
-				value: stringifyEnum<SceneLayerEffectLinearKeyBlendMode>(props.blendMode, SceneLayerEffectLinearKeyBlendMode),
+				value: stringifyEnum<EffectLinearKeyBlendMode>(props.blendMode, EffectLinearKeyBlendMode),
 			},
 		])
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectPosition(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectPositionObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectPositionObjectEncodingDefinition)
+	async getSceneLayerEffectPosition(effectRef: SceneLayerEffectRef): Promise<EffectPositionObject> {
+		return this.#getObject(refToPath(effectRef), EffectPositionObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectPosition(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectPositionObject>
+		props: Partial<UpdateEffectPositionObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -783,20 +772,20 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'height', value: stringifyInteger(props.height) },
 			{
 				attribute: 'rotate',
-				value: stringifyEnum<SceneLayerEffectPositionRotate>(props.rotate, SceneLayerEffectPositionRotate),
+				value: stringifyEnum<EffectPositionRotate>(props.rotate, EffectPositionRotate),
 			},
 		])
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectPCrop(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectPCropObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectPCropObjectEncodingDefinition)
+	async getSceneLayerEffectPCrop(effectRef: SceneLayerEffectRef): Promise<EffectPCropObject> {
+		return this.#getObject(refToPath(effectRef), EffectPCropObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectPCrop(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectPCropObject>
+		props: Partial<UpdateEffectPCropObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'enabled', value: stringifyBoolean(props.enabled) },
@@ -808,14 +797,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectFilmLook(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectFilmLookObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectFilmLookObjectEncodingDefinition)
+	async getSceneLayerEffectFilmLook(effectRef: SceneLayerEffectRef): Promise<EffectFilmLookObject> {
+		return this.#getObject(refToPath(effectRef), EffectFilmLookObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectFilmLook(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectFilmLookObject>
+		props: Partial<UpdateEffectFilmLookObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			{ attribute: 'crack', value: stringifyFloat(props.crack) },
@@ -825,21 +814,21 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'shadow', value: stringifyFloat(props.shadow) },
 			{
 				attribute: 'color mode',
-				value: stringifyEnum<SceneLayerEffectFilmLookColorMode>(props.colorMode, SceneLayerEffectFilmLookColorMode),
+				value: stringifyEnum<EffectFilmLookColorMode>(props.colorMode, EffectFilmLookColorMode),
 			},
 			{ attribute: 'color strength', value: stringifyFloat(props.colorStrength) },
 		])
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
-	async getSceneLayerEffectGlowEffect(effectRef: SceneLayerEffectRef): Promise<SceneLayerEffectGlowEffectObject> {
-		return this.#getObject(refToPath(effectRef), SceneLayerEffectGlowEffectObjectEncodingDefinition)
+	async getSceneLayerEffectGlowEffect(effectRef: SceneLayerEffectRef): Promise<EffectGlowEffectObject> {
+		return this.#getObject(refToPath(effectRef), EffectGlowEffectObjectEncodingDefinition)
 	}
 
 	/** Note: This Effect is only available if listed using listSceneLayerEffects() */
 	async updateSceneLayerEffectGlowEffect(
 		effectRef: SceneLayerEffectRef,
-		props: Partial<UpdateSceneLayerEffectGlowEffectObject>
+		props: Partial<UpdateEffectGlowEffectObject>
 	): Promise<void> {
 		await this.setAttributes(refToPath(effectRef), [
 			// { attribute: 'enabled', value: stringifyBoolean(props.enabled) },
