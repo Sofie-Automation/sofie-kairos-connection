@@ -22,6 +22,7 @@ export type AnyRef =
 	| SourceIntRef
 	| GfxSceneRef
 	| GfxSceneItemRef
+	| AudioMixerChannelRef
 	| MattesRef
 
 export function isRef(ref: unknown): ref is AnyRef {
@@ -131,6 +132,8 @@ export function refToPath(ref: AnyRef): string {
 			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr), ...ref.sceneItemPath.map(protocolEncodeStr)].join(
 				'.'
 			)
+		case 'audioMixer-channel':
+			return ['AUDIOMIXER', ...ref.channelPath.map(protocolEncodeStr)].join('.')
 		case 'mattes':
 			return ['MATTES', ...ref.path.map(protocolEncodeStr)].join('.')
 		default:
@@ -486,6 +489,15 @@ export function refSourceInt(path: SourceIntRef['path']): SourceIntRef {
 	return { realm: 'source-int', path }
 }
 
+// ------------------------ AUDIOMIXER Channels -------------------------
+export type AudioMixerChannelRef = {
+	realm: 'audioMixer-channel'
+	channelPath: RefPath
+}
+export function refAudioMixerChannel(channelPath: RefPath): AudioMixerChannelRef {
+	return { realm: 'audioMixer-channel', channelPath }
+  
+// ------------------------------- MATTES ------------------------------
 export type MattesRef = {
 	realm: 'mattes'
 	path: RefPath
