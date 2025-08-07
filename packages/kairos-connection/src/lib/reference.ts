@@ -496,7 +496,8 @@ export type AudioMixerChannelRef = {
 }
 export function refAudioMixerChannel(channelPath: RefPath): AudioMixerChannelRef {
 	return { realm: 'audioMixer-channel', channelPath }
-  
+}
+
 // ------------------------------- MATTES ------------------------------
 export type MattesRef = {
 	realm: 'mattes'
