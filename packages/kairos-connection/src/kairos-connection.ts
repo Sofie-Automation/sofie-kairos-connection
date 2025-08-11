@@ -83,12 +83,17 @@ import {
 	UpdateAuxObject,
 	AudioAuxObject,
 	UpdateAudioAuxObject,
+	AudioPlayerObject,
+	UpdateAudioPlayerObject,
+	AudioMixerObject,
+	UpdateAudioMixerObject,
 } from './kairos-types/main.js'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
 	AnyRef,
 	AuxEffectRef,
 	AuxRef,
+	AudioMixerChannelRef,
 	GfxSceneItemRef,
 	GfxSceneRef,
 	isRef,
@@ -150,10 +155,11 @@ import {
 	EncodeUpdateEffectTemperatureCorrectionObject,
 	EncodeUpdateEffectFilmLookObject,
 	EncodeUpdateEffectGlowEffectObject,
+	AudioPlayerObjectEncodingDefinition,
+	AudioMixerObjectEncodingDefinition,
+	AudioAuxObjectEncodingDefinition,
+	AuxObjectEncodingDefinition,
 } from './object-encoding/index.js'
-import { AudioPlayerObject, UpdateAudioPlayerObject } from './kairos-types/audio-player.js'
-import { AudioPlayerObjectEncodingDefinition } from './object-encoding/audio-players.js'
-import { AudioAuxObjectEncodingDefinition, AuxObjectEncodingDefinition } from './object-encoding/aux.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -1703,6 +1709,36 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	// AUDIOMIXERS
 	// 	AUDIOMIXER
+	async listAudioMixerChannels(): Promise<(AudioMixerChannelRef & { name: string })[]> {
+		return (await this._listDeep('AUDIOMIXER')).map((itemPath) => {
+			return {
+				realm: 'audioMixer-channel',
+				name: itemPath[itemPath.length - 1],
+				channelPath: itemPath.slice(1), // remove the "AUDIOMIXER" part
+			}
+		})
+	}
+	async getAudioMixerMainBus(): Promise<AudioMixerObject> {
+		return this.#getObject(`AUDIOMIXER`, AudioMixerObjectEncodingDefinition)
+	}
+	async updateAudioMixerMainBus(props: Partial<UpdateAudioMixerObject>): Promise<void> {
+		await this.setAttributes(`AUDIOMIXER`, [
+			{ attribute: 'volume', value: stringifyFloat(props.volume) },
+			{ attribute: 'mute', value: stringifyBoolean(props.mute) },
+		])
+	}
+	async getAudioMixerChannel(channelRef: AudioMixerChannelRef): Promise<AudioMixerObject> {
+		return this.#getObject(`${refToPath(channelRef)}`, AudioMixerObjectEncodingDefinition)
+	}
+	async updateAudioMixerChannel(
+		channelRef: AudioMixerChannelRef,
+		props: Partial<UpdateAudioMixerObject>
+	): Promise<void> {
+		await this.setAttributes(`${refToPath(channelRef)}`, [
+			{ attribute: 'volume', value: stringifyFloat(props.volume) },
+			{ attribute: 'mute', value: stringifyBoolean(props.mute) },
+		])
+	}
 	// 		Channel <1-16>
 	// 	AUDIOMONITOR
 	// 	MIXOUT<1-8>
