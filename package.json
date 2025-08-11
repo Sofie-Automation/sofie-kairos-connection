@@ -32,7 +32,7 @@
     "docs:test": "run docs:html",
     "docs:html": "typedoc --tsconfig tsconfig.build.json",
     "release": "sofie-version",
-    "publish:all": "yarn workspaces foreach --all --exclude sofie-kairos-connection npm publish --access=public",
+    "publish:all": "yarn workspaces foreach --all --exclude sofie-kairos-connection --exclude kairos-explorer npm publish --access=public",
     "test:all": "yarn && yarn build && yarn test"
   },
   "devDependencies": {
