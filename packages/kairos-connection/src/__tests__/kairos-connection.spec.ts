@@ -9,7 +9,7 @@ import {
 	ResponseError,
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
-	SceneLayerDissolveMode,
+	DissolveMode,
 	EffectChromaKeyEdgeSmoothingSize,
 	EffectChromaKeyObject,
 	EffectCropObject,
@@ -41,7 +41,7 @@ import {
 	SceneLayerState,
 	SceneLimitOffAction,
 	SceneObject,
-	SceneResolution,
+	Resolution,
 	SceneCurve,
 	SceneSnapshotObject,
 	SceneSnapshotPriorityRecall,
@@ -58,6 +58,8 @@ import {
 	AuxObject,
 	AuxRecordingStatus,
 	AudioMixerObject,
+	ImageStoreObject,
+	ImageStoreScaleMode,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
@@ -732,7 +734,7 @@ describe('KairosConnection', () => {
 				limitReturnTime: 20,
 				nextTransition: [refSceneTransition(refMain, ['BgdMix'])],
 				nextTransitionType: '<unknown>',
-				resolution: SceneResolution.Resolution1920x1080,
+				resolution: Resolution.Resolution1920x1080,
 				resolutionX: 1920,
 				resolutionY: 1080,
 				tally: 3,
@@ -923,7 +925,7 @@ describe('KairosConnection', () => {
 					blue: 0,
 				},
 				dissolveEnabled: false,
-				dissolveMode: SceneLayerDissolveMode.Normal,
+				dissolveMode: DissolveMode.Normal,
 				dissolveTime: 50,
 				fxEnabled: false,
 				mode: SceneLayerMode.Auto,
@@ -4052,11 +4054,11 @@ describe('KairosConnection', () => {
 				},
 			])
 			expect(await connection.getGfxScene(refGfxScene(['Test']))).toStrictEqual({
-				resolution: SceneResolution.Resolution1920x1080,
+				resolution: Resolution.Resolution1920x1080,
 			} satisfies GfxSceneObject)
 			expect(
 				await connection.updateGfxScene(refGfxScene(['Test']), {
-					resolution: SceneResolution.Resolution1280x720,
+					resolution: Resolution.Resolution1280x720,
 				})
 			).toBeUndefined()
 			expect(await connection.getGfxSceneItem(refGfxSceneItem(refGfxScene(['Test']), ['Renderer']))).toStrictEqual({
@@ -4240,8 +4242,91 @@ describe('KairosConnection', () => {
 		// 	Couple
 		// PANELLAYOUTS
 		// CPANELLAYOUTS
+
 		// IMAGESTORES
 		// 	IS<1-8>
+		test('IMAGESTORES commands', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'IS1.color_overwrite': ['IS1.color_overwrite=0'],
+					'IS1.color': ['IS1.color=rgb(255,255,255)'],
+					'IS1.clip': ['IS1.clip=<unknown>'],
+					'IS1.tally': ['IS1.tally=0'],
+					'IS1.dissolve_enabled': ['IS1.dissolve_enabled=0'],
+					'IS1.dissolve_time': ['IS1.dissolve_time=50'],
+					'IS1.dissolve_mode': ['IS1.dissolve_mode=Normal'],
+					'IS1.remove_source_alpha': ['IS1.remove_source_alpha=0'],
+					'IS1.scale_mode': ['IS1.scale_mode=KeepAspect'],
+					'IS1.resolution': ['IS1.resolution=1920x1080'],
+					'IS1.advanced_resolution_control': ['IS1.advanced_resolution_control=0'],
+					'IS1.resolution_x': ['IS1.resolution_x=1920'],
+					'IS1.resolution_y': ['IS1.resolution_y=1080'],
+					'IS1.color_overwrite=0': ['OK'],
+					'IS1.color=rgb(255,255,255)': ['OK'],
+					'IS1.dissolve_enabled=0': ['OK'],
+					'IS1.dissolve_time=50': ['OK'],
+					'IS1.dissolve_mode=Normal': ['OK'],
+					'IS1.remove_source_alpha=0': ['OK'],
+					'IS1.scale_mode=KeepAspect': ['OK'],
+					'IS1.resolution=1920x1080': ['OK'],
+					'IS1.advanced_resolution_control=0': ['OK'],
+					'IS1.resolution_x=1920': ['OK'],
+					'IS1.resolution_y=1080': ['OK'],
+					'IS1.playlist_begin=': ['OK'],
+					'IS1.playlist_back=': ['OK'],
+					'IS1.playlist_next=': ['OK'],
+					'IS1.playlist_end=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(
+				await connection.updateImageStore(1, {
+					colorOverwrite: false,
+					color: {
+						red: 255,
+						green: 255,
+						blue: 255,
+					},
+					dissolveEnabled: false,
+					dissolveTime: 50,
+					dissolveMode: DissolveMode.Normal,
+					removeSourceAlpha: false,
+					scaleMode: ImageStoreScaleMode.KeepAspect,
+					resolution: Resolution.Resolution1920x1080,
+					advancedResolutionControl: false,
+					resolutionX: 1920,
+					resolutionY: 1080,
+				})
+			).toBeUndefined()
+			expect(await connection.getImageStore(1)).toStrictEqual({
+				colorOverwrite: false,
+				color: {
+					red: 255,
+					green: 255,
+					blue: 255,
+				},
+				clip: '<unknown>',
+				tally: 0,
+				dissolveEnabled: false,
+				dissolveTime: 50,
+				dissolveMode: DissolveMode.Normal,
+				removeSourceAlpha: false,
+				scaleMode: ImageStoreScaleMode.KeepAspect,
+				resolution: Resolution.Resolution1920x1080,
+				advancedResolutionControl: false,
+				resolutionX: 1920,
+				resolutionY: 1080,
+			} satisfies ImageStoreObject)
+
+			expect(await connection.imageStorePlaylistBegin(1)).toBeUndefined()
+			expect(await connection.imageStorePlaylistBack(1)).toBeUndefined()
+			expect(await connection.imageStorePlaylistNext(1)).toBeUndefined()
+			expect(await connection.imageStorePlaylistEnd(1)).toBeUndefined()
+		})
+
 		// SPANELPROFILES
 	})
 
@@ -4318,7 +4403,7 @@ describe('KairosConnection', () => {
 				sourceCleanMask: 2,
 				dissolveEnabled: false,
 				dissolveTime: 1000,
-				dissolveMode: SceneLayerDissolveMode.Normal,
+				dissolveMode: DissolveMode.Normal,
 				blendMode: SceneLayerBlendMode.Normal,
 			})
 			expect(mockCallback).toHaveBeenCalledTimes(1)

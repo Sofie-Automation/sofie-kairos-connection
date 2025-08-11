@@ -1,12 +1,12 @@
 import type { ObjectEncodingDefinition } from './types.js'
 import { GfxSceneHTMLElementItemObject, GfxSceneItemObject, GfxSceneObject } from '../kairos-types/gfx-scene.js'
-import { SceneResolution } from '../kairos-types/main.js'
+import { Resolution } from '../kairos-types/main.js'
 import { parseEnum, parseInteger, parsePos2D } from '../lib/data-parsers.js'
 
 export const GfxSceneObjectEncodingDefinition: ObjectEncodingDefinition<GfxSceneObject> = {
 	resolution: {
 		protocolName: 'resolution',
-		parser: (value) => parseEnum<SceneResolution>(value, SceneResolution),
+		parser: (value) => parseEnum<Resolution>(value, Resolution),
 	},
 }
 

@@ -1,8 +1,8 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
-import { Pos2Df, SceneResolution } from './main.js'
+import { Pos2Df, Resolution } from './lib-types.js'
 
 export interface GfxSceneObject {
-	resolution: SceneResolution
+	resolution: Resolution
 }
 export type UpdateGfxSceneObject = OmitReadonly<GfxSceneObject>
 

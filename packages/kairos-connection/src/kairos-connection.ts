@@ -19,12 +19,12 @@ import {
 	type UpdateClipPlayerObject,
 	type SceneLayerObject,
 	type UpdateSceneLayerObject,
-	SceneResolution,
+	Resolution,
 	SceneLimitOffAction,
 	ClipPlayerTMS,
 	SceneLayerPgmPstMode,
 	SceneLayerMode,
-	SceneLayerDissolveMode,
+	DissolveMode,
 	SceneLayerBlendMode,
 	EffectCropObject,
 	UpdateEffectCropObject,
@@ -87,6 +87,9 @@ import {
 	UpdateAudioPlayerObject,
 	AudioMixerObject,
 	UpdateAudioMixerObject,
+	ImageStoreObject,
+	UpdateImageStoreObject,
+	ImageStoreScaleMode,
 } from './kairos-types/main.js'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -159,6 +162,7 @@ import {
 	AudioMixerObjectEncodingDefinition,
 	AudioAuxObjectEncodingDefinition,
 	AuxObjectEncodingDefinition,
+	ImageStoreObjectEncodingDefinition,
 } from './object-encoding/index.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -295,7 +299,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		await this.setAttributes(refToPath(sceneRef), [
 			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
-			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
+			{ attribute: 'resolution', value: stringifyEnum<Resolution>(props.resolution, Resolution) },
 			{
 				attribute: 'next_transition',
 				value: stringifyCommaSeparated(props.nextTransition?.map((o) => stringifySceneTransitionRef(o))),
@@ -381,7 +385,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
 			{
 				attribute: 'dissolve_mode',
-				value: stringifyEnum<SceneLayerDissolveMode>(props.dissolveMode, SceneLayerDissolveMode),
+				value: stringifyEnum<DissolveMode>(props.dissolveMode, DissolveMode),
 			},
 			{ attribute: 'blend_mode', value: stringifyEnum<SceneLayerBlendMode>(props.blendMode, SceneLayerBlendMode) },
 		])
@@ -1584,7 +1588,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async updateGfxScene(gfxSceneRef: GfxSceneRef, props: Partial<UpdateGfxSceneObject>): Promise<void> {
 		await this.setAttributes(refToPath(gfxSceneRef), [
-			{ attribute: 'resolution', value: stringifyEnum<SceneResolution>(props.resolution, SceneResolution) },
+			{ attribute: 'resolution', value: stringifyEnum<Resolution>(props.resolution, Resolution) },
 		])
 	}
 	async listGfxSceneItems(gfxSceneRef: GfxSceneRef): Promise<(GfxSceneItemRef & { name: string })[]> {
@@ -1748,8 +1752,54 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	Couple
 	// PANELLAYOUTS
 	// CPANELLAYOUTS
+
 	// IMAGESTORES
 	// 	IS<1-8>
+	async getImageStore(storeId: number): Promise<ImageStoreObject> {
+		this._assertImageStoreIdIsValid(storeId)
+		return this.#getObject(`IS${storeId}`, ImageStoreObjectEncodingDefinition)
+	}
+	async updateImageStore(storeId: number, props: Partial<UpdateImageStoreObject>): Promise<void> {
+		this._assertImageStoreIdIsValid(storeId)
+		await this.setAttributes(`IS${storeId}`, [
+			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
+			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
+			{ attribute: 'dissolve_enabled', value: stringifyBoolean(props.dissolveEnabled) },
+			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
+			{ attribute: 'dissolve_mode', value: stringifyEnum<DissolveMode>(props.dissolveMode, DissolveMode) },
+			{ attribute: 'remove_source_alpha', value: stringifyBoolean(props.removeSourceAlpha) },
+			{ attribute: 'scale_mode', value: stringifyEnum<ImageStoreScaleMode>(props.scaleMode, ImageStoreScaleMode) },
+			{ attribute: 'resolution', value: stringifyEnum<Resolution>(props.resolution, Resolution) },
+			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
+			{ attribute: 'resolution_x', value: stringifyInteger(props.resolutionX) },
+			{ attribute: 'resolution_y', value: stringifyInteger(props.resolutionY) },
+			// 'tally' is read-only, so can't be set
+		])
+	}
+	async imageStorePlaylistBegin(storeId: number): Promise<void> {
+		this._assertImageStoreIdIsValid(storeId)
+		return this.executeFunction(`IS${storeId}.playlist_begin`)
+	}
+	async imageStorePlaylistBack(storeId: number): Promise<void> {
+		this._assertImageStoreIdIsValid(storeId)
+		return this.executeFunction(`IS${storeId}.playlist_back`)
+	}
+	async imageStorePlaylistNext(storeId: number): Promise<void> {
+		this._assertImageStoreIdIsValid(storeId)
+		return this.executeFunction(`IS${storeId}.playlist_next`)
+	}
+	async imageStorePlaylistEnd(storeId: number): Promise<void> {
+		this._assertImageStoreIdIsValid(storeId)
+		return this.executeFunction(`IS${storeId}.playlist_end`)
+	}
+
+	private _assertImageStoreIdIsValid(storeId: number): void {
+		if (typeof storeId !== 'number' || storeId < 1 || storeId > 8) {
+			throw new Error(`Invalid storeId: ${storeId}. Must be 1, 2, 3, 4, 5, 6, 7 or 8.`)
+		}
+	}
+
 	// SPANELPROFILES
 
 	/**

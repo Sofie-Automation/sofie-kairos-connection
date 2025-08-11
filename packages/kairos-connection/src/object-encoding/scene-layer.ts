@@ -2,7 +2,6 @@ import type { ObjectEncodingDefinition } from './types.js'
 import {
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
-	SceneLayerDissolveMode,
 	SceneLayerMode,
 	SceneLayerObject,
 	SceneLayerPgmPstMode,
@@ -17,6 +16,7 @@ import {
 	parseColorRGB,
 	parseSourceRef,
 } from '../lib/data-parsers.js'
+import { DissolveMode } from '../kairos-types/lib-types.js'
 
 export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneLayerObject> = {
 	opacity: { protocolName: 'opacity', parser: parseFloatValue },
@@ -44,7 +44,7 @@ export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneL
 	dissolveTime: { protocolName: 'dissolve_time', parser: parseInteger },
 	dissolveMode: {
 		protocolName: 'dissolve_mode',
-		parser: (value) => parseEnum<SceneLayerDissolveMode>(value, SceneLayerDissolveMode),
+		parser: (value) => parseEnum<DissolveMode>(value, DissolveMode),
 	},
 	blendMode: {
 		protocolName: 'blend_mode',
