@@ -24,6 +24,8 @@ export type AnyRef =
 	| GfxSceneItemRef
 	| AudioMixerChannelRef
 	| MattesRef
+	| AuxRef
+	| AuxEffectRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -40,6 +42,7 @@ export type SourceRef =
 	| SourceIntRef
 	| SceneRef
 	| MattesRef
+	| AuxRef
 
 export function isSourceRef(ref: AnyRef): ref is SourceRef {
 	return (
@@ -49,7 +52,8 @@ export function isSourceRef(ref: AnyRef): ref is SourceRef {
 		ref.realm === 'source-base' ||
 		ref.realm === 'source-int' ||
 		ref.realm === 'scene' ||
-		ref.realm === 'mattes'
+		ref.realm === 'mattes' ||
+		ref.realm === 'aux'
 	)
 }
 
@@ -136,8 +140,19 @@ export function refToPath(ref: AnyRef): string {
 			return ['AUDIOMIXER', ...ref.channelPath.map(protocolEncodeStr)].join('.')
 		case 'mattes':
 			return ['MATTES', ...ref.path.map(protocolEncodeStr)].join('.')
+		case 'aux': {
+			const path = [protocolEncodeStr(ref.path)]
+			if (ref.pathIsName) path.unshift('AUX')
+			return path.join('.')
+		}
+		case 'aux-effect': {
+			const path = [protocolEncodeStr(ref.auxPath), 'Effects', ...ref.effectPath.map(protocolEncodeStr)]
+			if (ref.auxPathIsName) path.unshift('AUX')
+			return path.join('.')
+		}
 		default:
 			assertNever(ref)
+
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
 	}
 }
@@ -270,7 +285,17 @@ export function pathRoRef(ref: string): AnyRef | string {
 		return refMattes(path.slice(1))
 	} else if (path[0] === 'GFXSCENES') {
 		return refGfxScene(path.slice(1))
+	} else if (path[0] === 'AUX') {
+		if (path.length === 2) {
+			return refAuxName(path[1])
+		}
+	} else if (path[0].includes('-AUX')) {
+		// Auxes are often reffered to without the prefix
+		if (path.length === 1) {
+			return refAuxId(path[0])
+		}
 	}
+
 	// If nothing else matched, return the original string
 	return ref
 }
@@ -505,4 +530,26 @@ export type MattesRef = {
 }
 export function refMattes(path: MattesRef['path']): MattesRef {
 	return { realm: 'mattes', path }
+}
+
+export type AuxRef = {
+	realm: 'aux'
+	path: string
+	pathIsName: boolean // true if the path is a name, false if it is an id
+}
+export function refAuxId(path: AuxRef['path']): AuxRef {
+	return { realm: 'aux', path, pathIsName: false }
+}
+export function refAuxName(path: AuxRef['path']): AuxRef {
+	return { realm: 'aux', path, pathIsName: true }
+}
+
+export type AuxEffectRef = {
+	realm: 'aux-effect'
+	auxPath: string
+	auxPathIsName: boolean //
+	effectPath: RefPath
+}
+export function refAuxEffect(auxRef: AuxRef, effectPath: RefPath): AuxEffectRef {
+	return { realm: 'aux-effect', auxPath: auxRef.path, auxPathIsName: auxRef.pathIsName, effectPath }
 }

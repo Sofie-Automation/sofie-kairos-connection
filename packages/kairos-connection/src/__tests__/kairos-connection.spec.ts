@@ -10,31 +10,31 @@ import {
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
 	SceneLayerDissolveMode,
-	SceneLayerEffectChromaKeyEdgeSmoothingSize,
-	SceneLayerEffectChromaKeyObject,
-	SceneLayerEffectCropObject,
-	SceneLayerEffectFilmLookColorMode,
-	SceneLayerEffectFilmLookObject,
-	SceneLayerEffectGlowEffectObject,
-	SceneLayerEffectLinearKeyBlendMode,
-	SceneLayerEffectLinearKeyObject,
-	SceneLayerEffectLuminanceKeyBlendMode,
-	SceneLayerEffectLuminanceKeyObject,
-	SceneLayerEffectLUTCorrectionColorspace,
-	SceneLayerEffectLUTCorrectionIndex,
-	SceneLayerEffectLUTCorrectionObject,
-	SceneLayerEffectLUTCorrectionRange,
-	SceneLayerEffectMatrixCorrectionObject,
-	SceneLayerEffectPCropObject,
-	SceneLayerEffectPositionObject,
-	SceneLayerEffectPositionRotate,
-	SceneLayerEffectRGBCorrectionObject,
-	SceneLayerEffectTemperatureCorrectionObject,
-	SceneLayerEffectToneCurveCorrectionObject,
-	SceneLayerEffectTransform2DObject,
-	SceneLayerEffectTransform2DType,
-	SceneLayerEffectVirtualPTZObject,
-	SceneLayerEffectYUVCorrectionObject,
+	EffectChromaKeyEdgeSmoothingSize,
+	EffectChromaKeyObject,
+	EffectCropObject,
+	EffectFilmLookColorMode,
+	EffectFilmLookObject,
+	EffectGlowEffectObject,
+	EffectLinearKeyBlendMode,
+	EffectLinearKeyObject,
+	EffectLuminanceKeyBlendMode,
+	EffectLuminanceKeyObject,
+	EffectLUTCorrectionColorspace,
+	EffectLUTCorrectionIndex,
+	EffectLUTCorrectionObject,
+	EffectLUTCorrectionRange,
+	EffectMatrixCorrectionObject,
+	EffectPCropObject,
+	EffectPositionObject,
+	EffectPositionRotate,
+	EffectRGBCorrectionObject,
+	EffectTemperatureCorrectionObject,
+	EffectToneCurveCorrectionObject,
+	EffectTransform2DObject,
+	EffectTransform2DType,
+	EffectVirtualPTZObject,
+	EffectYUVCorrectionObject,
 	SceneLayerMode,
 	SceneLayerObject,
 	SceneLayerPgmPstMode,
@@ -55,11 +55,18 @@ import {
 	GfxSceneObject,
 	SubscriptionCallback,
 	AudioPlayerObject,
+	AuxObject,
+	AuxRecordingStatus,
 	AudioMixerObject,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
 import {
+	refAuxEffect,
+	refAuxId,
+	refAuxName,
+	AuxEffectRef,
+	AuxRef,
 	AudioMixerChannelRef,
 	GfxSceneRef,
 	refAudioMixerChannel,
@@ -68,6 +75,7 @@ import {
 	refGfxSceneItem,
 	refImageStore,
 	refMacro,
+	refMattes,
 	refRamRecorder,
 	refScene,
 	refSceneLayer,
@@ -104,7 +112,11 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 			// This uses extends the original class, and replaces some of the
 			class MockKairosMinimalConnectionInstance extends originalClass implements IMockMinimalKairosConnection {
 				private _mockConnected = false
-				private _replyHandler: (message: string) => Promise<string[]> = () => {
+				private _replyHandler: (
+					commandStr: string,
+					expectedResponse: ExpectedResponseType,
+					expectedResponsePath: string | null
+				) => Promise<string[]> = () => {
 					throw new Error('No reply handler set')
 				}
 				private _mockSubscribeValue: (
@@ -139,7 +151,7 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 				): Promise<TRes> {
 					const orgError = new Error()
 					try {
-						const replyLines = await this._replyHandler(commandStr)
+						const replyLines = await this._replyHandler(commandStr, expectedResponse, expectedResponsePath)
 
 						if (replyLines.length === 1 && replyLines[0] === 'Error') {
 							throw new ResponseError(commandStr, replyLines[0])
@@ -185,7 +197,13 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 
 				// ------------ Mock methods --------------------------------------------------------------------------
 
-				public mockSetReplyHandler(handler: (message: string) => Promise<string[]>) {
+				public mockSetReplyHandler(
+					handler: (
+						message: string,
+						expectedResponse: ExpectedResponseType,
+						expectedResponsePath: string | null
+					) => Promise<string[]>
+				) {
 					this._replyHandler = handler
 				}
 
@@ -212,7 +230,13 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 interface IMockMinimalKairosConnection extends MinimalKairosConnection {
 	isAMock: boolean
 
-	mockSetReplyHandler: (handler: (message: string) => Promise<string[]>) => void
+	mockSetReplyHandler: (
+		handler: (
+			message: string,
+			expectedResponse: ExpectedResponseType,
+			expectedResponsePath: string | null
+		) => Promise<string[]>
+	) => void
 	mockSetSubscribeValue: (handler: (path: string, abort: AbortSignal, callback: any) => void) => void
 }
 
@@ -513,14 +537,20 @@ describe('KairosConnection', () => {
 
 			// Set up a default reply handler for the connection
 			// That uses the stored responses from the Kairos emulator:
-			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
-				if (emulatorConnection) {
-					// If there is an emulatorConnection, use it to handle the command:
-					const reply = await emulatorConnection.doCommand(message)
-					if (reply !== null) return reply
+			connection.mockSetReplyHandler(
+				async (
+					message: string,
+					expectedResponse: ExpectedResponseType,
+					expectedResponsePath: string | null
+				): Promise<string[]> => {
+					if (emulatorConnection) {
+						// If there is an emulatorConnection, use it to handle the command:
+						const reply = await emulatorConnection.doCommand(message, expectedResponse, expectedResponsePath)
+						if (reply !== null) return reply
+					}
+					throw new Error(`Unexpected message: ${message}`)
 				}
-				throw new Error(`Unexpected message: ${message}`)
-			})
+			)
 		})
 
 		// SYS
@@ -1178,7 +1208,7 @@ describe('KairosConnection', () => {
 					softnessRight: 0,
 					softnessTop: 0,
 					top: 0,
-				} satisfies SceneLayerEffectCropObject)
+				} satisfies EffectCropObject)
 			})
 			test('Transform2D', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1254,7 +1284,7 @@ describe('KairosConnection', () => {
 						scale: 1,
 						stretchH: 0,
 						stretchV: 0,
-						type: SceneLayerEffectTransform2DType.TwoD,
+						type: EffectTransform2DType.TwoD,
 					})
 				).toBeUndefined()
 				expect(
@@ -1279,8 +1309,8 @@ describe('KairosConnection', () => {
 					scale: 1,
 					stretchH: 0,
 					stretchV: 0,
-					type: SceneLayerEffectTransform2DType.TwoD,
-				} satisfies SceneLayerEffectTransform2DObject)
+					type: EffectTransform2DType.TwoD,
+				} satisfies EffectTransform2DObject)
 			})
 			test('LuminanceKey', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1324,7 +1354,7 @@ describe('KairosConnection', () => {
 				})
 				expect(
 					await connection.updateSceneLayerEffectLuminanceKey(refSceneLayerEffect(refBackground, ['LuminanceKey']), {
-						blendMode: SceneLayerEffectLuminanceKeyBlendMode.Auto,
+						blendMode: EffectLuminanceKeyBlendMode.Auto,
 						cleanup: 0,
 						clip: 0.5,
 						density: 0,
@@ -1337,7 +1367,7 @@ describe('KairosConnection', () => {
 				expect(
 					await connection.getSceneLayerEffectLuminanceKey(refSceneLayerEffect(refBackground, ['LuminanceKey']))
 				).toStrictEqual({
-					blendMode: SceneLayerEffectLuminanceKeyBlendMode.Auto,
+					blendMode: EffectLuminanceKeyBlendMode.Auto,
 					cleanup: 0,
 					clip: 0.5,
 					density: 0,
@@ -1345,7 +1375,7 @@ describe('KairosConnection', () => {
 					gain: 1,
 					invert: false,
 					sourceKey: null, // '<unknown>',
-				} satisfies SceneLayerEffectLuminanceKeyObject)
+				} satisfies EffectLuminanceKeyObject)
 
 				expect(
 					await connection.sceneLayerEffectLuminanceKeyAutoAdjust(refSceneLayerEffect(refBackground, ['LuminanceKey']))
@@ -1443,7 +1473,7 @@ describe('KairosConnection', () => {
 						cleanup: 0,
 						clip: 0.5,
 						density: 0,
-						edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize.Off,
+						edgeSmoothingSize: EffectChromaKeyEdgeSmoothingSize.Off,
 						enabled: false,
 						fgdFade: false,
 						gain: 1,
@@ -1467,7 +1497,7 @@ describe('KairosConnection', () => {
 					cleanup: 0,
 					clip: 0.5,
 					density: 0,
-					edgeSmoothingSize: SceneLayerEffectChromaKeyEdgeSmoothingSize.Off,
+					edgeSmoothingSize: EffectChromaKeyEdgeSmoothingSize.Off,
 					enabled: false,
 					fgdFade: false,
 					gain: 1,
@@ -1480,7 +1510,7 @@ describe('KairosConnection', () => {
 					spillSupression: 0.3,
 					spillSupressionLeft: 1,
 					spillSupressionRight: 1,
-				} satisfies SceneLayerEffectChromaKeyObject)
+				} satisfies EffectChromaKeyObject)
 				expect(
 					await connection.sceneLayerEffectChromaKeyAutoAdjust(refSceneLayerEffect(refBackground, ['ChromaKey']))
 				).toBeUndefined()
@@ -1569,7 +1599,7 @@ describe('KairosConnection', () => {
 					saturation: 1,
 					uvRotation: 0,
 					yellowBlue: 0,
-				} satisfies SceneLayerEffectYUVCorrectionObject)
+				} satisfies EffectYUVCorrectionObject)
 			})
 			test('RGBCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1666,7 +1696,7 @@ describe('KairosConnection', () => {
 					pedestalBlue: 0,
 					pedestalGreen: 0,
 					pedestalRed: 0,
-				} satisfies SceneLayerEffectRGBCorrectionObject)
+				} satisfies EffectRGBCorrectionObject)
 			})
 			test('LUTCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1709,11 +1739,11 @@ describe('KairosConnection', () => {
 						{
 							colorSpaceConversion: false,
 							enabled: false,
-							index: SceneLayerEffectLUTCorrectionIndex.Cinema,
-							inputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-							inputRange: SceneLayerEffectLUTCorrectionRange.Normal,
-							outputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-							outputRange: SceneLayerEffectLUTCorrectionRange.Normal,
+							index: EffectLUTCorrectionIndex.Cinema,
+							inputColorspace: EffectLUTCorrectionColorspace.BT709,
+							inputRange: EffectLUTCorrectionRange.Normal,
+							outputColorspace: EffectLUTCorrectionColorspace.BT709,
+							outputRange: EffectLUTCorrectionRange.Normal,
 						}
 					)
 				).toBeUndefined()
@@ -1722,12 +1752,12 @@ describe('KairosConnection', () => {
 				).toStrictEqual({
 					colorSpaceConversion: false,
 					enabled: false,
-					index: SceneLayerEffectLUTCorrectionIndex.Cinema,
-					inputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-					inputRange: SceneLayerEffectLUTCorrectionRange.Normal,
-					outputColorspace: SceneLayerEffectLUTCorrectionColorspace.BT709,
-					outputRange: SceneLayerEffectLUTCorrectionRange.Normal,
-				} satisfies SceneLayerEffectLUTCorrectionObject)
+					index: EffectLUTCorrectionIndex.Cinema,
+					inputColorspace: EffectLUTCorrectionColorspace.BT709,
+					inputRange: EffectLUTCorrectionRange.Normal,
+					outputColorspace: EffectLUTCorrectionColorspace.BT709,
+					outputRange: EffectLUTCorrectionRange.Normal,
+				} satisfies EffectLUTCorrectionObject)
 			})
 			test('VirtualPTZ', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1767,7 +1797,7 @@ describe('KairosConnection', () => {
 						y: 0,
 					},
 					zoom: 1,
-				} satisfies SceneLayerEffectVirtualPTZObject)
+				} satisfies EffectVirtualPTZObject)
 			})
 			test('ToneCurveCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -1866,7 +1896,7 @@ describe('KairosConnection', () => {
 					whiteBlue: 1,
 					whiteGreen: 1,
 					whiteRed: 1,
-				} satisfies SceneLayerEffectToneCurveCorrectionObject)
+				} satisfies EffectToneCurveCorrectionObject)
 			})
 			test('MatrixCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2037,7 +2067,7 @@ describe('KairosConnection', () => {
 					rgP: 0,
 					yellowLevel: 1,
 					yellowPhase: 0,
-				} satisfies SceneLayerEffectMatrixCorrectionObject)
+				} satisfies EffectMatrixCorrectionObject)
 			})
 			test('TemperatureCorrection', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2082,7 +2112,7 @@ describe('KairosConnection', () => {
 					keepLuminance: true,
 					temperature: 6600,
 					tint: 0,
-				} satisfies SceneLayerEffectTemperatureCorrectionObject)
+				} satisfies EffectTemperatureCorrectionObject)
 			})
 			test('LinearKey', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2110,7 +2140,7 @@ describe('KairosConnection', () => {
 				})
 				expect(
 					await connection.updateSceneLayerEffectLinearKey(refSceneLayerEffect(refBackground, ['LinearKey-1']), {
-						blendMode: SceneLayerEffectLinearKeyBlendMode.Auto,
+						blendMode: EffectLinearKeyBlendMode.Auto,
 						enabled: false,
 						invert: false,
 						keySource: refSourceBase(['BLACK']),
@@ -2119,11 +2149,11 @@ describe('KairosConnection', () => {
 				expect(
 					await connection.getSceneLayerEffectLinearKey(refSceneLayerEffect(refBackground, ['LinearKey-1']))
 				).toStrictEqual({
-					blendMode: SceneLayerEffectLinearKeyBlendMode.Auto,
+					blendMode: EffectLinearKeyBlendMode.Auto,
 					enabled: false,
 					invert: false,
 					keySource: null, // '<unknown>',
-				} satisfies SceneLayerEffectLinearKeyObject)
+				} satisfies EffectLinearKeyObject)
 			})
 			test('Position', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2159,7 +2189,7 @@ describe('KairosConnection', () => {
 							x: 0,
 							y: 0,
 						},
-						rotate: SceneLayerEffectPositionRotate.Rotate0,
+						rotate: EffectPositionRotate.Rotate0,
 					})
 				).toBeUndefined()
 				expect(
@@ -2172,8 +2202,8 @@ describe('KairosConnection', () => {
 						x: 0,
 						y: 0,
 					},
-					rotate: SceneLayerEffectPositionRotate.Rotate0,
-				} satisfies SceneLayerEffectPositionObject)
+					rotate: EffectPositionRotate.Rotate0,
+				} satisfies EffectPositionObject)
 			})
 			test('PCrop', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2219,7 +2249,7 @@ describe('KairosConnection', () => {
 					left: 0,
 					right: 0,
 					top: 0,
-				} satisfies SceneLayerEffectPCropObject)
+				} satisfies EffectPCropObject)
 			})
 			test('FilmLook', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2258,7 +2288,7 @@ describe('KairosConnection', () => {
 				})
 				expect(
 					await connection.updateSceneLayerEffectFilmLook(refSceneLayerEffect(refBackground, ['FilmLook-1']), {
-						colorMode: SceneLayerEffectFilmLookColorMode.Sepia,
+						colorMode: EffectFilmLookColorMode.Sepia,
 						colorStrength: 0.5,
 						crack: 0.5,
 						grain: 0.5,
@@ -2270,14 +2300,14 @@ describe('KairosConnection', () => {
 				expect(
 					await connection.getSceneLayerEffectFilmLook(refSceneLayerEffect(refBackground, ['FilmLook-1']))
 				).toStrictEqual({
-					colorMode: SceneLayerEffectFilmLookColorMode.Sepia,
+					colorMode: EffectFilmLookColorMode.Sepia,
 					colorStrength: 0.5,
 					crack: 0.5,
 					grain: 0.5,
 					shadow: 0.5,
 					shake: 0.5,
 					spots: 0.5,
-				} satisfies SceneLayerEffectFilmLookObject)
+				} satisfies EffectFilmLookObject)
 			})
 			test('GlowEffect', async () => {
 				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -2325,7 +2355,7 @@ describe('KairosConnection', () => {
 						red: 255,
 					},
 					softness: 0.5,
-				} satisfies SceneLayerEffectGlowEffectObject)
+				} satisfies EffectGlowEffectObject)
 			})
 		})
 		// SCENES.Scene
@@ -3091,6 +3121,871 @@ describe('KairosConnection', () => {
 		// 			FilmLook
 		// 			GlowEffect
 		// 	AUDIO-AUX<1-8>
+
+		test('AUX', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:AUX': [
+						'list_ex:AUX=',
+						'IP-AUX1',
+						'IP-AUX2',
+						'IP-AUX3',
+						'IP-AUX4',
+						'IP-AUX5',
+						'IP-AUX6',
+						'IP-AUX7',
+						'IP-AUX8',
+						'IP-AUX9',
+						'IP-AUX10',
+						'IP-AUX11',
+						'IP-AUX12',
+						'IP-AUX13',
+						'IP-AUX14',
+						'IP-AUX15',
+						'IP-AUX16',
+						'IP-AUX17',
+						'IP-AUX18',
+						'IP-AUX19',
+						'IP-AUX20',
+						'IP-AUX21',
+						'IP-AUX22',
+						'IP-AUX23',
+						'IP-AUX24',
+						'IP-AUX25',
+						'IP-AUX26',
+						'IP-AUX27',
+						'IP-AUX28',
+						'IP-AUX29',
+						'IP-AUX30',
+						'IP-AUX31',
+						'IP-AUX32',
+						'IP-AUX33',
+						'IP-AUX34',
+						'IP-AUX35',
+						'IP-AUX36',
+						'IP-AUX37',
+						'IP-AUX38',
+						'IP-AUX39',
+						'IP-AUX40',
+						'SDI-AUX1',
+						'SDI-AUX2',
+						'SDI-AUX3',
+						'SDI-AUX4',
+						'SDI-AUX5',
+						'SDI-AUX6',
+						'SDI-AUX7',
+						'SDI-AUX8',
+						'SDI-AUX9',
+						'SDI-AUX10',
+						'SDI-AUX11',
+						'SDI-AUX12',
+						'SDI-AUX13',
+						'SDI-AUX14',
+						'SDI-AUX15',
+						'SDI-AUX16',
+						'SDI-AUX17',
+						'SDI-AUX18',
+						'SDI-AUX19',
+						'SDI-AUX20',
+						'HDMI-AUX1',
+						'HDMI-AUX2',
+						'HDMI-AUX3',
+						'HDMI-AUX4',
+						'HDMI-AUX5',
+						'HDMI-AUX6',
+						'HDMI-AUX7',
+						'HDMI-AUX8',
+						'HDMI-AUX9',
+						'HDMI-AUX10',
+						'HDMI-AUX11',
+						'HDMI-AUX12',
+						'HDMI-AUX13',
+						'HDMI-AUX14',
+						'HDMI-AUX15',
+						'HDMI-AUX16',
+						'HDMI-AUX17',
+						'HDMI-AUX18',
+						'HDMI-AUX19',
+						'HDMI-AUX20',
+						'NDI-AUX1',
+						'NDI-AUX2',
+						'STREAM-AUX1',
+						'STREAM-AUX2',
+						'AUX.Stream-AUX3',
+						'AUX.Stream-AUX4',
+						'AUDIO-AUX1',
+						'AUDIO-AUX2',
+						'AUDIO-AUX3',
+						'AUDIO-AUX4',
+						'AUDIO-AUX5',
+						'AUDIO-AUX6',
+						'AUDIO-AUX7',
+						'AUDIO-AUX8',
+						'',
+					],
+					'IP-AUX1.name=Test name': ['OK'],
+					'IP-AUX1.sourceOptions=MATTES.ColA,MATTES.ColB,MATTES.ColC': ['OK'],
+					'IP-AUX1.source=WHITE': ['OK'],
+					'IP-AUX1.tally_root=1': ['OK'],
+					'IP-AUX1.recording_status': ['IP-AUX1.recording_status=idle'],
+					'IP-AUX1.name': ['IP-AUX1.name=Test name'],
+					'IP-AUX1.available': ['IP-AUX1.available=0'],
+					'IP-AUX1.sourceOptions': ['IP-AUX1.sourceOptions=MATTES.ColA,MATTES.ColB,MATTES.ColC,'],
+					'IP-AUX1.source': ['IP-AUX1.source=WHITE'],
+					'IP-AUX1.tally_root': ['IP-AUX1.tally_root=1'],
+					'IP-AUX1.record=': ['OK'],
+					'IP-AUX1.record_loop=': ['OK'],
+					'IP-AUX1.stop_record=': ['OK'],
+					'IP-AUX1.grab=': ['OK'],
+					'IP-AUX1.grab=test-name': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(await connection.listAuxes()).toStrictEqual([
+				{ path: 'IP-AUX1', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX2', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX3', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX4', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX5', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX6', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX7', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX8', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX9', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX10', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX11', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX12', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX13', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX14', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX15', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX16', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX17', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX18', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX19', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX20', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX21', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX22', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX23', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX24', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX25', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX26', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX27', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX28', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX29', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX30', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX31', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX32', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX33', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX34', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX35', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX36', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX37', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX38', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX39', pathIsName: false, realm: 'aux' },
+				{ path: 'IP-AUX40', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX1', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX2', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX3', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX4', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX5', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX6', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX7', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX8', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX9', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX10', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX11', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX12', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX13', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX14', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX15', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX16', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX17', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX18', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX19', pathIsName: false, realm: 'aux' },
+				{ path: 'SDI-AUX20', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX1', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX2', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX3', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX4', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX5', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX6', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX7', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX8', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX9', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX10', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX11', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX12', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX13', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX14', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX15', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX16', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX17', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX18', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX19', pathIsName: false, realm: 'aux' },
+				{ path: 'HDMI-AUX20', pathIsName: false, realm: 'aux' },
+				{ path: 'NDI-AUX1', pathIsName: false, realm: 'aux' },
+				{ path: 'NDI-AUX2', pathIsName: false, realm: 'aux' },
+				{ path: 'STREAM-AUX1', pathIsName: false, realm: 'aux' },
+				{ path: 'STREAM-AUX2', pathIsName: false, realm: 'aux' },
+				{ path: 'Stream-AUX3', pathIsName: true, realm: 'aux' },
+				{ path: 'Stream-AUX4', pathIsName: true, realm: 'aux' },
+				{ path: 'AUDIO-AUX1', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX2', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX3', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX4', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX5', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX6', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX7', pathIsName: false, realm: 'aux' },
+				{ path: 'AUDIO-AUX8', pathIsName: false, realm: 'aux' },
+			] satisfies AuxRef[])
+			expect(
+				await connection.updateAux(refAuxId('IP-AUX1'), {
+					name: 'Test name',
+					source: refSourceBase(['WHITE']),
+					tallyRoot: 1,
+					sourceOptions: [refMattes(['ColA']), refMattes(['ColB']), refMattes(['ColC'])],
+					// recordingStatus, available is read only
+				})
+			).toBeUndefined()
+			expect(await connection.getAux(refAuxId('IP-AUX1'))).toStrictEqual({
+				recordingStatus: AuxRecordingStatus.Idle,
+				name: 'Test name',
+				available: false,
+				sourceOptions: [refMattes(['ColA']), refMattes(['ColB']), refMattes(['ColC'])],
+				source: refSourceBase(['WHITE']),
+				tallyRoot: 1,
+			} satisfies AuxObject)
+
+			expect(await connection.auxRecord(refAuxId('IP-AUX1'))).toBeUndefined()
+			expect(await connection.auxRecordLoop(refAuxId('IP-AUX1'))).toBeUndefined()
+			expect(await connection.auxRecordStop(refAuxId('IP-AUX1'))).toBeUndefined()
+			expect(await connection.auxGrabStill(refAuxId('IP-AUX1'))).toBeUndefined()
+
+			expect(await connection.auxGrabStill(refAuxId('IP-AUX1'), 'test-name')).toBeUndefined()
+		})
+
+		describe('AUX.Effects', async () => {
+			const refIpAux1Name = refAuxName('IP-AUX1')
+			const refIpAux1Id = refAuxId('IP-AUX1')
+			test('List', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'list_ex:AUX.IP-AUX1.Effects': [
+							'list_ex:AUX.IP-AUX1.Effects=',
+							'AUX.IP-AUX1.Effects.Crop',
+							'AUX.IP-AUX1.Effects.YUVCorrection-1',
+							'AUX.IP-AUX1.Effects.RGBCorrection-1',
+							'AUX.IP-AUX1.Effects.FilmLook-1',
+							'AUX.IP-AUX1.Effects.GlowEffect-1',
+							'',
+						],
+					}[message]
+					if (reply) return reply
+
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(await connection.listAuxEffects(refIpAux1Name)).toStrictEqual([
+					{
+						realm: 'aux-effect',
+						auxPath: 'IP-AUX1',
+						auxPathIsName: true,
+						effectPath: ['Crop'],
+						name: 'Crop',
+					},
+					{
+						realm: 'aux-effect',
+						auxPath: 'IP-AUX1',
+						auxPathIsName: true,
+						effectPath: ['YUVCorrection-1'],
+						name: 'YUVCorrection-1',
+					},
+					{
+						realm: 'aux-effect',
+						auxPath: 'IP-AUX1',
+						auxPathIsName: true,
+						effectPath: ['RGBCorrection-1'],
+						name: 'RGBCorrection-1',
+					},
+					{
+						realm: 'aux-effect',
+						auxPath: 'IP-AUX1',
+						auxPathIsName: true,
+						effectPath: ['FilmLook-1'],
+						name: 'FilmLook-1',
+					},
+					{
+						realm: 'aux-effect',
+						auxPath: 'IP-AUX1',
+						auxPathIsName: true,
+						effectPath: ['GlowEffect-1'],
+						name: 'GlowEffect-1',
+					},
+				] satisfies (AuxEffectRef & { name: string })[])
+			})
+
+			test('Crop', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.Crop.enabled=0': ['OK'],
+						'IP-AUX1.Effects.Crop.top=0': ['OK'],
+						'IP-AUX1.Effects.Crop.left=0': ['OK'],
+						'IP-AUX1.Effects.Crop.right=0': ['OK'],
+						'IP-AUX1.Effects.Crop.bottom=0': ['OK'],
+						'IP-AUX1.Effects.Crop.softness=0': ['OK'],
+						'IP-AUX1.Effects.Crop.rounded_corners=0': ['OK'],
+						'IP-AUX1.Effects.Crop.global_softness=1': ['OK'],
+						'IP-AUX1.Effects.Crop.enabled': ['IP-AUX1.Effects.Crop.enabled=0'],
+						'IP-AUX1.Effects.Crop.top': ['IP-AUX1.Effects.Crop.top=0'],
+						'IP-AUX1.Effects.Crop.left': ['IP-AUX1.Effects.Crop.left=0'],
+						'IP-AUX1.Effects.Crop.right': ['IP-AUX1.Effects.Crop.right=0'],
+						'IP-AUX1.Effects.Crop.bottom': ['IP-AUX1.Effects.Crop.bottom=0'],
+						'IP-AUX1.Effects.Crop.softness': ['IP-AUX1.Effects.Crop.softness=0'],
+						'IP-AUX1.Effects.Crop.rounded_corners': ['IP-AUX1.Effects.Crop.rounded_corners=0'],
+						'IP-AUX1.Effects.Crop.global_softness': ['IP-AUX1.Effects.Crop.global_softness=1'],
+						'IP-AUX1.Effects.Crop.softness_top': ['IP-AUX1.Effects.Crop.softness_top=0'],
+						'IP-AUX1.Effects.Crop.softness_left': ['IP-AUX1.Effects.Crop.softness_left=0'],
+						'IP-AUX1.Effects.Crop.softness_right': ['IP-AUX1.Effects.Crop.softness_right=0'],
+						'IP-AUX1.Effects.Crop.softness_bottom': ['IP-AUX1.Effects.Crop.softness_bottom=0'],
+					}[message]
+					if (reply) return reply
+
+					throw new Error(`Unexpected message: ${message}`)
+				})
+
+				expect(
+					await connection.updateAuxEffectCrop(refAuxEffect(refIpAux1Id, ['Crop']), {
+						bottom: 0,
+						enabled: false,
+						globalSoftness: true,
+						left: 0,
+						right: 0,
+						roundedCorners: 0,
+						softness: 0,
+						top: 0,
+						// softnessBottom, softnessLeft, softnessRight, softnessTop are read-only
+					})
+				).toBeUndefined()
+				expect(await connection.getAuxEffectCrop(refAuxEffect(refIpAux1Id, ['Crop']))).toStrictEqual({
+					bottom: 0,
+					enabled: false,
+					globalSoftness: true,
+					left: 0,
+					right: 0,
+					roundedCorners: 0,
+					softness: 0,
+					softnessBottom: 0,
+					softnessLeft: 0,
+					softnessRight: 0,
+					softnessTop: 0,
+					top: 0,
+				} satisfies EffectCropObject)
+			})
+			test('YUVCorrection', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.YUVCorrection-1.enabled=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.pedestal=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.luminance_lift=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.luminance_gain=0.991582': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.luminance_gamma=0.997782': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.contrast=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.saturation=1': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.UV_rotation=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.cyan_red=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.magenta_green=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.yellow_blue=0': ['OK'],
+						'IP-AUX1.Effects.YUVCorrection-1.enabled': ['IP-AUX1.Effects.YUVCorrection-1.enabled=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.pedestal': ['IP-AUX1.Effects.YUVCorrection-1.pedestal=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.luminance_lift': ['IP-AUX1.Effects.YUVCorrection-1.luminance_lift=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.luminance_gain': [
+							'IP-AUX1.Effects.YUVCorrection-1.luminance_gain=0.991582',
+						],
+						'IP-AUX1.Effects.YUVCorrection-1.luminance_gamma': [
+							'IP-AUX1.Effects.YUVCorrection-1.luminance_gamma=0.997782',
+						],
+						'IP-AUX1.Effects.YUVCorrection-1.contrast': ['IP-AUX1.Effects.YUVCorrection-1.contrast=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.saturation': ['IP-AUX1.Effects.YUVCorrection-1.saturation=1'],
+						'IP-AUX1.Effects.YUVCorrection-1.UV_rotation': ['IP-AUX1.Effects.YUVCorrection-1.UV_rotation=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.cyan_red': ['IP-AUX1.Effects.YUVCorrection-1.cyan_red=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.magenta_green': ['IP-AUX1.Effects.YUVCorrection-1.magenta_green=0'],
+						'IP-AUX1.Effects.YUVCorrection-1.yellow_blue': ['IP-AUX1.Effects.YUVCorrection-1.yellow_blue=0'],
+					}[message]
+					if (reply) return reply
+
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectYUVCorrection(refAuxEffect(refIpAux1Id, ['YUVCorrection-1']), {
+						contrast: 0,
+						cyanRed: 0,
+						enabled: false,
+						luminanceGain: 0.991582,
+						luminanceGamma: 0.997782,
+						luminanceLift: 0,
+						magentaGreen: 0,
+						pedestal: 0,
+						saturation: 1,
+						uvRotation: 0,
+						yellowBlue: 0,
+					})
+				).toBeUndefined()
+				expect(
+					await connection.getAuxEffectYUVCorrection(refAuxEffect(refIpAux1Id, ['YUVCorrection-1']))
+				).toStrictEqual({
+					contrast: 0,
+					cyanRed: 0,
+					enabled: false,
+					luminanceGain: 0.991582,
+					luminanceGamma: 0.997782,
+					luminanceLift: 0,
+					magentaGreen: 0,
+					pedestal: 0,
+					saturation: 1,
+					uvRotation: 0,
+					yellowBlue: 0,
+				} satisfies EffectYUVCorrectionObject)
+			})
+			test('RGBCorrection', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.RGBCorrection-1.enabled=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.pedestal_red=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.pedestal_green=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.pedestal_blue=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.lift_red=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.lift_green=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.lift_blue=0': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.gain_red=1': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.gain_green=1': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.gain_blue=1': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.gamma_red=1': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.gamma_green=1': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.gamma_blue=1': ['OK'],
+						'IP-AUX1.Effects.RGBCorrection-1.enabled': ['IP-AUX1.Effects.RGBCorrection-1.enabled=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.pedestal_red': ['IP-AUX1.Effects.RGBCorrection-1.pedestal_red=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.pedestal_green': ['IP-AUX1.Effects.RGBCorrection-1.pedestal_green=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.pedestal_blue': ['IP-AUX1.Effects.RGBCorrection-1.pedestal_blue=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.lift_red': ['IP-AUX1.Effects.RGBCorrection-1.lift_red=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.lift_green': ['IP-AUX1.Effects.RGBCorrection-1.lift_green=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.lift_blue': ['IP-AUX1.Effects.RGBCorrection-1.lift_blue=0'],
+						'IP-AUX1.Effects.RGBCorrection-1.gain_red': ['IP-AUX1.Effects.RGBCorrection-1.gain_red=1'],
+						'IP-AUX1.Effects.RGBCorrection-1.gain_green': ['IP-AUX1.Effects.RGBCorrection-1.gain_green=1'],
+						'IP-AUX1.Effects.RGBCorrection-1.gain_blue': ['IP-AUX1.Effects.RGBCorrection-1.gain_blue=1'],
+						'IP-AUX1.Effects.RGBCorrection-1.gamma_red': ['IP-AUX1.Effects.RGBCorrection-1.gamma_red=1'],
+						'IP-AUX1.Effects.RGBCorrection-1.gamma_green': ['IP-AUX1.Effects.RGBCorrection-1.gamma_green=1'],
+						'IP-AUX1.Effects.RGBCorrection-1.gamma_blue': ['IP-AUX1.Effects.RGBCorrection-1.gamma_blue=1'],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectRGBCorrection(refAuxEffect(refIpAux1Id, ['RGBCorrection-1']), {
+						enabled: false,
+						gainBlue: 1,
+						gainGreen: 1,
+						gainRed: 1,
+						gammaBlue: 1,
+						gammaGreen: 1,
+						gammaRed: 1,
+						liftBlue: 0,
+						liftGreen: 0,
+						liftRed: 0,
+						pedestalBlue: 0,
+						pedestalGreen: 0,
+						pedestalRed: 0,
+					})
+				).toBeUndefined()
+				expect(
+					await connection.getAuxEffectRGBCorrection(refAuxEffect(refIpAux1Id, ['RGBCorrection-1']))
+				).toStrictEqual({
+					enabled: false,
+					gainBlue: 1,
+					gainGreen: 1,
+					gainRed: 1,
+					gammaBlue: 1,
+					gammaGreen: 1,
+					gammaRed: 1,
+					liftBlue: 0,
+					liftGreen: 0,
+					liftRed: 0,
+					pedestalBlue: 0,
+					pedestalGreen: 0,
+					pedestalRed: 0,
+				} satisfies EffectRGBCorrectionObject)
+			})
+			test('LUTCorrection', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.LUTCorrection-1.enabled=0': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.index=Cinema': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.input_colorspace=BT709': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.output_colorspace=BT709': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.input_range=Normal': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.output_range=Normal': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.color_space_conversion=0': ['OK'],
+						'IP-AUX1.Effects.LUTCorrection-1.enabled': ['IP-AUX1.Effects.LUTCorrection-1.enabled=0'],
+						'IP-AUX1.Effects.LUTCorrection-1.index': ['IP-AUX1.Effects.LUTCorrection-1.index=Cinema'],
+						'IP-AUX1.Effects.LUTCorrection-1.input_colorspace': [
+							'IP-AUX1.Effects.LUTCorrection-1.input_colorspace=BT709',
+						],
+						'IP-AUX1.Effects.LUTCorrection-1.output_colorspace': [
+							'IP-AUX1.Effects.LUTCorrection-1.output_colorspace=BT709',
+						],
+						'IP-AUX1.Effects.LUTCorrection-1.input_range': ['IP-AUX1.Effects.LUTCorrection-1.input_range=Normal'],
+						'IP-AUX1.Effects.LUTCorrection-1.output_range': ['IP-AUX1.Effects.LUTCorrection-1.output_range=Normal'],
+						'IP-AUX1.Effects.LUTCorrection-1.color_space_conversion': [
+							'IP-AUX1.Effects.LUTCorrection-1.color_space_conversion=0',
+						],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectLUTCorrection(refAuxEffect(refIpAux1Id, ['LUTCorrection-1']), {
+						colorSpaceConversion: false,
+						enabled: false,
+						index: EffectLUTCorrectionIndex.Cinema,
+						inputColorspace: EffectLUTCorrectionColorspace.BT709,
+						inputRange: EffectLUTCorrectionRange.Normal,
+						outputColorspace: EffectLUTCorrectionColorspace.BT709,
+						outputRange: EffectLUTCorrectionRange.Normal,
+					})
+				).toBeUndefined()
+				expect(
+					await connection.getAuxEffectLUTCorrection(refAuxEffect(refIpAux1Id, ['LUTCorrection-1']))
+				).toStrictEqual({
+					colorSpaceConversion: false,
+					enabled: false,
+					index: EffectLUTCorrectionIndex.Cinema,
+					inputColorspace: EffectLUTCorrectionColorspace.BT709,
+					inputRange: EffectLUTCorrectionRange.Normal,
+					outputColorspace: EffectLUTCorrectionColorspace.BT709,
+					outputRange: EffectLUTCorrectionRange.Normal,
+				} satisfies EffectLUTCorrectionObject)
+			})
+			test('ToneCurveCorrection', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.ToneCurveCorrection-1.enabled=0': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.black_red=0': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.black_green=0': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.black_blue=0': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_red=0.3333': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_green=0.3333': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_blue=0.3333': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_red=0.6666': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_green=0.6666': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_blue=0.6666': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.white_red=1': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.white_green=1': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.white_blue=1': ['OK'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.enabled': ['IP-AUX1.Effects.ToneCurveCorrection-1.enabled=0'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.black_red': ['IP-AUX1.Effects.ToneCurveCorrection-1.black_red=0'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.black_green': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.black_green=0',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.black_blue': ['IP-AUX1.Effects.ToneCurveCorrection-1.black_blue=0'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_red': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_red=0.3333',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_green': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_green=0.3333',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_blue': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.gray_low_blue=0.3333',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_red': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_red=0.6666',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_green': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_green=0.6666',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_blue': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.gray_high_blue=0.6666',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.white_red': ['IP-AUX1.Effects.ToneCurveCorrection-1.white_red=1'],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.white_green': [
+							'IP-AUX1.Effects.ToneCurveCorrection-1.white_green=1',
+						],
+						'IP-AUX1.Effects.ToneCurveCorrection-1.white_blue': ['IP-AUX1.Effects.ToneCurveCorrection-1.white_blue=1'],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectToneCurveCorrection(refAuxEffect(refIpAux1Id, ['ToneCurveCorrection-1']), {
+						blackBlue: 0,
+						blackGreen: 0,
+						blackRed: 0,
+						enabled: false,
+						grayHighBlue: 0.6666,
+						grayHighGreen: 0.6666,
+						grayHighRed: 0.6666,
+						grayLowBlue: 0.3333,
+						grayLowGreen: 0.3333,
+						grayLowRed: 0.3333,
+						whiteBlue: 1,
+						whiteGreen: 1,
+						whiteRed: 1,
+					})
+				).toBeUndefined()
+				expect(
+					await connection.getAuxEffectToneCurveCorrection(refAuxEffect(refIpAux1Id, ['ToneCurveCorrection-1']))
+				).toStrictEqual({
+					blackBlue: 0,
+					blackGreen: 0,
+					blackRed: 0,
+					enabled: false,
+					grayHighBlue: 0.6666,
+					grayHighGreen: 0.6666,
+					grayHighRed: 0.6666,
+					grayLowBlue: 0.3333,
+					grayLowGreen: 0.3333,
+					grayLowRed: 0.3333,
+					whiteBlue: 1,
+					whiteGreen: 1,
+					whiteRed: 1,
+				} satisfies EffectToneCurveCorrectionObject)
+			})
+			test('MatrixCorrection', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.MatrixCorrection-1.enabled=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-g_n=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-g_p=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-b_n=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-b_p=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-r_n=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-r_p=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-b_n=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-b_p=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-r_n=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-r_p=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-g_n=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-g_p=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.red_phase=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.red_level=1': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.yellow_phase=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.yellow_level=1': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.green_phase=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.green_level=1': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.cyan_phase=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.cyan_level=1': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.blue_phase=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.blue_level=1': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.magenta_phase=0': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.magenta_level=1': ['OK'],
+						'IP-AUX1.Effects.MatrixCorrection-1.enabled': ['IP-AUX1.Effects.MatrixCorrection-1.enabled=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-g_n': ['IP-AUX1.Effects.MatrixCorrection-1.r-g_n=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-g_p': ['IP-AUX1.Effects.MatrixCorrection-1.r-g_p=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-b_n': ['IP-AUX1.Effects.MatrixCorrection-1.r-b_n=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.r-b_p': ['IP-AUX1.Effects.MatrixCorrection-1.r-b_p=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-r_n': ['IP-AUX1.Effects.MatrixCorrection-1.g-r_n=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-r_p': ['IP-AUX1.Effects.MatrixCorrection-1.g-r_p=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-b_n': ['IP-AUX1.Effects.MatrixCorrection-1.g-b_n=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.g-b_p': ['IP-AUX1.Effects.MatrixCorrection-1.g-b_p=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-r_n': ['IP-AUX1.Effects.MatrixCorrection-1.b-r_n=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-r_p': ['IP-AUX1.Effects.MatrixCorrection-1.b-r_p=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-g_n': ['IP-AUX1.Effects.MatrixCorrection-1.b-g_n=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.b-g_p': ['IP-AUX1.Effects.MatrixCorrection-1.b-g_p=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.red_phase': ['IP-AUX1.Effects.MatrixCorrection-1.red_phase=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.red_level': ['IP-AUX1.Effects.MatrixCorrection-1.red_level=1'],
+						'IP-AUX1.Effects.MatrixCorrection-1.yellow_phase': ['IP-AUX1.Effects.MatrixCorrection-1.yellow_phase=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.yellow_level': ['IP-AUX1.Effects.MatrixCorrection-1.yellow_level=1'],
+						'IP-AUX1.Effects.MatrixCorrection-1.green_phase': ['IP-AUX1.Effects.MatrixCorrection-1.green_phase=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.green_level': ['IP-AUX1.Effects.MatrixCorrection-1.green_level=1'],
+						'IP-AUX1.Effects.MatrixCorrection-1.cyan_phase': ['IP-AUX1.Effects.MatrixCorrection-1.cyan_phase=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.cyan_level': ['IP-AUX1.Effects.MatrixCorrection-1.cyan_level=1'],
+						'IP-AUX1.Effects.MatrixCorrection-1.blue_phase': ['IP-AUX1.Effects.MatrixCorrection-1.blue_phase=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.blue_level': ['IP-AUX1.Effects.MatrixCorrection-1.blue_level=1'],
+						'IP-AUX1.Effects.MatrixCorrection-1.magenta_phase': ['IP-AUX1.Effects.MatrixCorrection-1.magenta_phase=0'],
+						'IP-AUX1.Effects.MatrixCorrection-1.magenta_level': ['IP-AUX1.Effects.MatrixCorrection-1.magenta_level=1'],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectMatrixCorrection(refAuxEffect(refIpAux1Id, ['MatrixCorrection-1']), {
+						bgN: 0,
+						bgP: 0,
+						blueLevel: 1,
+						bluePhase: 0,
+						brN: 0,
+						brP: 0,
+						cyanLevel: 1,
+						cyanPhase: 0,
+						enabled: false,
+						gbN: 0,
+						gbP: 0,
+						grN: 0,
+						grP: 0,
+						greenLevel: 1,
+						greenPhase: 0,
+						magentaLevel: 1,
+						magentaPhase: 0,
+						rbN: 0,
+						rbP: 0,
+						redLevel: 1,
+						redPhase: 0,
+						rgN: 0,
+						rgP: 0,
+						yellowLevel: 1,
+						yellowPhase: 0,
+					})
+				).toBeUndefined()
+				expect(
+					await connection.getAuxEffectMatrixCorrection(refAuxEffect(refIpAux1Id, ['MatrixCorrection-1']))
+				).toStrictEqual({
+					bgN: 0,
+					bgP: 0,
+					blueLevel: 1,
+					bluePhase: 0,
+					brN: 0,
+					brP: 0,
+					cyanLevel: 1,
+					cyanPhase: 0,
+					enabled: false,
+					gbN: 0,
+					gbP: 0,
+					grN: 0,
+					grP: 0,
+					greenLevel: 1,
+					greenPhase: 0,
+					magentaLevel: 1,
+					magentaPhase: 0,
+					rbN: 0,
+					rbP: 0,
+					redLevel: 1,
+					redPhase: 0,
+					rgN: 0,
+					rgP: 0,
+					yellowLevel: 1,
+					yellowPhase: 0,
+				} satisfies EffectMatrixCorrectionObject)
+			})
+			test('TemperatureCorrection', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.TemperatureCorrection-1.enabled=0': ['OK'],
+						'IP-AUX1.Effects.TemperatureCorrection-1.temperature=6600': ['OK'],
+						'IP-AUX1.Effects.TemperatureCorrection-1.tint=0': ['OK'],
+						'IP-AUX1.Effects.TemperatureCorrection-1.keep_luminance=1': ['OK'],
+						'IP-AUX1.Effects.TemperatureCorrection-1.enabled': ['IP-AUX1.Effects.TemperatureCorrection-1.enabled=0'],
+						'IP-AUX1.Effects.TemperatureCorrection-1.temperature': [
+							'IP-AUX1.Effects.TemperatureCorrection-1.temperature=6600',
+						],
+						'IP-AUX1.Effects.TemperatureCorrection-1.tint': ['IP-AUX1.Effects.TemperatureCorrection-1.tint=0'],
+						'IP-AUX1.Effects.TemperatureCorrection-1.keep_luminance': [
+							'IP-AUX1.Effects.TemperatureCorrection-1.keep_luminance=1',
+						],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectTemperatureCorrection(
+						refAuxEffect(refIpAux1Id, ['TemperatureCorrection-1']),
+						{
+							enabled: false,
+							keepLuminance: true,
+							temperature: 6600,
+							tint: 0,
+						}
+					)
+				).toBeUndefined()
+				expect(
+					await connection.getAuxEffectTemperatureCorrection(refAuxEffect(refIpAux1Id, ['TemperatureCorrection-1']))
+				).toStrictEqual({
+					enabled: false,
+					keepLuminance: true,
+					temperature: 6600,
+					tint: 0,
+				} satisfies EffectTemperatureCorrectionObject)
+			})
+			test('FilmLook', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.FilmLook-1.crack=0.5': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.spots=0.5': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.grain=0.5': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.shake=0.5': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.shadow=0.5': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.color mode=Sepia': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.color strength=0.5': ['OK'],
+						'IP-AUX1.Effects.FilmLook-1.crack': ['IP-AUX1.Effects.FilmLook-1.crack=0.5'],
+						'IP-AUX1.Effects.FilmLook-1.spots': ['IP-AUX1.Effects.FilmLook-1.spots=0.5'],
+						'IP-AUX1.Effects.FilmLook-1.grain': ['IP-AUX1.Effects.FilmLook-1.grain=0.5'],
+						'IP-AUX1.Effects.FilmLook-1.shake': ['IP-AUX1.Effects.FilmLook-1.shake=0.5'],
+						'IP-AUX1.Effects.FilmLook-1.shadow': ['IP-AUX1.Effects.FilmLook-1.shadow=0.5'],
+						'IP-AUX1.Effects.FilmLook-1.color mode': ['IP-AUX1.Effects.FilmLook-1.color mode=Sepia'],
+						'IP-AUX1.Effects.FilmLook-1.color strength': ['IP-AUX1.Effects.FilmLook-1.color strength=0.5'],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectFilmLook(refAuxEffect(refIpAux1Id, ['FilmLook-1']), {
+						colorMode: EffectFilmLookColorMode.Sepia,
+						colorStrength: 0.5,
+						crack: 0.5,
+						grain: 0.5,
+						shadow: 0.5,
+						shake: 0.5,
+						spots: 0.5,
+					})
+				).toBeUndefined()
+				expect(await connection.getAuxEffectFilmLook(refAuxEffect(refIpAux1Id, ['FilmLook-1']))).toStrictEqual({
+					colorMode: EffectFilmLookColorMode.Sepia,
+					colorStrength: 0.5,
+					crack: 0.5,
+					grain: 0.5,
+					shadow: 0.5,
+					shake: 0.5,
+					spots: 0.5,
+				} satisfies EffectFilmLookObject)
+			})
+			test('GlowEffect', async () => {
+				connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+					const reply = {
+						'IP-AUX1.Effects.GlowEffect-1.clip=0.5': ['OK'],
+						'IP-AUX1.Effects.GlowEffect-1.gain=1': ['OK'],
+						'IP-AUX1.Effects.GlowEffect-1.softness=0.5': ['OK'],
+						'IP-AUX1.Effects.GlowEffect-1.glow color=rgb(255,255,255)': ['OK'],
+						'IP-AUX1.Effects.GlowEffect-1.clip': ['IP-AUX1.Effects.GlowEffect-1.clip=0.5'],
+						'IP-AUX1.Effects.GlowEffect-1.gain': ['IP-AUX1.Effects.GlowEffect-1.gain=1'],
+						'IP-AUX1.Effects.GlowEffect-1.softness': ['IP-AUX1.Effects.GlowEffect-1.softness=0.5'],
+						'IP-AUX1.Effects.GlowEffect-1.glow color': ['IP-AUX1.Effects.GlowEffect-1.glow color=rgb(255,255,255)'],
+					}[message]
+					if (reply) return reply
+					throw new Error(`Unexpected message: ${message}`)
+				})
+				expect(
+					await connection.updateAuxEffectGlowEffect(refAuxEffect(refIpAux1Id, ['GlowEffect-1']), {
+						clip: 0.5,
+						gain: 1,
+						glowColor: {
+							blue: 255,
+							green: 255,
+							red: 255,
+						},
+						softness: 0.5,
+					})
+				).toBeUndefined()
+				expect(await connection.getAuxEffectGlowEffect(refAuxEffect(refIpAux1Id, ['GlowEffect-1']))).toStrictEqual({
+					clip: 0.5,
+					gain: 1,
+					glowColor: {
+						blue: 255,
+						green: 255,
+						red: 255,
+					},
+					softness: 0.5,
+				} satisfies EffectGlowEffectObject)
+			})
+		})
+
 		// INPUTS
 		// 	IP<1-48>
 		// 	NDI<1-2>
