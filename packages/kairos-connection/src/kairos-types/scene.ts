@@ -1,6 +1,6 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
 import { SceneTransitionRef, SourceRef } from '../lib/reference.js'
-import { ColorRGB } from './lib-types.js'
+import { ColorRGB, DissolveMode, Resolution } from './lib-types.js'
 
 export interface SceneObject {
 	/**
@@ -64,7 +64,7 @@ export interface SceneObject {
 	 * The drop down menu next to “Resolution” allows to determine the designated
 	 * Scene-Resolution. The selectable defaults are “1280x720p”, “1920x1080p” and
 	 * “3840x2160”. */
-	resolution: SceneResolution
+	resolution: Resolution
 
 	/** list[ObjectID] */
 	nextTransition: SceneTransitionRef[]
@@ -284,7 +284,7 @@ export interface SceneLayerObject {
 	 * selection.
 	 * [ enum ]
 	 */
-	dissolveMode: SceneLayerDissolveMode
+	dissolveMode: DissolveMode
 
 	/**
 	 * [ enum ]
@@ -339,11 +339,6 @@ export interface SceneSnapshotObject {
 }
 
 // ------------------------- enums -----------------------------
-export enum SceneResolution {
-	Resolution1280x720 = '1280x720',
-	Resolution1920x1080 = '1920x1080',
-	Resolution3840x2160 = '3840x2160',
-}
 export enum SceneLimitOffAction {
 	None = 'None',
 	ToBegin = 'ToBegin',
@@ -370,11 +365,6 @@ export enum SceneLayerMode {
 	FitSceneKeepAspect = 'FitSceneKeepAspect',
 	KeepSize = 'KeepSize',
 	Auto = 'Auto',
-}
-export enum SceneLayerDissolveMode {
-	Normal = 'Normal',
-	Reverse = 'Reverse',
-	Cross = 'Cross',
 }
 export enum SceneLayerBlendMode {
 	Default = 'Default',
