@@ -26,6 +26,7 @@ export type AnyRef =
 	| MattesRef
 	| AuxRef
 	| AuxEffectRef
+	| InputRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -43,6 +44,7 @@ export type SourceRef =
 	| SceneRef
 	| MattesRef
 	| AuxRef
+	| InputRef
 
 export function isSourceRef(ref: AnyRef): ref is SourceRef {
 	return (
@@ -53,7 +55,8 @@ export function isSourceRef(ref: AnyRef): ref is SourceRef {
 		ref.realm === 'source-int' ||
 		ref.realm === 'scene' ||
 		ref.realm === 'mattes' ||
-		ref.realm === 'aux'
+		ref.realm === 'aux' ||
+		ref.realm === 'input'
 	)
 }
 
@@ -150,6 +153,8 @@ export function refToPath(ref: AnyRef): string {
 			if (ref.auxPathIsName) path.unshift('AUX')
 			return path.join('.')
 		}
+		case 'input':
+			return protocolEncodeStr(ref.path)
 		default:
 			assertNever(ref)
 
@@ -290,9 +295,14 @@ export function pathRoRef(ref: string): AnyRef | string {
 			return refAuxName(path[1])
 		}
 	} else if (path[0].includes('-AUX')) {
-		// Auxes are often reffered to without the prefix
+		// Auxes are often refered to without the prefix
 		if (path.length === 1) {
 			return refAuxId(path[0])
+		}
+	} else if (path[0].startsWith('IP')) {
+		if (path.length === 1) {
+			// Inputs are refered to without a prefix
+			return refInput(path[0])
 		}
 	}
 
@@ -542,6 +552,15 @@ export function refAuxId(path: AuxRef['path']): AuxRef {
 }
 export function refAuxName(path: AuxRef['path']): AuxRef {
 	return { realm: 'aux', path, pathIsName: true }
+}
+
+export type InputRef = {
+	realm: 'input'
+	path: string
+	// pathIsName: boolean // true if the path is a name, false if it is an id
+}
+export function refInput(path: InputRef['path']): InputRef {
+	return { realm: 'input', path }
 }
 
 export type AuxEffectRef = {
