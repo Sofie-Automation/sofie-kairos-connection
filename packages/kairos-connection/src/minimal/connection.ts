@@ -89,6 +89,8 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 			if (!this._socket.destroyed) {
 				this._socket.destroy()
 			}
+			this._discardUnprocessed()
+			this._setConnected(false)
 		}
 
 		this._socket = new Socket()
