@@ -1,5 +1,5 @@
 export * from './lib-types.js'
-export * from './aux.js'
+export * from './auxes.js'
 export * from './clip-player.js'
 export * from './effects.js'
 export * from './macro.js'
