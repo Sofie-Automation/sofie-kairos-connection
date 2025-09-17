@@ -27,6 +27,8 @@ export type AnyRef =
 	| AuxRef
 	| AuxEffectRef
 	| InputRef
+	| FxInputRef
+	| MatteRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -155,6 +157,10 @@ export function refToPath(ref: AnyRef): string {
 		}
 		case 'input':
 			return protocolEncodeStr(ref.path)
+		case 'fxInput':
+			return ['FXINPUTS', ...ref.fxInputPath.map(protocolEncodeStr)].join('.')
+		case 'matte':
+			return ['MATTES', ...ref.mattePath.map(protocolEncodeStr)].join('.')
 		default:
 			assertNever(ref)
 
@@ -414,6 +420,21 @@ export function refSceneTransitionMixEffect(
 		mixPath: mixRef.mixPath,
 		effectPath,
 	}
+}
+
+export type FxInputRef = {
+	realm: 'fxInput'
+	fxInputPath: RefPath
+}
+export function refFxInput(fxInputPath: RefPath): FxInputRef {
+	return { realm: 'fxInput', fxInputPath }
+}
+export type MatteRef = {
+	realm: 'matte'
+	mattePath: RefPath
+}
+export function refMatte(mattePath: RefPath): MatteRef {
+	return { realm: 'matte', mattePath }
 }
 
 // ---------------------------- MEDIA -----------------------------

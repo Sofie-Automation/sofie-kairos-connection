@@ -88,7 +88,9 @@ import {
 	refSceneTransitionMixEffect,
 	refSourceBase,
 	SceneRef,
+	refFxInput,
 } from '../lib/reference.js'
+import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -2678,12 +2680,117 @@ describe('KairosConnection', () => {
 		// 				PCrop
 		// 				FilmLook
 		// 				GlowEffect
+		test('FXInputs', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:FXINPUTS': ['list_ex:FXINPUTS=', 'FXINPUTS.FxGFX1', 'FXINPUTS.folder', ''],
+					'list_ex:FXINPUTS.FxGFX1': ['list_ex:FXINPUTS.FxGFX1=', 'FXINPUTS.FxGFX1.SourceEffectGroup', ''],
+					'list_ex:FXINPUTS.folder': ['list_ex:FXINPUTS.folder=', 'FXINPUTS.folder.FxGFX2', ''],
+					'list_ex:FXINPUTS.folder.FxGFX2': [
+						'list_ex:FXINPUTS.folder.FxGFX2=',
+						'FXINPUTS.folder.FxGFX2.SourceEffectGroup',
+						'',
+					],
+					'FXINPUTS.FxGFX1.name=FxGFX1': ['OK'],
+					'FXINPUTS.FxGFX1.color_overwrite=0': ['OK'],
+					'FXINPUTS.FxGFX1.scale_mode=None': ['OK'],
+					'FXINPUTS.FxGFX1.resolution=1920x1080': ['OK'],
+					'FXINPUTS.FxGFX1.advanced_resolution_control=0': ['OK'],
+					'FXINPUTS.FxGFX1.name': ['FXINPUTS.FxGFX1.name=FxGFX1'],
+					'FXINPUTS.FxGFX1.color_overwrite': ['FXINPUTS.FxGFX1.color_overwrite=0'],
+					'FXINPUTS.FxGFX1.color': ['FXINPUTS.FxGFX1.color=rgb(255,255,255)'],
+					'FXINPUTS.FxGFX1.scale_mode': ['FXINPUTS.FxGFX1.scale_mode=None'],
+					'FXINPUTS.FxGFX1.resolution': ['FXINPUTS.FxGFX1.resolution=1920x1080'],
+					'FXINPUTS.FxGFX1.advanced_resolution_control': ['FXINPUTS.FxGFX1.advanced_resolution_control=0'],
+					'FXINPUTS.FxGFX1.resolution_x': ['FXINPUTS.FxGFX1.resolution_x=1920'],
+					'FXINPUTS.FxGFX1.resolution_y': ['FXINPUTS.FxGFX1.resolution_y=1080'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(await connection.listFxInputs()).toStrictEqual([
+				{
+					fxInputPath: ['FxGFX1'],
+					name: 'FxGFX1',
+					realm: 'fxInput',
+				},
+				{
+					fxInputPath: ['folder', 'FxGFX2'],
+					name: 'FxGFX2',
+					realm: 'fxInput',
+				},
+			])
+
+			expect(
+				await connection.updateFxInput(refFxInput(['FxGFX1']), {
+					colorOverwrite: false,
+					name: 'FxGFX1',
+					advancedResolutionControl: false,
+					resolution: Resolution.Resolution1920x1080,
+					scaleMode: ScaleMode.None,
+				})
+			).toBeUndefined()
+			expect(await connection.getFxInput(refFxInput(['FxGFX1']))).toStrictEqual({
+				color: {
+					blue: 255,
+					green: 255,
+					red: 255,
+				},
+				colorOverwrite: false,
+				name: 'FxGFX1',
+				advancedResolutionControl: false,
+				resolution: Resolution.Resolution1920x1080,
+				resolutionX: 1920,
+				resolutionY: 1080,
+				scaleMode: ScaleMode.None,
+			} satisfies FxInputObject)
+		})
 		// 	MATTES
 		// 		ColorMatte
 		// 		TestPattern
 		// 		Shaped
 		// 		Rays
 		// 		Starfield
+		test('MATTES', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:MATTES': ['list_ex:MATTES=', 'MATTES.ColA', 'MATTES.ColB', 'MATTES.ColC', 'MATTES.folder', ''],
+					'list_ex:MATTES.ColA': ['list_ex:MATTES.ColA=', ''],
+					'list_ex:MATTES.ColB': ['list_ex:MATTES.ColB=', ''],
+					'list_ex:MATTES.ColC': ['list_ex:MATTES.ColC=', ''],
+					'list_ex:MATTES.folder': ['list_ex:MATTES.folder=', 'MATTES.folder.asdf', ''],
+					'list_ex:MATTES.folder.asdf': ['list_ex:MATTES.folder.asdf=', ''],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(await connection.listMattes()).toStrictEqual([
+				{
+					mattePath: ['ColA'],
+					name: 'ColA',
+					realm: 'matte',
+				},
+				{
+					mattePath: ['ColB'],
+					name: 'ColB',
+					realm: 'matte',
+				},
+				{
+					mattePath: ['ColC'],
+					name: 'ColC',
+					realm: 'matte',
+				},
+				{
+					mattePath: ['folder', 'asdf'],
+					name: 'asdf',
+					realm: 'matte',
+				},
+			])
+		})
 
 		// RAMRECORDERS
 		// 	RR<1-8>

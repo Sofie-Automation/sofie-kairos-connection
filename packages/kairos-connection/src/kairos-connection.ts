@@ -111,6 +111,8 @@ import {
 	SceneTransitionMixRef,
 	SceneTransitionRef,
 	splitPath,
+	FxInputRef,
+	MatteRef,
 } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
 import {
@@ -164,6 +166,8 @@ import {
 	AuxObjectEncodingDefinition,
 	ImageStoreObjectEncodingDefinition,
 } from './object-encoding/index.js'
+import { FxInputObject, ScaleMode, UpdateFxInputObject } from './kairos-types/sources.js'
+import { FxInputObjectEncodingDefinition } from './object-encoding/sources.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -872,10 +876,48 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async sceneSnapshotDeleteEx(snapshotRef: SceneSnapshotRef): Promise<void> {
 		return this.executeFunction(`${refToPath(snapshotRef)}.delete_ex`)
-	} // SOURCES
+	}
+	// SOURCES:
 	// 	FXINPUTS
 	// 		Fx
-	// 			SourceEffectGroup
+	async listFxInputs(): Promise<(FxInputRef & { name: string })[]> {
+		const itemPaths = await this._listDeep(`FXINPUTS`, ['SourceEffectGroup'], true)
+
+		// Filter away folders:
+		const pathsSet = new Set<string>()
+		for (const p of itemPaths) {
+			const dirPath = p.slice(0, -1).join('.') // omit last, making it a dirPath
+			pathsSet.add(dirPath)
+		}
+		return itemPaths
+			.filter((p) => {
+				const myPath = p.join('.')
+				return !pathsSet.has(myPath) // If myPath exists in the set, it means I'm a folder
+			})
+			.map((itemPath) => {
+				return {
+					realm: 'fxInput',
+					name: itemPath.slice(1)[itemPath.length - 2],
+					fxInputPath: itemPath.slice(1), // remove the "FXINPUTS" part
+				}
+			})
+	}
+	async getFxInput(fxInputRef: FxInputRef): Promise<FxInputObject> {
+		return this.#getObject(refToPath(fxInputRef), FxInputObjectEncodingDefinition)
+	}
+	async updateFxInput(fxInputRef: FxInputRef, props: Partial<UpdateFxInputObject>): Promise<void> {
+		await this.setAttributes(refToPath(fxInputRef), [
+			{ attribute: 'name', value: props.name },
+			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
+			// { attribute: 'color', value: stringifyColorRGB(props.color) },
+			{ attribute: 'scale_mode', value: stringifyEnum<ScaleMode>(props.scaleMode, ScaleMode) },
+			{ attribute: 'resolution', value: stringifyEnum<Resolution>(props.resolution, Resolution) },
+			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
+			// { attribute: 'resolution_x', value: stringifyInteger(props.resolutionX) },
+			// { attribute: 'resolution_y', value: stringifyInteger(props.resolutionY) },
+		])
+	}
+	// 	FXINPUTS.Fx.SourceEffectGroup
 	// 				Crop
 	// 				Transform2D
 	// 				YUVCorrection
@@ -892,6 +934,30 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 				PCrop
 	// 				FilmLook
 	// 				GlowEffect
+
+	// 	MATTES
+	async listMattes(): Promise<(MatteRef & { name: string })[]> {
+		const itemPaths = await this._listDeep(`MATTES`, [], true)
+
+		// Filter away folders:
+		const pathsSet = new Set<string>()
+		for (const p of itemPaths) {
+			const dirPath = p.slice(0, -1).join('.') // omit last, making it a dirPath
+			pathsSet.add(dirPath)
+		}
+		return itemPaths
+			.filter((p) => {
+				const myPath = p.join('.')
+				return !pathsSet.has(myPath) // If myPath exists in the set, it means I'm a folder
+			})
+			.map((itemPath) => {
+				return {
+					realm: 'matte',
+					name: itemPath.slice(1)[itemPath.length - 2],
+					mattePath: itemPath.slice(1), // remove the "MATTES" part
+				}
+			})
+	}
 	// 	MATTES
 	// 		ColorMatte
 	// 		TestPattern
