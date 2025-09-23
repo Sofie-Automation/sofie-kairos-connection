@@ -60,6 +60,8 @@ import {
 	AudioMixerObject,
 	ImageStoreObject,
 	ImageStoreScaleMode,
+	InputObject,
+	InputRecordingStatus,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
 import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
@@ -89,6 +91,7 @@ import {
 	refSourceBase,
 	SceneRef,
 	refFxInput,
+	refInput,
 } from '../lib/reference.js'
 import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
 import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
@@ -4101,6 +4104,53 @@ describe('KairosConnection', () => {
 		// 	NDI<1-2>
 		// 	STREAM<1-6>
 		// 	SDI<1-32>
+		test('INPUTS commands', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'IP1.name': ['IP1.name=IP1'],
+					'IP1.tally': ['IP1.tally=0'],
+					'IP1.available': ['IP1.available=1'],
+					'IP1.recording_status': ['IP1.recording_status=idle'],
+					'IP1.color_overwrite': ['IP1.color_overwrite=0'],
+					'IP1.color': ['IP1.color=rgb(255,255,255)'],
+
+					'IP1.color=rgb(0,0,255)': ['OK'],
+					'IP1.record=': ['OK'],
+					'IP1.record_loop=': ['OK'],
+					'IP1.stop_record=': ['OK'],
+					'IP1.grab=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.getInput(refInput('IP1'))).toStrictEqual({
+				name: 'IP1',
+				tally: 0,
+				available: true,
+				color: {
+					blue: 255,
+					green: 255,
+					red: 255,
+				},
+				colorOverwrite: false,
+				recordingStatus: InputRecordingStatus.Idle,
+			} satisfies InputObject)
+			expect(
+				await connection.updateInput(refInput('IP1'), {
+					color: {
+						red: 0,
+						green: 0,
+						blue: 255,
+					},
+				})
+			).toBeUndefined()
+			expect(await connection.grabInput(refInput('IP1'))).toBeUndefined()
+			expect(await connection.recordInput(refInput('IP1'))).toBeUndefined()
+			expect(await connection.recordLoopInput(refInput('IP1'))).toBeUndefined()
+			expect(await connection.stopRecordInput(refInput('IP1'))).toBeUndefined()
+		})
+
 		// TRIGGERS
 		// 	HTTP Trigger
 		// 	IP Trigger

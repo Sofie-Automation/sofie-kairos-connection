@@ -1645,6 +1645,18 @@ export class KairosConnection extends MinimalKairosConnection {
 			// tally is read-only
 		])
 	}
+	async grabInput(inputRef: InputRef): Promise<void> {
+		await this.executeFunction(`${refToPath(inputRef)}.grab`)
+	}
+	async recordInput(inputRef: InputRef): Promise<void> {
+		await this.executeFunction(`${refToPath(inputRef)}.record`)
+	}
+	async stopRecordInput(inputRef: InputRef): Promise<void> {
+		await this.executeFunction(`${refToPath(inputRef)}.stop_record`)
+	}
+	async recordLoopInput(inputRef: InputRef): Promise<void> {
+		await this.executeFunction(`${refToPath(inputRef)}.record_loop`)
+	}
 
 	// TRIGGERS
 	// 	HTTP Trigger
