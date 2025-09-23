@@ -305,7 +305,12 @@ export function pathRoRef(ref: string): AnyRef | string {
 		if (path.length === 1) {
 			return refAuxId(path[0])
 		}
-	} else if (path[0].startsWith('IP')) {
+	} else if (
+		path[0].startsWith('IP') ||
+		path[0].startsWith('NDI') ||
+		path[0].startsWith('STREAM') ||
+		path[0].startsWith('SDI')
+	) {
 		if (path.length === 1) {
 			// Inputs are refered to without a prefix
 			return refInput(path[0])

@@ -93,6 +93,11 @@ import {
 	ImageStoreObject,
 	UpdateImageStoreObject,
 	ImageStoreScaleMode,
+	InputObject,
+	UpdateInputObject,
+	FxInputObject,
+	ScaleMode,
+	UpdateFxInputObject,
 } from './kairos-types/main.js'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -116,6 +121,7 @@ import {
 	splitPath,
 	FxInputRef,
 	MatteRef,
+	InputRef,
 } from './lib/reference.js'
 import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
 import {
@@ -168,9 +174,9 @@ import {
 	AudioAuxObjectEncodingDefinition,
 	AuxObjectEncodingDefinition,
 	ImageStoreObjectEncodingDefinition,
+	InputObjectEncodingDefinition,
+	FxInputObjectEncodingDefinition,
 } from './object-encoding/index.js'
-import { FxInputObject, ScaleMode, UpdateFxInputObject } from './kairos-types/sources.js'
-import { FxInputObjectEncodingDefinition } from './object-encoding/sources.js'
 import { RamRecPlayerObject, UpdateRamRecPlayerObject } from './kairos-types/ramrec-player.js'
 import { RamRecPlayerObjectEncodingDefinition } from './object-encoding/ramrec-players.js'
 
@@ -1623,6 +1629,23 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	NDI<1-2>
 	// 	STREAM<1-6>
 	// 	SDI<1-32>
+	async getInput(inputRef: InputRef): Promise<InputObject> {
+		return this.#getObject(refToPath(inputRef), InputObjectEncodingDefinition)
+	}
+	async updateInput(inputRef: InputRef, props: Partial<UpdateInputObject>): Promise<void> {
+		await this.setAttributes(refToPath(inputRef), [
+			{ attribute: 'name', value: props.name },
+			{
+				attribute: 'colorOverwrite',
+				value: stringifyBoolean(props.colorOverwrite),
+			},
+			{ attribute: 'color', value: stringifyColorRGB(props.color) },
+			// available is read-only
+			// recordingStatus is read-only
+			// tally is read-only
+		])
+	}
+
 	// TRIGGERS
 	// 	HTTP Trigger
 	// 	IP Trigger
