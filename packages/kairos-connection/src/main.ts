@@ -1,6 +1,6 @@
 export * from './minimal/kairos-minimal.js'
 export * from './minimal/errors.js'
 export * from './kairos-connection.js'
-export * from './kairos-types/main.js'
-export * from './lib/reference.js'
-export * from './lib/encode-decode.js'
+
+// Re-export kairos-lib types for convenience
+export * from 'kairos-lib'

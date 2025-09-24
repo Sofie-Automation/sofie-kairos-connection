@@ -1,5 +1,16 @@
-import { Pos3Df, Pos2Df, Pos2D, ColorRGB } from '../kairos-types/main.js'
-import { GfxSceneRef, isRef, isSourceRef, pathRoRef, refToPath, SceneTransitionRef, SourceRef } from './reference.js'
+import {
+	Pos3Df,
+	Pos2Df,
+	Pos2D,
+	ColorRGB,
+	GfxSceneRef,
+	isRef,
+	isSourceRef,
+	pathRoRef,
+	refToPath,
+	SceneTransitionRef,
+	SourceRef,
+} from 'kairos-lib'
 
 export function parseBoolean(value: string): boolean {
 	if (value === '1') return true
