@@ -12,7 +12,7 @@ import {
 	UpdateEffectPositionObject,
 	UpdateEffectTransform2DObject,
 	UpdateEffectVirtualPTZObject,
-} from '../kairos-types/effects.js'
+} from 'kairos-lib'
 import {
 	parseBoolean,
 	parseEnum,

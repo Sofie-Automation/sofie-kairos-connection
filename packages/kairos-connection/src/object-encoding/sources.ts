@@ -1,7 +1,6 @@
 import type { ObjectEncodingDefinition } from './types.js'
 import { parseEnum, parseInteger, parseBoolean, parseColorRGB } from '../lib/data-parsers.js'
-import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
-import { Resolution } from '../kairos-types/lib-types.js'
+import { FxInputObject, ScaleMode, Resolution } from 'kairos-lib'
 
 export const FxInputObjectEncodingDefinition: ObjectEncodingDefinition<FxInputObject> = {
 	name: {

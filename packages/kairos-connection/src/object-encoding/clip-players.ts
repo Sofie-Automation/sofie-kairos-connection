@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { ClipPlayerObject, ClipPlayerTMS } from '../kairos-types/clip-player.js'
+import { ClipPlayerObject, ClipPlayerTMS } from 'kairos-lib'
 import {
 	parseEnum,
 	parseInteger,

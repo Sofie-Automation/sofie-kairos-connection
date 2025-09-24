@@ -15,7 +15,7 @@ import {
 	UpdateEffectRGBCorrectionObject,
 	UpdateEffectToneCurveCorrectionObject,
 	UpdateEffectYUVCorrectionObject,
-} from '../kairos-types/effects.js'
+} from 'kairos-lib'
 import {
 	parseBoolean,
 	parseEnum,

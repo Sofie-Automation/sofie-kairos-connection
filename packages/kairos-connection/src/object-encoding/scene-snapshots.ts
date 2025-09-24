@@ -1,10 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import {
-	SceneSnapshotObject,
-	SceneSnapshotStatus,
-	SceneCurve,
-	SceneSnapshotPriorityRecall,
-} from '../kairos-types/scene.js'
+import { SceneSnapshotObject, SceneSnapshotStatus, SceneCurve, SceneSnapshotPriorityRecall } from 'kairos-lib'
 import { parseEnum, parseInteger, parseBoolean, parseColorRGB } from '../lib/data-parsers.js'
 
 export const SceneSnapshotObjectEncodingDefinition: ObjectEncodingDefinition<SceneSnapshotObject> = {

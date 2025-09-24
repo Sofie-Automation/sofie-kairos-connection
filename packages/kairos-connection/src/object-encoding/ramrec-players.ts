@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { RamRecPlayerObject } from '../kairos-types/ramrec-player.js'
+import type { RamRecPlayerObject } from 'kairos-lib'
 import {
 	parseBoolean,
 	parseColorRGB,
