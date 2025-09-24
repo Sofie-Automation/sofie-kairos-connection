@@ -1,6 +1,6 @@
 import type { ObjectEncodingDefinition } from './types.js'
 import { parseBoolean, parseCommaSeparated, parseEnum, parseInteger, parseSourceRef } from '../lib/data-parsers.js'
-import { AudioAuxObject, AuxObject, AuxRecordingStatus } from '../kairos-types/auxes.js'
+import { AudioAuxObject, AuxObject, AuxRecordingStatus } from 'kairos-lib'
 
 export const AuxObjectEncodingDefinition: ObjectEncodingDefinition<AuxObject> = {
 	recordingStatus: {

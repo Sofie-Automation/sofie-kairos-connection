@@ -5,7 +5,7 @@ import {
 	EffectGlowEffectObject,
 	UpdateEffectFilmLookObject,
 	UpdateEffectGlowEffectObject,
-} from '../kairos-types/effects.js'
+} from 'kairos-lib'
 import {
 	parseEnum,
 	parseFloatValue,

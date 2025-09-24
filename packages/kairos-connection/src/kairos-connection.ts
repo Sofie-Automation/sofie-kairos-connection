@@ -90,9 +90,6 @@ import {
 	ImageStoreObject,
 	UpdateImageStoreObject,
 	ImageStoreScaleMode,
-} from './kairos-types/main.js'
-import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
-import {
 	AnyRef,
 	AuxEffectRef,
 	AuxRef,
@@ -113,8 +110,15 @@ import {
 	splitPath,
 	FxInputRef,
 	MatteRef,
-} from './lib/reference.js'
-import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
+	protocolDecodePath,
+	protocolEncodePath,
+	RefPath,
+	RefPathSingle,
+	FxInputObject,
+	ScaleMode,
+	UpdateFxInputObject,
+} from 'kairos-lib'
+import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
 	getProtocolAttributeNames,
 	ObjectEncodingDefinition,
@@ -166,7 +170,6 @@ import {
 	AuxObjectEncodingDefinition,
 	ImageStoreObjectEncodingDefinition,
 } from './object-encoding/index.js'
-import { FxInputObject, ScaleMode, UpdateFxInputObject } from './kairos-types/sources.js'
 import { FxInputObjectEncodingDefinition } from './object-encoding/sources.js'
 
 export class KairosConnection extends MinimalKairosConnection {

@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { AudioPlayerObject } from '../kairos-types/audio-player.js'
+import { AudioPlayerObject } from 'kairos-lib'
 import { ClipPlayerObjectEncodingDefinition } from './clip-players.js'
 
 export const AudioPlayerObjectEncodingDefinition: ObjectEncodingDefinition<AudioPlayerObject> = {

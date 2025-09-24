@@ -89,8 +89,9 @@ import {
 	refSourceBase,
 	SceneRef,
 	refFxInput,
-} from '../lib/reference.js'
-import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
+	FxInputObject,
+	ScaleMode,
+} from 'kairos-lib'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
