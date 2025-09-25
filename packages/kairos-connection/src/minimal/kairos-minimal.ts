@@ -2,9 +2,10 @@
 import EventEmitter, { addAbortListener } from 'node:events'
 import { randomUUID } from 'node:crypto'
 import { Connection } from './connection.js'
-import { TerminateSubscriptionError } from './errors.js'
+import { ResponseError, TerminateSubscriptionError } from './errors.js'
 import { ExpectedResponseType, InternalRequest, parseResponseForCommand } from './parser.js'
 import type { AttributeUpdates } from '../object-encoding/types.js'
+import { sleep } from '../lib/lib.js'
 
 export interface Options {
 	/** Host name of the machine to connect to. Defaults to 127.0.0.1 */
@@ -86,6 +87,12 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 
 		this._timeoutTime = options?.timeoutTime || 5000
 		this._timeoutTimer = setInterval(() => this._checkTimeouts(), this._timeoutTime)
+	}
+	public set debug(value: boolean) {
+		this._connection.debug = value
+	}
+	public get debug(): boolean {
+		return this._connection.debug
 	}
 
 	private _processResponses(newLines: string[]): void {
@@ -490,6 +497,97 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 				})
 			}
 		})
+	}
+
+	/**
+	 * Convenience method for updating an attribute, and verifying that the value has been set
+	 * (and that any side effects from it has also taken place)
+	 */
+	async setAttributeAndVerify(
+		/** Path of attribute to update */
+		path: string,
+		/** Value to set */
+		value: string,
+		/** Array of other attributes to  */
+		sideEffects: { path: string; value: string }[],
+		timeout: number = 1000
+	): Promise<void> {
+		const startTime = Date.now()
+		const timeLeft = () => {
+			return timeout - (Date.now() - startTime)
+		}
+
+		// Step 1: Update the value
+		await this.setAttribute(path, value)
+
+		// Step 2: Verify that the value has been set
+		await this.verifyAttributeValueStable(path, value, timeLeft())
+
+		// Step 3: Verify the other values:
+		for (const verification of sideEffects) {
+			// Set the value
+			await this.setAttributeRetry(verification.path, verification.value, timeLeft())
+
+			// Verify that the value has been set and is stable
+			await this.verifyAttributeValueStable(verification.path, verification.value, timeLeft())
+		}
+	}
+	/**
+	 * Set a value to an attribute, retrying if it fails, until timeout is reached
+	 */
+	async setAttributeRetry(path: string, value: string, timeout: number): Promise<void> {
+		const startTime = Date.now()
+
+		let lastError: Error | null = null
+		while (true) {
+			if (Date.now() - startTime > timeout) {
+				// Timeout!
+				if (lastError) throw lastError
+				else throw new Error(`Timeout waiting for attribute ${path} to be set to ${value}`)
+			}
+			try {
+				await this.setAttribute(path, value)
+				break // success
+			} catch (e) {
+				// Setting of the attribute might give an error, try again if it fails:
+				lastError = e as Error
+				if (e instanceof ResponseError) {
+					await sleep(40)
+					continue
+				} else throw e
+			}
+		}
+	}
+	/**
+	 * Verify that an attribute has a value and is stable (not changing)
+	 */
+	async verifyAttributeValueStable(path: string, value: string, timeout: number): Promise<void> {
+		const startTime = Date.now()
+		/**
+		 * Unfortunately, just checking once is not enough, as we've seen that a value can be reverted to an old value.
+		 * Therefore, we require that the value is correct several times in succession before we consider it "good"
+		 */
+		const REQUIRE_TEST_SUCCESS_COUNT = 2
+
+		let successCount = 0
+
+		// Verify that the value has been set:
+		while (true) {
+			if (Date.now() - startTime > timeout) {
+				throw new Error(`Timeout waiting for ${path} to be set to ${value}`)
+			}
+
+			const currentValue = await this.getAttribute(path)
+
+			if (currentValue === value) {
+				// The value is correct
+				successCount++
+				if (successCount >= REQUIRE_TEST_SUCCESS_COUNT) return // Success!
+			} else {
+				successCount = 0
+			}
+			await sleep(20) // try again
+		}
 	}
 
 	#terminateSubscription(path: string, subscription: SubscriptionState, error: Error): void {

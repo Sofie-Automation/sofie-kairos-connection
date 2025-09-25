@@ -91,12 +91,7 @@ import {
 	refFxInput,
 } from '../lib/reference.js'
 import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
-import {
-	parseMediaClipRef,
-	parseMediaClipRefOptional,
-	parseMediaSoundRefOptional,
-	stringifyMediaClipRef,
-} from '../lib/data-parsers.js'
+import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {

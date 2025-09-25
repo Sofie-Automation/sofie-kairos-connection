@@ -976,6 +976,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
 		return this.#getObject(`RR${ramRecorderId}`, RamRecPlayerObjectEncodingDefinition)
 	}
+	async loadRamRecorderClip(ramRecorderId: number, clip: RamRecPlayerObject['clip'], position?: number): Promise<void> {
+		await this._loadPlayerClip(`RR${ramRecorderId}`, stringifyMediaRamRecRef(clip), position)
+	}
 	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateRamRecPlayerObject>): Promise<void> {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
 		await this.setAttributes(`RR${ramRecorderId}`, [
@@ -1063,6 +1066,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getClipPlayer(playerId: number): Promise<ClipPlayerObject> {
 		this._assertPlayerIdIsValid(playerId)
 		return this.#getObject(`CP${playerId}`, ClipPlayerObjectEncodingDefinition)
+	}
+	async loadClipPlayerClip(playerId: number, clip: ClipPlayerObject['clip'], position?: number): Promise<void> {
+		await this._loadPlayerClip(`CP${playerId}`, stringifyMediaClipRef(clip), position)
 	}
 	async updateClipPlayer(playerId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
 		this._assertPlayerIdIsValid(playerId)
@@ -1707,6 +1713,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		this._assertPlayerIdIsValid(playerId)
 		return this.#getObject(`AP${playerId}`, AudioPlayerObjectEncodingDefinition)
 	}
+	async loadAudioPLayerClip(playerId: number, clip: AudioPlayerObject['clip'], position?: number): Promise<void> {
+		await this._loadPlayerClip(`AP${playerId}`, stringifyMediaSoundRef(clip), position)
+	}
 	async updateAudioPlayer(playerId: number, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
 		this._assertPlayerIdIsValid(playerId)
 		await this.setAttributes(`AP${playerId}`, [
@@ -1920,6 +1929,45 @@ export class KairosConnection extends MinimalKairosConnection {
 		}
 
 		return list
+	}
+	/**
+	 * Loads a clip onto a player, and sets the position
+	 */
+	private async _loadPlayerClip(playerPath: string, clipPath: string, position?: number): Promise<void> {
+		// This is a special operation, because loading a clip can take some time and the responses from KAIROS are unreliable during that time.
+
+		if (clipPath === '') {
+			// Fast path, unload the clip:
+			await this.setAttribute(`${playerPath}.clip`, clipPath)
+			return
+		}
+
+		// Fast path: Do an initial check if the clip is already loaded
+		const currentClip = await this.getAttribute(`${playerPath}.clip`)
+		if (currentClip === clipPath) {
+			// It looks like the clip is already loaded
+			if (position !== undefined) {
+				await this.setAttribute(`${playerPath}.position`, `${position}`)
+			}
+			return
+		}
+
+		if (position === undefined) position = 0
+
+		await this.setAttributeAndVerify(
+			`${playerPath}.clip`,
+			clipPath,
+			[
+				{
+					path: `${playerPath}.position`,
+					value: `${position + 1}`,
+				},
+			],
+			5000
+		)
+
+		// Set position to the correct one:
+		await this.setAttribute(`${playerPath}.position`, `${position}`)
 	}
 }
 
