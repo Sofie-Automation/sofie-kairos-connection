@@ -9,6 +9,9 @@ import {
 	stringifySourceRef,
 	stringifySceneTransitionRef,
 	stringifyGfxSceneRef,
+	stringifyMediaClipRef,
+	stringifyMediaSoundRef,
+	stringifyMediaRamRecRef,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -168,6 +171,8 @@ import {
 } from './object-encoding/index.js'
 import { FxInputObject, ScaleMode, UpdateFxInputObject } from './kairos-types/sources.js'
 import { FxInputObjectEncodingDefinition } from './object-encoding/sources.js'
+import { RamRecPlayerObject, UpdateRamRecPlayerObject } from './kairos-types/ramrec-player.js'
+import { RamRecPlayerObjectEncodingDefinition } from './object-encoding/ramrec-players.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -967,16 +972,16 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	// RAMRECORDERS
 	// 	RR<1-8>
-	async getRamRecorder(ramRecorderId: number): Promise<ClipPlayerObject> {
+	async getRamRecorder(ramRecorderId: number): Promise<RamRecPlayerObject> {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
-		return this.#getObject(`RR${ramRecorderId}`, ClipPlayerObjectEncodingDefinition)
+		return this.#getObject(`RR${ramRecorderId}`, RamRecPlayerObjectEncodingDefinition)
 	}
-	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
+	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateRamRecPlayerObject>): Promise<void> {
 		this._assertRamRecorderIdIsValid(ramRecorderId)
 		await this.setAttributes(`RR${ramRecorderId}`, [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
-			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'clip', value: stringifyMediaRamRecRef(props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
 			{ attribute: 'remaining_time', value: props.remainingTime },
 			{ attribute: 'position', value: stringifyInteger(props.position) },
@@ -1064,7 +1069,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		await this.setAttributes(`CP${playerId}`, [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
-			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'clip', value: stringifyMediaClipRef(props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
 			{ attribute: 'remaining_time', value: props.remainingTime },
 			{ attribute: 'position', value: stringifyInteger(props.position) },
@@ -1705,7 +1710,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	async updateAudioPlayer(playerId: number, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
 		this._assertPlayerIdIsValid(playerId)
 		await this.setAttributes(`AP${playerId}`, [
-			{ attribute: 'clip', value: props.clip }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'clip', value: stringifyMediaSoundRef(props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
 			{ attribute: 'remaining_time', value: props.remainingTime },
 			{ attribute: 'position', value: stringifyInteger(props.position) },

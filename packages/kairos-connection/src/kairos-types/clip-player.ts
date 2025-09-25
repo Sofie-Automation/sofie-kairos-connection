@@ -1,4 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
+import { MediaClipRef } from '../main.js'
 import { ColorRGB } from './lib-types.js'
 
 export interface ClipPlayerObject {
@@ -16,7 +17,7 @@ export interface ClipPlayerObject {
 	tms: ClipPlayerTMS
 
 	/** [ ObjectID ] */
-	clip: string
+	clip: MediaClipRef | null
 
 	/** int */
 	readonly tally: number

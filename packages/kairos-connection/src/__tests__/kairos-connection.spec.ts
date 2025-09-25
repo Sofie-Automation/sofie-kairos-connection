@@ -91,6 +91,12 @@ import {
 	refFxInput,
 } from '../lib/reference.js'
 import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
+import {
+	parseMediaClipRef,
+	parseMediaClipRefOptional,
+	parseMediaSoundRefOptional,
+	stringifyMediaClipRef,
+} from '../lib/data-parsers.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -2850,7 +2856,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getRamRecorder(1)).toStrictEqual({
 				autoplay: false,
-				clip: '<unknown>',
+				clip: parseMediaClipRefOptional('<unknown>'),
 				color: {
 					red: 255,
 					green: 255,
@@ -2941,7 +2947,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getClipPlayer(1)).toStrictEqual({
 				autoplay: false,
-				clip: '<unknown>',
+				clip: parseMediaClipRefOptional('<unknown>'),
 				color: {
 					red: 255,
 					green: 255,
@@ -4259,7 +4265,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getAudioPlayer(1)).toStrictEqual({
 				autoplay: false,
-				clip: '<unknown>',
+				clip: parseMediaSoundRefOptional('<unknown>'),
 				position: 0,
 				remainingTime: '00:00:00:00',
 				repeat: false,

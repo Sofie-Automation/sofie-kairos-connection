@@ -1,15 +1,18 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { AudioPlayerObject } from '../kairos-types/audio-player.js'
+import { RamRecPlayerObject } from '../kairos-types/ramrec-player.js'
 import {
 	parseBoolean,
+	parseColorRGB,
 	passThroughString,
 	parseInteger,
 	parseEnum,
-	parseMediaSoundRefOptional,
+	parseMediaRamRecRefOptional,
 } from '../lib/data-parsers.js'
 import { ClipPlayerTMS } from '../main.js'
 
-export const AudioPlayerObjectEncodingDefinition: ObjectEncodingDefinition<AudioPlayerObject> = {
+export const RamRecPlayerObjectEncodingDefinition: ObjectEncodingDefinition<RamRecPlayerObject> = {
+	colorOverwrite: { protocolName: 'color_overwrite', parser: parseBoolean },
+	color: { protocolName: 'color', parser: parseColorRGB },
 	timecode: { protocolName: 'timecode', parser: passThroughString },
 	remainingTime: { protocolName: 'remaining_time', parser: passThroughString },
 	position: { protocolName: 'position', parser: parseInteger },
@@ -18,7 +21,7 @@ export const AudioPlayerObjectEncodingDefinition: ObjectEncodingDefinition<Audio
 		protocolName: 'tms',
 		parser: (value) => parseEnum<ClipPlayerTMS>(value, ClipPlayerTMS),
 	},
-	clip: { protocolName: 'clip', parser: parseMediaSoundRefOptional },
+	clip: { protocolName: 'clip', parser: parseMediaRamRecRefOptional },
 	tally: { protocolName: 'tally', parser: parseInteger },
 	autoplay: { protocolName: 'autoplay', parser: parseBoolean },
 }
