@@ -76,7 +76,7 @@ rl.addListener('line', (input) => {
 					println('Subscription Error: ' + error.message)
 					return
 				}
-				println(`${path}=` + String(value))
+				println(`\n${path}=` + String(value))
 			},
 			false
 		)
@@ -103,7 +103,7 @@ rl.addListener('line', (input) => {
 		// eslint-disable-next-line n/no-process-exit
 		process.exit()
 	} else {
-		println(`Unknown command: "${command}`)
+		println(`Unknown command: "${command}"`)
 	}
 })
 rl.prompt()
