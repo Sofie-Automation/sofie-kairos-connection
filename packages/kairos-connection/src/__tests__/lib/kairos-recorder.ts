@@ -3,7 +3,7 @@ import path from 'path'
 import * as MinimalImport from '../../minimal/kairos-minimal.js'
 import { ResponseError } from '../../minimal/errors.js'
 import { ExpectedResponseType } from '../../minimal/parser.js'
-import { assertNever } from '../../lib/lib.js'
+import { assertNever } from 'kairos-lib'
 
 /**
  * This class connects to a Kairos ( /emulator), sends messages to it and stores the replies in a cache on disk.

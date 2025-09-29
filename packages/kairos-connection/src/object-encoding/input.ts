@@ -1,6 +1,6 @@
 import type { ObjectEncodingDefinition } from './types.js'
 import { parseBoolean, parseColorRGB, parseEnum, parseInteger } from '../lib/data-parsers.js'
-import { InputObject, InputRecordingStatus } from '../kairos-types/input.js'
+import { InputObject, InputRecordingStatus } from 'kairos-lib'
 
 export const InputObjectEncodingDefinition: ObjectEncodingDefinition<InputObject> = {
 	name: {

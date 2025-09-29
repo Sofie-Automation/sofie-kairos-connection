@@ -6,7 +6,7 @@ import {
 	EffectChromaKeyEdgeSmoothingSize,
 	EffectLinearKeyObject,
 	EffectLinearKeyBlendMode,
-} from '../kairos-types/effects.js'
+} from 'kairos-lib'
 import { parseBoolean, parseEnum, parseFloatValue, parseInteger, parseSourceRefOptional } from '../lib/data-parsers.js'
 
 export const EffectLuminanceKeyObjectEncodingDefinition: ObjectEncodingDefinition<EffectLuminanceKeyObject> = {

@@ -91,9 +91,10 @@ import {
 	refSourceBase,
 	SceneRef,
 	refFxInput,
+	FxInputObject,
+	ScaleMode,
 	refInput,
-} from '../lib/reference.js'
-import { FxInputObject, ScaleMode } from '../kairos-types/sources.js'
+} from 'kairos-lib'
 import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
 
 // Mock the MinimalKairosConnection class

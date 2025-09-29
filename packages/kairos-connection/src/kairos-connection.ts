@@ -98,9 +98,6 @@ import {
 	FxInputObject,
 	ScaleMode,
 	UpdateFxInputObject,
-} from './kairos-types/main.js'
-import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
-import {
 	AnyRef,
 	AuxEffectRef,
 	AuxRef,
@@ -121,9 +118,15 @@ import {
 	splitPath,
 	FxInputRef,
 	MatteRef,
+	protocolDecodePath,
+	protocolEncodePath,
+	RefPath,
+	RefPathSingle,
+	RamRecPlayerObject,
+	UpdateRamRecPlayerObject,
 	InputRef,
-} from './lib/reference.js'
-import { protocolDecodePath, protocolEncodePath, RefPath, RefPathSingle } from './lib/encode-decode.js'
+} from 'kairos-lib'
+import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
 	getProtocolAttributeNames,
 	ObjectEncodingDefinition,
@@ -176,9 +179,8 @@ import {
 	ImageStoreObjectEncodingDefinition,
 	InputObjectEncodingDefinition,
 	FxInputObjectEncodingDefinition,
+	RamRecPlayerObjectEncodingDefinition,
 } from './object-encoding/index.js'
-import { RamRecPlayerObject, UpdateRamRecPlayerObject } from './kairos-types/ramrec-player.js'
-import { RamRecPlayerObjectEncodingDefinition } from './object-encoding/ramrec-players.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
