@@ -2,7 +2,7 @@
   "name": "sofie-kairos-connection",
   "version": "0.0.1",
   "license": "MIT",
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "yarn@4.10.3",
   "private": true,
   "repository": {
     "type": "git",

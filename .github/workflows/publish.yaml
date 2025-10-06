@@ -108,34 +108,30 @@ jobs:
           # Bump to prerelease version if needed
           if [ "${{ steps.do-publish.outputs.prerelease }}" != "" ]; then
             OLD_VERSION=$(node -p "require('./package.json').version")
-            yarn version ${OLD_VERSION}-${{ steps.do-publish.outputs.prerelease }}
-            # yarn release --prerelease ${{ steps.do-publish.outputs.prerelease }}
+            yarn workspaces foreach --all version ${OLD_VERSION}-${{ steps.do-publish.outputs.prerelease }}
           fi
 
           yarn build
         env:
           CI: true
 
+      - name: Generate docs
+        if: ${{ steps.do-publish.outputs.tag == 'latest' }}
+        run: |
+          yarn docs:html
+
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: publish-dist
           path: |
-            dist
+            packages/*/dist
+            packages/*/package.json
             package.json
+            yarn.lock
+            docs
           retention-days: 1
           if-no-files-found: error
-
-      - name: Generate docs
-        if: ${{ steps.do-publish.outputs.tag }} == 'latest'
-        run: |
-          yarn docs:html
-      - name: Publish docs
-        uses: peaceiris/actions-gh-pages@v4
-        if: ${{ steps.do-publish.outputs.tag }} == 'latest'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
 
   publish:
     name: Publish to NPM
@@ -144,7 +140,7 @@ jobs:
       - test
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write # scoped for as short as possible, as this gives write access to npm
 
     steps:
@@ -168,9 +164,15 @@ jobs:
           yarn install
 
           # Publish from the extracted release (build output present)
-          yarn npm publish --access=public --provenance --tag ${{ needs.prepare.outputs.tag }}
+          yarn workspaces foreach --all -pt --exclude sofie-kairos-connection --exclude kairos-explorer npm publish --access=public --provenance --tag ${{ needs.prepare.outputs.tag }}
 
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "**Published:** $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
         env:
           CI: true
+      - name: Publish docs
+        uses: peaceiris/actions-gh-pages@v4
+        if: ${{ needs.prepare.outputs.tag == 'latest' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

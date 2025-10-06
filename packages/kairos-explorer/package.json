@@ -2,7 +2,7 @@
 	"name": "kairos-explorer",
 	"version": "0.0.1",
 	"license": "MIT",
-	"packageManager": "yarn@4.9.1",
+	"packageManager": "yarn@4.10.3",
 	"private": true,
 	"main": "./index.mjs",
 	"repository": {

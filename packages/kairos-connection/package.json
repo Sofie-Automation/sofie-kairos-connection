@@ -2,7 +2,7 @@
   "name": "kairos-connection",
   "version": "0.0.1",
   "license": "MIT",
-  "packageManager": "yarn@4.9.1",
+  "packageManager": "yarn@4.10.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sofie-Automation/sofie-kairos-connection.git",
