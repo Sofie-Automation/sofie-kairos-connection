@@ -1,8 +1,8 @@
 {
 	"files": [],
 	"references": [
-		//
+		{ "path": "./packages/kairos-lib/tsconfig.json" },
 		{ "path": "./packages/kairos-connection/tsconfig.json" },
-		{ "path": "./packages/kairos-state/tsconfig.json" },
+		{ "path": "./packages/kairos-state/tsconfig.json" }
 	]
 }

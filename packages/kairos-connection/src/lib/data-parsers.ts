@@ -1,5 +1,8 @@
-import { Pos3Df, Pos2Df, Pos2D, ColorRGB } from '../kairos-types/main.js'
 import {
+	Pos3Df,
+	Pos2Df,
+	Pos2D,
+	ColorRGB,
 	GfxSceneRef,
 	isRef,
 	isSourceRef,
@@ -10,7 +13,7 @@ import {
 	refToPath,
 	SceneTransitionRef,
 	SourceRef,
-} from './reference.js'
+} from 'kairos-lib'
 
 export function passThroughString(value: string): string
 export function passThroughString(value: string | undefined): string | undefined

@@ -1,4 +1,4 @@
-import { assertNever } from '../lib/lib.js'
+import { assertNever } from 'kairos-lib'
 import { ResponseError, UnknownResponseError } from './errors.js'
 
 const MAX_LIST_LENGTH = 1000 // Maximum number of items in a list before we consider it too large to be plausible

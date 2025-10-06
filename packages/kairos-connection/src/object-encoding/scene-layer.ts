@@ -6,7 +6,8 @@ import {
 	SceneLayerObject,
 	SceneLayerPgmPstMode,
 	SceneLayerState,
-} from '../kairos-types/scene.js'
+	DissolveMode,
+} from 'kairos-lib'
 import {
 	parseBoolean,
 	parseCommaSeparated,
@@ -16,7 +17,6 @@ import {
 	parseColorRGB,
 	parseSourceRef,
 } from '../lib/data-parsers.js'
-import { DissolveMode } from '../kairos-types/lib-types.js'
 
 export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneLayerObject> = {
 	opacity: { protocolName: 'opacity', parser: parseFloatValue },

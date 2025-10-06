@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { SceneObject, SceneLimitOffAction } from '../kairos-types/scene.js'
+import { SceneObject, SceneLimitOffAction, Resolution } from 'kairos-lib'
 import {
 	parseBoolean,
 	parseEnum,
@@ -9,7 +9,6 @@ import {
 	parseCommaSeparated,
 	parseSceneTransitionRef,
 } from '../lib/data-parsers.js'
-import { Resolution } from '../kairos-types/lib-types.js'
 
 export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject> = {
 	advancedResolutionControl: { protocolName: 'advanced_resolution_control', parser: parseBoolean },

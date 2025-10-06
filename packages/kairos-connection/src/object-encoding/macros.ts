@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { MacroObject, MacroStatus } from '../kairos-types/macro.js'
+import { MacroObject, MacroStatus } from 'kairos-lib'
 import { parseEnum, parseColorRGB } from '../lib/data-parsers.js'
 
 export const MacroObjectEncodingDefinition: ObjectEncodingDefinition<MacroObject> = {

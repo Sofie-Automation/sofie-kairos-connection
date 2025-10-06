@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { SceneTransitionObject, SceneTransitionMixEffectObject, SceneCurve } from '../kairos-types/scene.js'
+import { SceneTransitionObject, SceneTransitionMixEffectObject, SceneCurve } from 'kairos-lib'
 import { parseEnum, parseInteger, parseFloatValue } from '../lib/data-parsers.js'
 
 export const SceneTransitionObjectEncodingDefinition: ObjectEncodingDefinition<SceneTransitionObject> = {

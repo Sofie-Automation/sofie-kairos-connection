@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { AudioPlayerObject } from '../kairos-types/audio-player.js'
+import { AudioPlayerObject, ClipPlayerTMS } from 'kairos-lib'
 import {
 	parseBoolean,
 	passThroughString,
@@ -7,7 +7,6 @@ import {
 	parseEnum,
 	parseMediaSoundRefOptional,
 } from '../lib/data-parsers.js'
-import { ClipPlayerTMS } from '../main.js'
 
 export const AudioPlayerObjectEncodingDefinition: ObjectEncodingDefinition<AudioPlayerObject> = {
 	timecode: { protocolName: 'timecode', parser: passThroughString },

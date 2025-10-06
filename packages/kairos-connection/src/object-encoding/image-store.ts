@@ -1,5 +1,4 @@
-import { ImageStoreScaleMode, type ImageStoreObject } from '../kairos-types/image-store.js'
-import { DissolveMode, Resolution } from '../kairos-types/lib-types.js'
+import { ImageStoreScaleMode, type ImageStoreObject, DissolveMode, Resolution } from 'kairos-lib'
 import type { ObjectEncodingDefinition } from './types.js'
 import { parseBoolean, parseColorRGB, parseEnum, parseInteger } from '../lib/data-parsers.js'
 
