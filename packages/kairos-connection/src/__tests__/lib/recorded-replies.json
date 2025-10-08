@@ -1,1 +1,26 @@
-{}
+{
+  "list_ex:AUDIOOUTS": [
+    "list_ex:AUDIOOUTS=",
+    "OUT_AUDIO1",
+    "OUT_AUDIO2",
+    "OUT_AUDIO3",
+    "OUT_AUDIO4",
+    "OUT_AUDIO5",
+    "OUT_AUDIO6",
+    "OUT_AUDIO7",
+    "OUT_AUDIO8",
+    ""
+  ],
+  "OUT_AUDIO1.status": [
+    "OUT_AUDIO1.status=3"
+  ],
+  "OUT_AUDIO1.status_text": [
+    "OUT_AUDIO1.status_text=disabled"
+  ],
+  "OUT_AUDIO1.delay": [
+    "OUT_AUDIO1.delay=0"
+  ],
+  "OUT_AUDIO1.delay=5": [
+    "OK"
+  ]
+}

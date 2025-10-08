@@ -29,6 +29,15 @@ export type AnyRef =
 	| InputRef
 	| FxInputRef
 	| MatteRef
+	| IpInputRef
+	| SDIInputRef
+	| NDIInputRef
+	| StreamInputRef
+	| IpOutputRef
+	| SDIOutputRef
+	| NDIOutputRef
+	| StreamOutputRef
+	| AudioOutputRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -161,6 +170,24 @@ export function refToPath(ref: AnyRef): string {
 			return ['FXINPUTS', ...ref.fxInputPath.map(protocolEncodeStr)].join('.')
 		case 'matte':
 			return ['MATTES', ...ref.mattePath.map(protocolEncodeStr)].join('.')
+		case 'ip-input':
+			return `IN_IP${ref.ipInput}`
+		case 'sdi-input':
+			return `IN_SDI${ref.sdiInput}`
+		case 'ndi-input':
+			return `IN_NDI${ref.ndiInput}`
+		case 'stream-input':
+			return `IN_STREAM${ref.streamInput}`
+		case 'ip-output':
+			return `OUT_IP${ref.ipOutput}`
+		case 'sdi-output':
+			return `OUT_SDI${ref.sdiOutput}`
+		case 'ndi-output':
+			return `OUT_NDI${ref.ndiOutput}`
+		case 'stream-output':
+			return `OUT_STREAM${ref.streamOutput}`
+		case 'audio-output':
+			return `OUT_AUDIO${ref.audioOutput}`
 		default:
 			assertNever(ref)
 
@@ -597,4 +624,71 @@ export type AuxEffectRef = {
 }
 export function refAuxEffect(auxRef: AuxRef, effectPath: RefPath): AuxEffectRef {
 	return { realm: 'aux-effect', auxPath: auxRef.path, auxPathIsName: auxRef.pathIsName, effectPath }
+}
+
+// ------------------------------- INPUTSETTINGS ----------------------------------
+
+export type IpInputRef = {
+	realm: 'ip-input'
+	ipInput: number
+}
+export type SDIInputRef = {
+	realm: 'sdi-input'
+	sdiInput: number
+}
+export type NDIInputRef = {
+	realm: 'ndi-input'
+	ndiInput: number
+}
+export type StreamInputRef = {
+	realm: 'stream-input'
+	streamInput: number
+}
+export function refIpInput(ipInput: number): IpInputRef {
+	return { realm: 'ip-input', ipInput }
+}
+export function refSDIInput(sdiInput: number): SDIInputRef {
+	return { realm: 'sdi-input', sdiInput }
+}
+export function refNDIInput(ndiInput: number): NDIInputRef {
+	return { realm: 'ndi-input', ndiInput }
+}
+export function refStreamInput(streamInput: number): StreamInputRef {
+	return { realm: 'stream-input', streamInput }
+}
+// ------------------------------- OUTPUTSETTINGS ----------------------------------
+export type IpOutputRef = {
+	realm: 'ip-output'
+	ipOutput: number
+}
+export type SDIOutputRef = {
+	realm: 'sdi-output'
+	sdiOutput: number
+}
+export type NDIOutputRef = {
+	realm: 'ndi-output'
+	ndiOutput: number
+}
+export type StreamOutputRef = {
+	realm: 'stream-output'
+	streamOutput: number
+}
+export type AudioOutputRef = {
+	realm: 'audio-output'
+	audioOutput: number
+}
+export function refIpOutput(ipOutput: number): IpOutputRef {
+	return { realm: 'ip-output', ipOutput }
+}
+export function refSDIOutput(sdiOutput: number): SDIOutputRef {
+	return { realm: 'sdi-output', sdiOutput }
+}
+export function refNDIOutput(ndiOutput: number): NDIOutputRef {
+	return { realm: 'ndi-output', ndiOutput }
+}
+export function refStreamOutput(streamOutput: number): StreamOutputRef {
+	return { realm: 'stream-output', streamOutput }
+}
+export function refAudioOutput(audioOutput: number): AudioOutputRef {
+	return { realm: 'audio-output', audioOutput }
 }

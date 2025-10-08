@@ -94,6 +94,33 @@ import {
 	FxInputObject,
 	ScaleMode,
 	refInput,
+	IpInputRef,
+	refIpInput,
+	IpInputObject,
+	SDIInputObject,
+	SDIInputRef,
+	refSDIInput,
+	NDIInputObject,
+	NDIInputRef,
+	refNDIInput,
+	StreamInputRef,
+	StreamInputObject,
+	refStreamInput,
+	IpOutputObject,
+	IpOutputRef,
+	refIpOutput,
+	SDIOutputObject,
+	SDIOutputRef,
+	refSDIOutput,
+	NDIOutputObject,
+	NDIOutputRef,
+	refNDIOutput,
+	StreamOutputObject,
+	StreamOutputRef,
+	refStreamOutput,
+	AudioOutputObject,
+	AudioOutputRef,
+	refAudioOutput,
 } from 'kairos-lib'
 import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
 
@@ -569,29 +596,507 @@ describe('KairosConnection', () => {
 		// 	ColorBar
 		// 	ColorCircle
 		// 	MV<1-4>
+
 		// INPUTSETTINGS
 		// 	IPINPUTS
 		// 		IN_IP<1-48>
+
+		test('IPINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:IPINPUTS': [
+						'list_ex:IPINPUTS=',
+						'IN_IP1',
+						'IN_IP2',
+						'IN_IP3',
+						'IN_IP4',
+						'IN_IP5',
+						'IN_IP6',
+						'IN_IP7',
+						'IN_IP8',
+						'IN_IP9',
+						'IN_IP10',
+						'IN_IP11',
+						'IN_IP12',
+						'IN_IP13',
+						'IN_IP14',
+						'IN_IP15',
+						'IN_IP16',
+						'IN_IP17',
+						'IN_IP18',
+						'IN_IP19',
+						'IN_IP20',
+						'IN_IP21',
+						'IN_IP22',
+						'IN_IP23',
+						'IN_IP24',
+						'IN_IP25',
+						'IN_IP26',
+						'IN_IP27',
+						'IN_IP28',
+						'IN_IP29',
+						'IN_IP30',
+						'IN_IP31',
+						'IN_IP32',
+						'IN_IP33',
+						'IN_IP34',
+						'IN_IP35',
+						'IN_IP36',
+						'IN_IP37',
+						'IN_IP38',
+						'IN_IP39',
+						'IN_IP40',
+						'IN_IP41',
+						'IN_IP42',
+						'IN_IP43',
+						'IN_IP44',
+						'IN_IP45',
+						'IN_IP46',
+						'IN_IP47',
+						'IN_IP48',
+						'',
+					],
+					'IN_IP1.status': ['IN_IP1.status=3'],
+					'IN_IP1.status_text': ['IN_IP1.status_text=disabled'],
+					'IN_IP1.tally': ['IN_IP1.tally=0'],
+					'IN_IP1.delay': ['IN_IP1.delay=0'],
+					'IN_IP1.on_demand': ['IN_IP1.on_demand=0'],
+					'IN_IP1.requested': ['IN_IP1.requested=1'],
+					'IN_IP1.delay=5': ['OK'], // Permission Error
+					'IN_IP1.on_demand=1': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: IpInputRef[] = []
+			for (let i = 1; i <= 48; i++) {
+				inputs.push(refIpInput(i))
+			}
+			expect(await connection.listIpInputs()).toStrictEqual(inputs)
+
+			expect(await connection.getIpInput(refIpInput(1))).toStrictEqual({
+				delay: 0,
+				onDemand: false,
+				requested: true,
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+			} satisfies IpInputObject)
+
+			expect(
+				await connection.updateIpInput(refIpInput(1), {
+					delay: 5,
+					onDemand: true,
+				})
+			).toBeUndefined()
+		})
 		// 	SDIINPUTS
 		// 		IN_SDI<1-32>
+		test('SDIINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SDIINPUTS': [
+						'list_ex:SDIINPUTS=',
+						'IN_SDI1',
+						'IN_SDI2',
+						'IN_SDI3',
+						'IN_SDI4',
+						'IN_SDI5',
+						'IN_SDI6',
+						'IN_SDI7',
+						'IN_SDI8',
+						'IN_SDI9',
+						'IN_SDI10',
+						'IN_SDI11',
+						'IN_SDI12',
+						'IN_SDI13',
+						'IN_SDI14',
+						'IN_SDI15',
+						'IN_SDI16',
+						'IN_SDI17',
+						'IN_SDI18',
+						'IN_SDI19',
+						'IN_SDI20',
+						'IN_SDI21',
+						'IN_SDI22',
+						'IN_SDI23',
+						'IN_SDI24',
+						'IN_SDI25',
+						'IN_SDI26',
+						'IN_SDI27',
+						'IN_SDI28',
+						'IN_SDI29',
+						'IN_SDI30',
+						'IN_SDI31',
+						'IN_SDI32',
+						'',
+					],
+					'IN_SDI1.status': ['IN_SDI1.status=3'],
+					'IN_SDI1.status_text': ['IN_SDI1.status_text=disabled'],
+					'IN_SDI1.tally': ['IN_SDI1.tally=0'],
+					'IN_SDI1.delay': ['IN_SDI1.delay=5'],
+					'IN_SDI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: SDIInputRef[] = []
+			for (let i = 1; i <= 32; i++) {
+				inputs.push(refSDIInput(i))
+			}
+			expect(await connection.listSDIInputs()).toStrictEqual(inputs)
+
+			expect(await connection.getSDIInput(refSDIInput(1))).toStrictEqual({
+				delay: 5,
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+			} satisfies SDIInputObject)
+
+			expect(
+				await connection.updateSDIInput(refSDIInput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	NDIINPUTS
 		// 		IN_NDI<1-2>
+		test('NDIINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:NDIINPUTS': ['list_ex:NDIINPUTS=', 'IN_NDI1', 'IN_NDI2', ''],
+					'IN_NDI1.status': ['IN_NDI1.status=3'],
+					'IN_NDI1.status_text': ['IN_NDI1.status_text=disabled'],
+					'IN_NDI1.tally': ['IN_NDI1.tally=0'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: NDIInputRef[] = []
+			for (let i = 1; i <= 2; i++) {
+				inputs.push(refNDIInput(i))
+			}
+			expect(await connection.listNDIInputs()).toStrictEqual(inputs)
+
+			expect(await connection.getNDIInput(refNDIInput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+			} satisfies NDIInputObject)
+		})
 		// 	STREAMINPUTS
 		// 		IN_STREAM<1-6>
+		test('STREAMINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:STREAMINPUTS': [
+						'list_ex:STREAMINPUTS=',
+						'IN_STREAM1',
+						'IN_STREAM2',
+						'IN_STREAM3',
+						'IN_STREAM4',
+						'IN_STREAM5',
+						'IN_STREAM6',
+						'',
+					],
+					'IN_STREAM1.status': ['IN_STREAM1.status=3'],
+					'IN_STREAM1.status_text': ['IN_STREAM1.status_text=disabled'],
+					'IN_STREAM1.tally': ['IN_STREAM1.tally=0'],
+					'IN_STREAM1.delay': ['IN_STREAM1.delay=5'],
+					'IN_STREAM1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: StreamInputRef[] = []
+			for (let i = 1; i <= 6; i++) {
+				inputs.push(refStreamInput(i))
+			}
+			expect(await connection.listStreamInputs()).toStrictEqual(inputs)
+
+			expect(await connection.getStreamInput(refStreamInput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+				delay: 5,
+			} satisfies StreamInputObject)
+
+			expect(
+				await connection.updateStreamInput(refStreamInput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// OUTPUTSETTINGS
 		// 	IPOUTS
 		// 		OUT_IP<1-32>
+		test('IPOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:IPOUTS': [
+						'list_ex:IPOUTS=',
+						'OUT_IP1',
+						'OUT_IP2',
+						'OUT_IP3',
+						'OUT_IP4',
+						'OUT_IP5',
+						'OUT_IP6',
+						'OUT_IP7',
+						'OUT_IP8',
+						'OUT_IP9',
+						'OUT_IP10',
+						'OUT_IP11',
+						'OUT_IP12',
+						'OUT_IP13',
+						'OUT_IP14',
+						'OUT_IP15',
+						'OUT_IP16',
+						'OUT_IP17',
+						'OUT_IP18',
+						'OUT_IP19',
+						'OUT_IP20',
+						'OUT_IP21',
+						'OUT_IP22',
+						'OUT_IP23',
+						'OUT_IP24',
+						'OUT_IP25',
+						'OUT_IP26',
+						'OUT_IP27',
+						'OUT_IP28',
+						'OUT_IP29',
+						'OUT_IP30',
+						'OUT_IP31',
+						'OUT_IP32',
+						'',
+					],
+					'OUT_IP1.status': ['OUT_IP1.status=3'],
+					'OUT_IP1.status_text': ['OUT_IP1.status_text=disabled'],
+					'OUT_IP1.delay': ['OUT_IP1.delay=5'],
+					'OUT_IP1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: IpOutputRef[] = []
+			for (let i = 1; i <= 32; i++) {
+				inputs.push(refIpOutput(i))
+			}
+			expect(await connection.listIpOutputs()).toStrictEqual(inputs)
+
+			expect(await connection.getIpOutput(refIpOutput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies IpOutputObject)
+
+			expect(
+				await connection.updateIpOutput(refIpOutput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	SDIOUTS
 		// 		OUT_SDI<1-16>
+		test('SDIOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SDIOUTS': [
+						'list_ex:SDIOUTS=',
+						'OUT_SDI1',
+						'OUT_SDI2',
+						'OUT_SDI3',
+						'OUT_SDI4',
+						'OUT_SDI5',
+						'OUT_SDI6',
+						'OUT_SDI7',
+						'OUT_SDI8',
+						'OUT_SDI9',
+						'OUT_SDI10',
+						'OUT_SDI11',
+						'OUT_SDI12',
+						'OUT_SDI13',
+						'OUT_SDI14',
+						'OUT_SDI15',
+						'OUT_SDI16',
+						'OUT_SDI17',
+						'OUT_SDI18',
+						'OUT_SDI19',
+						'OUT_SDI20',
+						'',
+					],
+					'OUT_SDI1.status': ['OUT_SDI1.status=3'],
+					'OUT_SDI1.status_text': ['OUT_SDI1.status_text=disabled'],
+					'OUT_SDI1.delay': ['OUT_SDI1.delay=5'],
+					'OUT_SDI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: SDIOutputRef[] = []
+			for (let i = 1; i <= 20; i++) {
+				inputs.push(refSDIOutput(i))
+			}
+			expect(await connection.listSDIOutputs()).toStrictEqual(inputs)
+
+			expect(await connection.getSDIOutput(refSDIOutput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies SDIOutputObject)
+
+			expect(
+				await connection.updateSDIOutput(refSDIOutput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
+
 		// 	NDIOUTS
 		// 		OUT_NDI<1-2>
+		test('NDIOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:NDIOUTS': ['list_ex:NDIOUTS=', 'OUT_NDI1', 'OUT_NDI2', ''],
+					'OUT_NDI1.status': ['OUT_NDI1.status=3'],
+					'OUT_NDI1.status_text': ['OUT_NDI1.status_text=disabled'],
+					'OUT_NDI1.delay': ['OUT_NDI1.delay=5'],
+					'OUT_NDI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: NDIOutputRef[] = []
+			for (let i = 1; i <= 2; i++) {
+				inputs.push(refNDIOutput(i))
+			}
+			expect(await connection.listNDIOutputs()).toStrictEqual(inputs)
+
+			expect(await connection.getNDIOutput(refNDIOutput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies NDIOutputObject)
+
+			expect(
+				await connection.updateNDIOutput(refNDIOutput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	STREAMOUTS
 		// 		OUT_STREAM<1-2>
+		test('STREAMOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:STREAMOUTS': ['list_ex:STREAMOUTS=', 'OUT_STREAM1', 'OUT_STREAM2', 'OUT_STREAM3', 'OUT_STREAM4', ''],
+					'OUT_STREAM1.status': ['OUT_STREAM1.status=3'],
+					'OUT_STREAM1.status_text': ['OUT_STREAM1.status_text=disabled'],
+					'OUT_STREAM1.delay': ['OUT_STREAM1.delay=5'],
+					'OUT_STREAM1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: StreamOutputRef[] = []
+			for (let i = 1; i <= 4; i++) {
+				inputs.push(refStreamOutput(i))
+			}
+			expect(await connection.listStreamOutputs()).toStrictEqual(inputs)
+
+			expect(await connection.getStreamOutput(refStreamOutput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies StreamOutputObject)
+
+			expect(
+				await connection.updateStreamOutput(refStreamOutput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	AUDIOOUTS
 		// 		OUT_AUDIO<1-8>
+		test('AUDIOOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:AUDIOOUTS': [
+						'list_ex:AUDIOOUTS=',
+						'OUT_AUDIO1',
+						'OUT_AUDIO2',
+						'OUT_AUDIO3',
+						'OUT_AUDIO4',
+						'OUT_AUDIO5',
+						'OUT_AUDIO6',
+						'OUT_AUDIO7',
+						'OUT_AUDIO8',
+						'',
+					],
+					'OUT_AUDIO1.status': ['OUT_AUDIO1.status=3'],
+					'OUT_AUDIO1.status_text': ['OUT_AUDIO1.status_text=disabled'],
+					'OUT_AUDIO1.delay': ['OUT_AUDIO1.delay=0'],
+					'OUT_AUDIO1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: AudioOutputRef[] = []
+			for (let i = 1; i <= 8; i++) {
+				inputs.push(refAudioOutput(i))
+			}
+			expect(await connection.listAudioOutputs()).toStrictEqual(inputs)
+
+			expect(await connection.getAudioOutput(refAudioOutput(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 0,
+			} satisfies AudioOutputObject)
+
+			expect(
+				await connection.updateAudioOutput(refAudioOutput(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
+
 		// SCENES
 		// 	Scene
-
 		test('SCENES', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {

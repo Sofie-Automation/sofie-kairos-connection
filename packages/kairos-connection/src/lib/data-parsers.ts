@@ -45,6 +45,16 @@ export function stringifyCommaSeparated(values: string[] | undefined): string | 
 	// TODO:end with a ',' ?
 }
 
+export function parseString(value: string): string {
+	return value
+}
+export function stringifyString(value: undefined): undefined
+export function stringifyString(value: string): string
+export function stringifyString(value: string | undefined): string | undefined
+export function stringifyString(value: string | undefined): string | undefined {
+	return `${value}`
+}
+
 export function parseInteger(value: string): number {
 	const parsed = parseInt(value, 10)
 	if (isNaN(parsed)) throw new Error(`Unable to parse integer from string: "${value}"`)

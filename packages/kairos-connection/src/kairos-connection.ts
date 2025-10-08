@@ -125,6 +125,41 @@ import {
 	RamRecPlayerObject,
 	UpdateRamRecPlayerObject,
 	InputRef,
+	IpInputRef,
+	refIpInput,
+	IpInputObject,
+	UpdateIpInputObject,
+	refSDIInput,
+	SDIInputObject,
+	SDIInputRef,
+	UpdateSDIInputObject,
+	NDIInputObject,
+	NDIInputRef,
+	refNDIInput,
+	refStreamInput,
+	StreamInputObject,
+	StreamInputRef,
+	UpdateStreamInputObject,
+	IpOutputObject,
+	IpOutputRef,
+	refIpOutput,
+	UpdateIpOutputObject,
+	refSDIOutput,
+	SDIOutputObject,
+	SDIOutputRef,
+	UpdateSDIOutputObject,
+	NDIOutputObject,
+	NDIOutputRef,
+	refNDIOutput,
+	UpdateNDIOutputObject,
+	StreamOutputRef,
+	refStreamOutput,
+	StreamOutputObject,
+	UpdateStreamOutputObject,
+	AudioOutputObject,
+	AudioOutputRef,
+	refAudioOutput,
+	UpdateAudioOutputObject,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -181,6 +216,20 @@ import {
 	FxInputObjectEncodingDefinition,
 	RamRecPlayerObjectEncodingDefinition,
 } from './object-encoding/index.js'
+import { omitFalsy } from './lib/lib.js'
+import {
+	IpInputEncodingDefinition,
+	NDIInputEncodingDefinition,
+	SDIInputEncodingDefinition,
+	StreamInputEncodingDefinition,
+} from './object-encoding/inputSettings.js'
+import {
+	AudioOutputEncodingDefinition,
+	IpOutputEncodingDefinition,
+	NDIOutputEncodingDefinition,
+	SDIOutputEncodingDefinition,
+	StreamOutputEncodingDefinition,
+} from './object-encoding/outputSettings.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -275,6 +324,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	ColorBar
 	// 	ColorCircle
 	// 	MV<1-4>
+
 	// INPUTSETTINGS
 	// 	IPINPUTS
 	// 		IN_IP<1-48>
@@ -284,6 +334,89 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		IN_NDI<1-2>
 	// 	STREAMINPUTS
 	// 		IN_STREAM<1-6>
+
+	async listIpInputs(): Promise<IpInputRef[]> {
+		// "IN_IP4"
+		const list = await this.getList('IPINPUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^IN_IP(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refIpInput(index)
+			})
+		)
+	}
+	async getIpInput(ipInputRef: IpInputRef): Promise<IpInputObject> {
+		return this.#getObject(refToPath(ipInputRef), IpInputEncodingDefinition)
+	}
+	async updateIpInput(ipInputRef: IpInputRef, props: Partial<UpdateIpInputObject>): Promise<void> {
+		await this.setAttributes(refToPath(ipInputRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+			{ attribute: 'on_demand', value: stringifyBoolean(props.onDemand) },
+		])
+	}
+
+	async listSDIInputs(): Promise<SDIInputRef[]> {
+		// "IN_SDI10"
+		const list = await this.getList('SDIINPUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^IN_SDI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refSDIInput(index)
+			})
+		)
+	}
+	async getSDIInput(sdiInputRef: SDIInputRef): Promise<SDIInputObject> {
+		return this.#getObject(refToPath(sdiInputRef), SDIInputEncodingDefinition)
+	}
+	async updateSDIInput(sdiInputRef: SDIInputRef, props: Partial<UpdateSDIInputObject>): Promise<void> {
+		await this.setAttributes(refToPath(sdiInputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+	async listNDIInputs(): Promise<NDIInputRef[]> {
+		// "IN_NDI1"
+		const list = await this.getList('NDIINPUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^IN_NDI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refNDIInput(index)
+			})
+		)
+	}
+	async getNDIInput(ndiInputRef: NDIInputRef): Promise<NDIInputObject> {
+		return this.#getObject(refToPath(ndiInputRef), NDIInputEncodingDefinition)
+	}
+	async listStreamInputs(): Promise<StreamInputRef[]> {
+		// "IN_STREAM"
+		const list = await this.getList('STREAMINPUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^IN_STREAM(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refStreamInput(index)
+			})
+		)
+	}
+	async getStreamInput(streamInputRef: StreamInputRef): Promise<StreamInputObject> {
+		return this.#getObject(refToPath(streamInputRef), StreamInputEncodingDefinition)
+	}
+	async updateStreamInput(streamInputRef: StreamInputRef, props: Partial<UpdateStreamInputObject>): Promise<void> {
+		await this.setAttributes(refToPath(streamInputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+
 	// OUTPUTSETTINGS
 	// 	IPOUTS
 	// 		OUT_IP<1-32>
@@ -295,6 +428,108 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		OUT_STREAM<1-2>
 	// 	AUDIOOUTS
 	// 		OUT_AUDIO<1-8>
+
+	async listIpOutputs(): Promise<IpOutputRef[]> {
+		// "OUT_IP"
+		const list = await this.getList('IPOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_IP(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refIpOutput(index)
+			})
+		)
+	}
+	async getIpOutput(ipOutputRef: IpOutputRef): Promise<IpOutputObject> {
+		return this.#getObject(refToPath(ipOutputRef), IpOutputEncodingDefinition)
+	}
+	async updateIpOutput(ipOutputRef: IpOutputRef, props: Partial<UpdateIpOutputObject>): Promise<void> {
+		await this.setAttributes(refToPath(ipOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+	async listSDIOutputs(): Promise<SDIOutputRef[]> {
+		// "OUT_SDI"
+		const list = await this.getList('SDIOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_SDI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refSDIOutput(index)
+			})
+		)
+	}
+	async getSDIOutput(sdiOutputRef: SDIOutputRef): Promise<SDIOutputObject> {
+		return this.#getObject(refToPath(sdiOutputRef), SDIOutputEncodingDefinition)
+	}
+	async updateSDIOutput(sdiOutputRef: SDIOutputRef, props: Partial<UpdateSDIOutputObject>): Promise<void> {
+		await this.setAttributes(refToPath(sdiOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+	async listNDIOutputs(): Promise<NDIOutputRef[]> {
+		// "OUT_NDI"
+		const list = await this.getList('NDIOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_NDI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refNDIOutput(index)
+			})
+		)
+	}
+	async getNDIOutput(NDIOutputRef: NDIOutputRef): Promise<NDIOutputObject> {
+		return this.#getObject(refToPath(NDIOutputRef), NDIOutputEncodingDefinition)
+	}
+	async updateNDIOutput(NDIOutputRef: NDIOutputRef, props: Partial<UpdateNDIOutputObject>): Promise<void> {
+		await this.setAttributes(refToPath(NDIOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+	async listStreamOutputs(): Promise<StreamOutputRef[]> {
+		// "OUT_STREAM"
+		const list = await this.getList('STREAMOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_STREAM(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refStreamOutput(index)
+			})
+		)
+	}
+	async getStreamOutput(StreamOutputRef: StreamOutputRef): Promise<StreamOutputObject> {
+		return this.#getObject(refToPath(StreamOutputRef), StreamOutputEncodingDefinition)
+	}
+	async updateStreamOutput(StreamOutputRef: StreamOutputRef, props: Partial<UpdateStreamOutputObject>): Promise<void> {
+		await this.setAttributes(refToPath(StreamOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+	async listAudioOutputs(): Promise<AudioOutputRef[]> {
+		// "OUT_AUDIO"
+		const list = await this.getList('AUDIOOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_AUDIO(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refAudioOutput(index)
+			})
+		)
+	}
+	async getAudioOutput(AudioOutputRef: AudioOutputRef): Promise<AudioOutputObject> {
+		return this.#getObject(refToPath(AudioOutputRef), AudioOutputEncodingDefinition)
+	}
+	async updateAudioOutput(AudioOutputRef: AudioOutputRef, props: Partial<UpdateAudioOutputObject>): Promise<void> {
+		await this.setAttributes(refToPath(AudioOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	}
+
 	// SCENES
 	// 	Scene
 	async listScenes(
