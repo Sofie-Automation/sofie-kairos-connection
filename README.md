@@ -2,8 +2,8 @@
 
 [![Node CI](https://github.com/Sofie-Automation/sofie-kairos-connection/actions/workflows/node.yaml/badge.svg)](https://github.com/Sofie-Automation/sofie-kairos-connection/actions/workflows/node.yaml)
 [![NPM Version](https://img.shields.io/npm/v/kairos-connection?label=npm:kairos-connection)](https://www.npmjs.com/package/kairos-connection)
+[![NPM Version](https://img.shields.io/npm/v/kairos-lib?label=npm:kairos-lib)](https://www.npmjs.com/package/kairos-lib)
 [![NPM Version](https://img.shields.io/npm/v/kairos-state?label=npm:kairos-state)](https://www.npmjs.com/package/kairos-state)
-
 
 This is the _KAIROS Connection_ library of the [**Sofie** TV Automation System](https://github.com/Sofie-Automation/Sofie-TV-automation/). The library is used for controlling Panasonic KAIROS devices.
 
@@ -21,6 +21,7 @@ This is the _KAIROS Connection_ library of the [**Sofie** TV Automation System](
 This project is composed of a few different packages:
 
 - [kairos-connection](./packages/kairos-connection/) - A library for connecting and communicating with Panasonic KAIROS devices.
+- [kairos-lib](./packages/kairos-lib/) - A library of types and utilities for working with kairos-connection.
 - [kairos-state](./packages/kairos-state/) - A library for generating commands to achieve certain states in a Panasonic KAIROS device.
 
 ### Documentation
