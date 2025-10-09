@@ -1,7 +1,7 @@
 import { expect, test, describe, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest'
 import {
 	ClipPlayerObject,
-	ClipPlayerTMS,
+	PlayerTMS,
 	KairosConnection,
 	MacroObject,
 	MacroStatus,
@@ -93,9 +93,43 @@ import {
 	refFxInput,
 	FxInputObject,
 	ScaleMode,
-	refInput,
+	IpInputSettingObject,
+	SDIInputSettingObject,
+	NDIInputSettingObject,
+	StreamInputSettingObject,
+	IpOutputSettingObject,
+	SDIOutputSettingObject,
+	NDIOutputSettingObject,
+	IpInputSettingRef,
+	SDIInputSettingRef,
+	NDIInputSettingRef,
+	StreamInputSettingRef,
+	refIpInputSetting,
+	refNDIInputSetting,
+	refSDIInputSetting,
+	refStreamInputSetting,
+	IpOutputSettingRef,
+	NDIOutputSettingRef,
+	SDIOutputSettingRef,
+	refIpOutputSetting,
+	refSDIOutputSetting,
+	refNDIOutputSetting,
+	refStreamOutputSetting,
+	StreamOutputSettingObject,
+	StreamOutputSettingRef,
+	refAudioOutputSetting,
+	AudioOutputSettingObject,
+	AudioOutputSettingRef,
+	refIpInput,
+	MediaClipRef,
+	MediaSoundRef,
+	refMediaClip,
+	refMediaStill,
+	refMediaRamRec,
+	refMediaImage,
+	refMediaSound,
 } from 'kairos-lib'
-import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
+import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -569,29 +603,507 @@ describe('KairosConnection', () => {
 		// 	ColorBar
 		// 	ColorCircle
 		// 	MV<1-4>
+
 		// INPUTSETTINGS
 		// 	IPINPUTS
 		// 		IN_IP<1-48>
+
+		test('IPINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:IPINPUTS': [
+						'list_ex:IPINPUTS=',
+						'IN_IP1',
+						'IN_IP2',
+						'IN_IP3',
+						'IN_IP4',
+						'IN_IP5',
+						'IN_IP6',
+						'IN_IP7',
+						'IN_IP8',
+						'IN_IP9',
+						'IN_IP10',
+						'IN_IP11',
+						'IN_IP12',
+						'IN_IP13',
+						'IN_IP14',
+						'IN_IP15',
+						'IN_IP16',
+						'IN_IP17',
+						'IN_IP18',
+						'IN_IP19',
+						'IN_IP20',
+						'IN_IP21',
+						'IN_IP22',
+						'IN_IP23',
+						'IN_IP24',
+						'IN_IP25',
+						'IN_IP26',
+						'IN_IP27',
+						'IN_IP28',
+						'IN_IP29',
+						'IN_IP30',
+						'IN_IP31',
+						'IN_IP32',
+						'IN_IP33',
+						'IN_IP34',
+						'IN_IP35',
+						'IN_IP36',
+						'IN_IP37',
+						'IN_IP38',
+						'IN_IP39',
+						'IN_IP40',
+						'IN_IP41',
+						'IN_IP42',
+						'IN_IP43',
+						'IN_IP44',
+						'IN_IP45',
+						'IN_IP46',
+						'IN_IP47',
+						'IN_IP48',
+						'',
+					],
+					'IN_IP1.status': ['IN_IP1.status=3'],
+					'IN_IP1.status_text': ['IN_IP1.status_text=disabled'],
+					'IN_IP1.tally': ['IN_IP1.tally=0'],
+					'IN_IP1.delay': ['IN_IP1.delay=0'],
+					'IN_IP1.on_demand': ['IN_IP1.on_demand=0'],
+					'IN_IP1.requested': ['IN_IP1.requested=1'],
+					'IN_IP1.delay=5': ['OK'], // Permission Error
+					'IN_IP1.on_demand=1': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: IpInputSettingRef[] = []
+			for (let i = 1; i <= 48; i++) {
+				inputs.push(refIpInputSetting(i))
+			}
+			expect(await connection.listIpInputSettings()).toStrictEqual(inputs)
+
+			expect(await connection.getIpInputSetting(refIpInputSetting(1))).toStrictEqual({
+				delay: 0,
+				onDemand: false,
+				requested: true,
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+			} satisfies IpInputSettingObject)
+
+			expect(
+				await connection.updateIpInputSetting(refIpInputSetting(1), {
+					delay: 5,
+					onDemand: true,
+				})
+			).toBeUndefined()
+		})
 		// 	SDIINPUTS
 		// 		IN_SDI<1-32>
+		test('SDIINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SDIINPUTS': [
+						'list_ex:SDIINPUTS=',
+						'IN_SDI1',
+						'IN_SDI2',
+						'IN_SDI3',
+						'IN_SDI4',
+						'IN_SDI5',
+						'IN_SDI6',
+						'IN_SDI7',
+						'IN_SDI8',
+						'IN_SDI9',
+						'IN_SDI10',
+						'IN_SDI11',
+						'IN_SDI12',
+						'IN_SDI13',
+						'IN_SDI14',
+						'IN_SDI15',
+						'IN_SDI16',
+						'IN_SDI17',
+						'IN_SDI18',
+						'IN_SDI19',
+						'IN_SDI20',
+						'IN_SDI21',
+						'IN_SDI22',
+						'IN_SDI23',
+						'IN_SDI24',
+						'IN_SDI25',
+						'IN_SDI26',
+						'IN_SDI27',
+						'IN_SDI28',
+						'IN_SDI29',
+						'IN_SDI30',
+						'IN_SDI31',
+						'IN_SDI32',
+						'',
+					],
+					'IN_SDI1.status': ['IN_SDI1.status=3'],
+					'IN_SDI1.status_text': ['IN_SDI1.status_text=disabled'],
+					'IN_SDI1.tally': ['IN_SDI1.tally=0'],
+					'IN_SDI1.delay': ['IN_SDI1.delay=5'],
+					'IN_SDI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: SDIInputSettingRef[] = []
+			for (let i = 1; i <= 32; i++) {
+				inputs.push(refSDIInputSetting(i))
+			}
+			expect(await connection.listSDIInputSettings()).toStrictEqual(inputs)
+
+			expect(await connection.getSDIInputSetting(refSDIInputSetting(1))).toStrictEqual({
+				delay: 5,
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+			} satisfies SDIInputSettingObject)
+
+			expect(
+				await connection.updateSDIInputSetting(refSDIInputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	NDIINPUTS
 		// 		IN_NDI<1-2>
+		test('NDIINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:NDIINPUTS': ['list_ex:NDIINPUTS=', 'IN_NDI1', 'IN_NDI2', ''],
+					'IN_NDI1.status': ['IN_NDI1.status=3'],
+					'IN_NDI1.status_text': ['IN_NDI1.status_text=disabled'],
+					'IN_NDI1.tally': ['IN_NDI1.tally=0'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: NDIInputSettingRef[] = []
+			for (let i = 1; i <= 2; i++) {
+				inputs.push(refNDIInputSetting(i))
+			}
+			expect(await connection.listNDIInputSettings()).toStrictEqual(inputs)
+
+			expect(await connection.getNDIInputSetting(refNDIInputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+			} satisfies NDIInputSettingObject)
+		})
 		// 	STREAMINPUTS
 		// 		IN_STREAM<1-6>
+		test('STREAMINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:STREAMINPUTS': [
+						'list_ex:STREAMINPUTS=',
+						'IN_STREAM1',
+						'IN_STREAM2',
+						'IN_STREAM3',
+						'IN_STREAM4',
+						'IN_STREAM5',
+						'IN_STREAM6',
+						'',
+					],
+					'IN_STREAM1.status': ['IN_STREAM1.status=3'],
+					'IN_STREAM1.status_text': ['IN_STREAM1.status_text=disabled'],
+					'IN_STREAM1.tally': ['IN_STREAM1.tally=0'],
+					'IN_STREAM1.delay': ['IN_STREAM1.delay=5'],
+					'IN_STREAM1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: StreamInputSettingRef[] = []
+			for (let i = 1; i <= 6; i++) {
+				inputs.push(refStreamInputSetting(i))
+			}
+			expect(await connection.listStreamInputsSetting()).toStrictEqual(inputs)
+
+			expect(await connection.getStreamInputSetting(refStreamInputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				tally: 0,
+				delay: 5,
+			} satisfies StreamInputSettingObject)
+
+			expect(
+				await connection.updateStreamInputSetting(refStreamInputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// OUTPUTSETTINGS
 		// 	IPOUTS
 		// 		OUT_IP<1-32>
+		test('IPOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:IPOUTS': [
+						'list_ex:IPOUTS=',
+						'OUT_IP1',
+						'OUT_IP2',
+						'OUT_IP3',
+						'OUT_IP4',
+						'OUT_IP5',
+						'OUT_IP6',
+						'OUT_IP7',
+						'OUT_IP8',
+						'OUT_IP9',
+						'OUT_IP10',
+						'OUT_IP11',
+						'OUT_IP12',
+						'OUT_IP13',
+						'OUT_IP14',
+						'OUT_IP15',
+						'OUT_IP16',
+						'OUT_IP17',
+						'OUT_IP18',
+						'OUT_IP19',
+						'OUT_IP20',
+						'OUT_IP21',
+						'OUT_IP22',
+						'OUT_IP23',
+						'OUT_IP24',
+						'OUT_IP25',
+						'OUT_IP26',
+						'OUT_IP27',
+						'OUT_IP28',
+						'OUT_IP29',
+						'OUT_IP30',
+						'OUT_IP31',
+						'OUT_IP32',
+						'',
+					],
+					'OUT_IP1.status': ['OUT_IP1.status=3'],
+					'OUT_IP1.status_text': ['OUT_IP1.status_text=disabled'],
+					'OUT_IP1.delay': ['OUT_IP1.delay=5'],
+					'OUT_IP1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: IpOutputSettingRef[] = []
+			for (let i = 1; i <= 32; i++) {
+				inputs.push(refIpOutputSetting(i))
+			}
+			expect(await connection.listIpOutputSettings()).toStrictEqual(inputs)
+
+			expect(await connection.getIpOutputSetting(refIpOutputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies IpOutputSettingObject)
+
+			expect(
+				await connection.updateIpOutputSetting(refIpOutputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	SDIOUTS
 		// 		OUT_SDI<1-16>
+		test('SDIOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SDIOUTS': [
+						'list_ex:SDIOUTS=',
+						'OUT_SDI1',
+						'OUT_SDI2',
+						'OUT_SDI3',
+						'OUT_SDI4',
+						'OUT_SDI5',
+						'OUT_SDI6',
+						'OUT_SDI7',
+						'OUT_SDI8',
+						'OUT_SDI9',
+						'OUT_SDI10',
+						'OUT_SDI11',
+						'OUT_SDI12',
+						'OUT_SDI13',
+						'OUT_SDI14',
+						'OUT_SDI15',
+						'OUT_SDI16',
+						'OUT_SDI17',
+						'OUT_SDI18',
+						'OUT_SDI19',
+						'OUT_SDI20',
+						'',
+					],
+					'OUT_SDI1.status': ['OUT_SDI1.status=3'],
+					'OUT_SDI1.status_text': ['OUT_SDI1.status_text=disabled'],
+					'OUT_SDI1.delay': ['OUT_SDI1.delay=5'],
+					'OUT_SDI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const outputs: SDIOutputSettingRef[] = []
+			for (let i = 1; i <= 20; i++) {
+				outputs.push(refSDIOutputSetting(i))
+			}
+			expect(await connection.listSDIOutputSettings()).toStrictEqual(outputs)
+
+			expect(await connection.getSDIOutputSetting(refSDIOutputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies SDIOutputSettingObject)
+
+			expect(
+				await connection.updateSDIOutputSetting(refSDIOutputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
+
 		// 	NDIOUTS
 		// 		OUT_NDI<1-2>
+		test('NDIOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:NDIOUTS': ['list_ex:NDIOUTS=', 'OUT_NDI1', 'OUT_NDI2', ''],
+					'OUT_NDI1.status': ['OUT_NDI1.status=3'],
+					'OUT_NDI1.status_text': ['OUT_NDI1.status_text=disabled'],
+					'OUT_NDI1.delay': ['OUT_NDI1.delay=5'],
+					'OUT_NDI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const outputs: NDIOutputSettingRef[] = []
+			for (let i = 1; i <= 2; i++) {
+				outputs.push(refNDIOutputSetting(i))
+			}
+			expect(await connection.listNDIOutputSettings()).toStrictEqual(outputs)
+
+			expect(await connection.getNDIOutputSetting(refNDIOutputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies NDIOutputSettingObject)
+
+			expect(
+				await connection.updateNDIOutputSetting(refNDIOutputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	STREAMOUTS
 		// 		OUT_STREAM<1-2>
+		test('STREAMOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:STREAMOUTS': ['list_ex:STREAMOUTS=', 'OUT_STREAM1', 'OUT_STREAM2', 'OUT_STREAM3', 'OUT_STREAM4', ''],
+					'OUT_STREAM1.status': ['OUT_STREAM1.status=3'],
+					'OUT_STREAM1.status_text': ['OUT_STREAM1.status_text=disabled'],
+					'OUT_STREAM1.delay': ['OUT_STREAM1.delay=5'],
+					'OUT_STREAM1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const outputs: StreamOutputSettingRef[] = []
+			for (let i = 1; i <= 4; i++) {
+				outputs.push(refStreamOutputSetting(i))
+			}
+			expect(await connection.listStreamOutputSettings()).toStrictEqual(outputs)
+
+			expect(await connection.getStreamOutputSetting(refStreamOutputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 5,
+			} satisfies StreamOutputSettingObject)
+
+			expect(
+				await connection.updateStreamOutputSetting(refStreamOutputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// 	AUDIOOUTS
 		// 		OUT_AUDIO<1-8>
+		test('AUDIOOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:AUDIOOUTS': [
+						'list_ex:AUDIOOUTS=',
+						'OUT_AUDIO1',
+						'OUT_AUDIO2',
+						'OUT_AUDIO3',
+						'OUT_AUDIO4',
+						'OUT_AUDIO5',
+						'OUT_AUDIO6',
+						'OUT_AUDIO7',
+						'OUT_AUDIO8',
+						'',
+					],
+					'OUT_AUDIO1.status': ['OUT_AUDIO1.status=3'],
+					'OUT_AUDIO1.status_text': ['OUT_AUDIO1.status_text=disabled'],
+					'OUT_AUDIO1.delay': ['OUT_AUDIO1.delay=0'],
+					'OUT_AUDIO1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const outputs: AudioOutputSettingRef[] = []
+			for (let i = 1; i <= 8; i++) {
+				outputs.push(refAudioOutputSetting(i))
+			}
+			expect(await connection.listAudioOutputSettings()).toStrictEqual(outputs)
+
+			expect(await connection.getAudioOutputSetting(refAudioOutputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'disabled',
+				delay: 0,
+			} satisfies AudioOutputSettingObject)
+
+			expect(
+				await connection.updateAudioOutputSetting(refAudioOutputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
+
 		// SCENES
 		// 	Scene
-
 		test('SCENES', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
@@ -892,24 +1404,24 @@ describe('KairosConnection', () => {
 					sourceCleanMask: 0,
 					sourceOptions: [
 						refSourceBase(['BLACK']),
-						refClipPlayer(['CP1']),
-						refClipPlayer(['CP2']),
-						refRamRecorder(['RR1']),
-						refRamRecorder(['RR2']),
-						refRamRecorder(['RR3']),
-						refRamRecorder(['RR4']),
-						refRamRecorder(['RR5']),
-						refRamRecorder(['RR6']),
-						refRamRecorder(['RR7']),
-						refRamRecorder(['RR8']),
-						refImageStore(['IS1']),
-						refImageStore(['IS2']),
-						refImageStore(['IS3']),
-						refImageStore(['IS4']),
-						refImageStore(['IS5']),
-						refImageStore(['IS6']),
-						refImageStore(['IS7']),
-						refImageStore(['IS8']),
+						refClipPlayer(1),
+						refClipPlayer(2),
+						refRamRecorder(1),
+						refRamRecorder(2),
+						refRamRecorder(3),
+						refRamRecorder(4),
+						refRamRecorder(5),
+						refRamRecorder(6),
+						refRamRecorder(7),
+						refRamRecorder(8),
+						refImageStore(1),
+						refImageStore(2),
+						refImageStore(3),
+						refImageStore(4),
+						refImageStore(5),
+						refImageStore(6),
+						refImageStore(7),
+						refImageStore(8),
 						refScene(['Templates', '2Box']),
 						refScene(['Templates', '4Box']),
 						refScene(['Templates', 'OTS Left']),
@@ -944,24 +1456,24 @@ describe('KairosConnection', () => {
 				sourceCleanMask: 0,
 				sourceOptions: [
 					refSourceBase(['BLACK']),
-					refClipPlayer(['CP1']),
-					refClipPlayer(['CP2']),
-					refRamRecorder(['RR1']),
-					refRamRecorder(['RR2']),
-					refRamRecorder(['RR3']),
-					refRamRecorder(['RR4']),
-					refRamRecorder(['RR5']),
-					refRamRecorder(['RR6']),
-					refRamRecorder(['RR7']),
-					refRamRecorder(['RR8']),
-					refImageStore(['IS1']),
-					refImageStore(['IS2']),
-					refImageStore(['IS3']),
-					refImageStore(['IS4']),
-					refImageStore(['IS5']),
-					refImageStore(['IS6']),
-					refImageStore(['IS7']),
-					refImageStore(['IS8']),
+					refClipPlayer(1),
+					refClipPlayer(2),
+					refRamRecorder(1),
+					refRamRecorder(2),
+					refRamRecorder(3),
+					refRamRecorder(4),
+					refRamRecorder(5),
+					refRamRecorder(6),
+					refRamRecorder(7),
+					refRamRecorder(8),
+					refImageStore(1),
+					refImageStore(2),
+					refImageStore(3),
+					refImageStore(4),
+					refImageStore(5),
+					refImageStore(6),
+					refImageStore(7),
+					refImageStore(8),
 					refScene(['Templates', '2Box']),
 					refScene(['Templates', '4Box']),
 					refScene(['Templates', 'OTS Left']),
@@ -2855,7 +3367,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getRamRecorder(1)).toStrictEqual({
 				autoplay: false,
-				clip: parseMediaClipRefOptional('<unknown>'),
+				clip: parseRefOptional<MediaClipRef>('media-clip', '<unknown>'),
 				color: {
 					red: 255,
 					green: 255,
@@ -2867,7 +3379,7 @@ describe('KairosConnection', () => {
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: ClipPlayerTMS.Pause,
+				tms: PlayerTMS.Pause,
 			} satisfies ClipPlayerObject)
 
 			expect(await connection.ramRecorderBegin(1)).toBeUndefined()
@@ -2946,7 +3458,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getClipPlayer(1)).toStrictEqual({
 				autoplay: false,
-				clip: parseMediaClipRefOptional('<unknown>'),
+				clip: parseRefOptional<MediaClipRef>('media-clip', '<unknown>'),
 				color: {
 					red: 255,
 					green: 255,
@@ -2958,7 +3470,7 @@ describe('KairosConnection', () => {
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: ClipPlayerTMS.Stop,
+				tms: PlayerTMS.Stop,
 			} satisfies ClipPlayerObject)
 
 			expect(await connection.clipPlayerBegin(1)).toBeUndefined()
@@ -2992,7 +3504,17 @@ describe('KairosConnection', () => {
 		test('MEDIA commands', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
-					'list_ex:MEDIA.clips': ['list_ex:MEDIA.clips=', ''],
+					'list_ex:MEDIA.clips': [
+						'list_ex:MEDIA.clips=',
+						'MEDIA.clips.MyFile1&#46;mxf',
+						'MEDIA.clips.MyFile2&#46;mxf',
+						'MEDIA.clips.MyFolder',
+						'',
+					],
+					'list_ex:MEDIA.clips.MyFolder': ['list_ex:MEDIA.clips.MyFolder=', 'MEDIA.clips.MyFolder.MyFile3&#46;mxf', ''],
+					'list_ex:MEDIA.clips.MyFile1&#46;mxf': ['Error'],
+					'list_ex:MEDIA.clips.MyFile2&#46;mxf': ['Error'],
+					'list_ex:MEDIA.clips.MyFolder.MyFile3&#46;mxf': ['Error'],
 					'list_ex:MEDIA.stills': ['list_ex:MEDIA.stills=', ''],
 					'list_ex:MEDIA.ramrec': ['list_ex:MEDIA.ramrec=', ''],
 					'list_ex:MEDIA.images': ['list_ex:MEDIA.images=', ''],
@@ -3011,6 +3533,7 @@ describe('KairosConnection', () => {
 					'MEDIA.images.nonexistent.load_progress': ['Error'],
 					'MEDIA.sounds.nonexistent.name': ['Error'],
 				}[message]
+				// console.log('message', message)
 				if (reply) {
 					return reply
 				}
@@ -3018,16 +3541,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			expect(await connection.listMediaClips()).toStrictEqual([])
-			expect(await connection.getMediaClip('nonexistent')).toBeUndefined()
+			expect(await connection.listMediaClips(undefined, true)).toStrictEqual([
+				{ ...refMediaClip(['MyFile1.mxf']), name: 'MyFile1.mxf' },
+				{ ...refMediaClip(['MyFile2.mxf']), name: 'MyFile2.mxf' },
+				{ ...refMediaClip(['MyFolder', 'MyFile3.mxf']), name: 'MyFile3.mxf' },
+			])
+			expect(await connection.getMediaClip(refMediaClip(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaStills()).toStrictEqual([])
-			expect(await connection.getMediaStill('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaStill(refMediaStill(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaRamRec()).toStrictEqual([])
-			expect(await connection.getMediaRamRec('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaRamRec(refMediaRamRec(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaImage()).toStrictEqual([])
-			expect(await connection.getMediaImage('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaImage(refMediaImage(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaSounds()).toStrictEqual([])
-			expect(await connection.getMediaSound('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaSound(refMediaSound(['nonexistent']))).toBeUndefined()
 		})
 
 		// TRANSLIB
@@ -4125,7 +4652,8 @@ describe('KairosConnection', () => {
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
-			expect(await connection.getInput(refInput('IP1'))).toStrictEqual({
+			expect(await connection.getInput(refIpInput(1))).toStrictEqual({
+				type: 'ip-input',
 				name: 'IP1',
 				tally: 0,
 				available: true,
@@ -4138,7 +4666,7 @@ describe('KairosConnection', () => {
 				recordingStatus: InputRecordingStatus.Idle,
 			} satisfies InputObject)
 			expect(
-				await connection.updateInput(refInput('IP1'), {
+				await connection.updateInput(refIpInput(1), {
 					color: {
 						red: 0,
 						green: 0,
@@ -4146,10 +4674,10 @@ describe('KairosConnection', () => {
 					},
 				})
 			).toBeUndefined()
-			expect(await connection.grabInput(refInput('IP1'))).toBeUndefined()
-			expect(await connection.recordInput(refInput('IP1'))).toBeUndefined()
-			expect(await connection.recordLoopInput(refInput('IP1'))).toBeUndefined()
-			expect(await connection.stopRecordInput(refInput('IP1'))).toBeUndefined()
+			expect(await connection.grabInput(refIpInput(1))).toBeUndefined()
+			expect(await connection.recordInput(refIpInput(1))).toBeUndefined()
+			expect(await connection.recordLoopInput(refIpInput(1))).toBeUndefined()
+			expect(await connection.stopRecordInput(refIpInput(1))).toBeUndefined()
 		})
 
 		// TRIGGERS
@@ -4311,13 +4839,13 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getAudioPlayer(1)).toStrictEqual({
 				autoplay: false,
-				clip: parseMediaSoundRefOptional('<unknown>'),
+				clip: parseRefOptional<MediaSoundRef>('media-sound', '<unknown>'),
 				position: 0,
 				remainingTime: '00:00:00:00',
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: ClipPlayerTMS.Stop,
+				tms: PlayerTMS.Stop,
 			} satisfies AudioPlayerObject)
 
 			expect(await connection.audioPlayerBegin(1)).toBeUndefined()
@@ -4467,7 +4995,7 @@ describe('KairosConnection', () => {
 					green: 255,
 					blue: 255,
 				},
-				clip: '<unknown>',
+				clip: parseImageStoreClip('<unknown>'),
 				tally: 0,
 				dissolveEnabled: false,
 				dissolveTime: 50,
@@ -4552,7 +5080,7 @@ describe('KairosConnection', () => {
 				sourcePst: refSourceBase(['WHITE']),
 				activeBus: SceneLayerActiveBus.ABus,
 				pgmPstMode: SceneLayerPgmPstMode.Swap,
-				sourceOptions: [refSourceBase(['BLACK']), refClipPlayer(['CP1']), refClipPlayer(['CP2'])],
+				sourceOptions: [refSourceBase(['BLACK']), refClipPlayer(1), refClipPlayer(2)],
 				state: SceneLayerState.On,
 				mode: SceneLayerMode.FitScene,
 				fxEnabled: true,

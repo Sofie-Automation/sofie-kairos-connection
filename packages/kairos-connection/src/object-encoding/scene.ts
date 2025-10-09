@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { SceneObject, SceneLimitOffAction, Resolution } from 'kairos-lib'
+import { SceneObject, SceneLimitOffAction, Resolution, SceneTransitionRef } from 'kairos-lib'
 import {
 	parseBoolean,
 	parseEnum,
@@ -7,7 +7,7 @@ import {
 	parseFloatValue,
 	parseColorRGB,
 	parseCommaSeparated,
-	parseSceneTransitionRef,
+	parseRef,
 } from '../lib/data-parsers.js'
 
 export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject> = {
@@ -22,7 +22,7 @@ export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject
 	},
 	nextTransition: {
 		protocolName: 'next_transition',
-		parser: (value) => parseCommaSeparated(value).map((o) => parseSceneTransitionRef(o)),
+		parser: (value) => parseCommaSeparated(value).map((o) => parseRef<SceneTransitionRef>('scene-transition', o)),
 	},
 	allDuration: { protocolName: 'all_duration', parser: parseInteger },
 	allFader: { protocolName: 'all_fader', parser: parseFloatValue },

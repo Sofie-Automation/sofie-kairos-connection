@@ -1,12 +1,12 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { ClipPlayerObject, ClipPlayerTMS } from 'kairos-lib'
+import { ClipPlayerObject, MediaClipRef, PlayerTMS } from 'kairos-lib'
 import {
 	parseEnum,
 	parseInteger,
 	parseBoolean,
 	parseColorRGB,
 	passThroughString,
-	parseMediaClipRefOptional,
+	parseRefOptional,
 } from '../lib/data-parsers.js'
 
 export const ClipPlayerObjectEncodingDefinition: ObjectEncodingDefinition<ClipPlayerObject> = {
@@ -18,9 +18,9 @@ export const ClipPlayerObjectEncodingDefinition: ObjectEncodingDefinition<ClipPl
 	repeat: { protocolName: 'repeat', parser: parseBoolean },
 	tms: {
 		protocolName: 'tms',
-		parser: (value) => parseEnum<ClipPlayerTMS>(value, ClipPlayerTMS),
+		parser: (value) => parseEnum<PlayerTMS>(value, PlayerTMS),
 	},
-	clip: { protocolName: 'clip', parser: parseMediaClipRefOptional },
+	clip: { protocolName: 'clip', parser: (v) => parseRefOptional<MediaClipRef>('media-clip', v) },
 	tally: { protocolName: 'tally', parser: parseInteger },
 	autoplay: { protocolName: 'autoplay', parser: parseBoolean },
 }

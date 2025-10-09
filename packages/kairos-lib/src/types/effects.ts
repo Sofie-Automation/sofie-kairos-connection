@@ -1,5 +1,5 @@
 import type { OmitReadonly } from '../lib/omit-readonly.js'
-import type { SourceRef } from '../lib/reference.js'
+import type { AnySourceRef } from '../lib/reference.js'
 import type { ColorRGB, Pos2D, Pos2Df, Pos3Df } from './lib-types.js'
 
 export interface EffectCropObject {
@@ -163,7 +163,7 @@ export interface EffectLuminanceKeyObject {
 	 * menu to select from all available listed external as well as internal sources.
 	 * [ ObjectID ]
 	 */
-	sourceKey: SourceRef | null
+	sourceKey: AnySourceRef | null
 }
 export interface EffectTransform2DObject {
 	enabled: boolean
@@ -818,7 +818,7 @@ export interface EffectLinearKeyObject {
 	/**
 	 * [ ObjectID ]
 	 */
-	keySource: SourceRef | null // null means <undefined>
+	keySource: AnySourceRef | null // null means <undefined>
 
 	blendMode: EffectLinearKeyBlendMode
 }
@@ -985,7 +985,7 @@ export enum EffectFilmLookColorMode {
 
 export type UpdateEffectCropObject = OmitReadonly<EffectCropObject>
 export type UpdateEffectLuminanceKeyObject = OmitReadonly<EffectLuminanceKeyObject> & {
-	sourceKey: SourceRef // Cannot be null in updates
+	sourceKey: AnySourceRef // Cannot be null in updates
 }
 export type UpdateEffectTransform2DObject = OmitReadonly<EffectTransform2DObject>
 export type UpdateEffectChromaKeyObject = OmitReadonly<EffectChromaKeyObject>
@@ -997,7 +997,7 @@ export type UpdateEffectToneCurveCorrectionObject = OmitReadonly<EffectToneCurve
 export type UpdateEffectMatrixCorrectionObject = OmitReadonly<EffectMatrixCorrectionObject>
 export type UpdateEffectTemperatureCorrectionObject = OmitReadonly<EffectTemperatureCorrectionObject>
 export type UpdateEffectLinearKeyObject = OmitReadonly<EffectLinearKeyObject> & {
-	keySource: SourceRef // Cannot be null in updates
+	keySource: AnySourceRef // Cannot be null in updates
 }
 export type UpdateEffectPositionObject = OmitReadonly<EffectPositionObject>
 export type UpdateEffectPCropObject = OmitReadonly<EffectPCropObject>
