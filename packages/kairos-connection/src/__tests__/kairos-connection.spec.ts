@@ -123,6 +123,11 @@ import {
 	refIpInput,
 	MediaClipRef,
 	MediaSoundRef,
+	refMediaClip,
+	refMediaStill,
+	refMediaRamRec,
+	refMediaImage,
+	refMediaSound,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -3499,7 +3504,17 @@ describe('KairosConnection', () => {
 		test('MEDIA commands', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
-					'list_ex:MEDIA.clips': ['list_ex:MEDIA.clips=', ''],
+					'list_ex:MEDIA.clips': [
+						'list_ex:MEDIA.clips=',
+						'MEDIA.clips.MyFile1&#46;mxf',
+						'MEDIA.clips.MyFile2&#46;mxf',
+						'MEDIA.clips.MyFolder',
+						'',
+					],
+					'list_ex:MEDIA.clips.MyFolder': ['list_ex:MEDIA.clips.MyFolder=', 'MEDIA.clips.MyFolder.MyFile3&#46;mxf', ''],
+					'list_ex:MEDIA.clips.MyFile1&#46;mxf': ['Error'],
+					'list_ex:MEDIA.clips.MyFile2&#46;mxf': ['Error'],
+					'list_ex:MEDIA.clips.MyFolder.MyFile3&#46;mxf': ['Error'],
 					'list_ex:MEDIA.stills': ['list_ex:MEDIA.stills=', ''],
 					'list_ex:MEDIA.ramrec': ['list_ex:MEDIA.ramrec=', ''],
 					'list_ex:MEDIA.images': ['list_ex:MEDIA.images=', ''],
@@ -3518,6 +3533,7 @@ describe('KairosConnection', () => {
 					'MEDIA.images.nonexistent.load_progress': ['Error'],
 					'MEDIA.sounds.nonexistent.name': ['Error'],
 				}[message]
+				// console.log('message', message)
 				if (reply) {
 					return reply
 				}
@@ -3525,16 +3541,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			expect(await connection.listMediaClips()).toStrictEqual([])
-			expect(await connection.getMediaClip('nonexistent')).toBeUndefined()
+			expect(await connection.listMediaClips(undefined, true)).toStrictEqual([
+				{ ...refMediaClip(['MyFile1.mxf']), name: 'MyFile1.mxf' },
+				{ ...refMediaClip(['MyFile2.mxf']), name: 'MyFile2.mxf' },
+				{ ...refMediaClip(['MyFolder', 'MyFile3.mxf']), name: 'MyFile3.mxf' },
+			])
+			expect(await connection.getMediaClip(refMediaClip(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaStills()).toStrictEqual([])
-			expect(await connection.getMediaStill('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaStill(refMediaStill(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaRamRec()).toStrictEqual([])
-			expect(await connection.getMediaRamRec('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaRamRec(refMediaRamRec(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaImage()).toStrictEqual([])
-			expect(await connection.getMediaImage('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaImage(refMediaImage(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaSounds()).toStrictEqual([])
-			expect(await connection.getMediaSound('nonexistent')).toBeUndefined()
+			expect(await connection.getMediaSound(refMediaSound(['nonexistent']))).toBeUndefined()
 		})
 
 		// TRANSLIB

@@ -166,6 +166,9 @@ import {
 	refRamRecorder,
 	MediaSoundRef,
 	MediaClipRef,
+	MediaStillRef,
+	MediaRamRecRef,
+	MediaImageRef,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -1173,25 +1176,15 @@ export class KairosConnection extends MinimalKairosConnection {
 	async listFxInputs(): Promise<(FxInputRef & { name: string })[]> {
 		const itemPaths = await this._listDeep(`FXINPUTS`, ['SourceEffectGroup'], true)
 
-		// Filter away folders:
-		const pathsSet = new Set<string>()
-		for (const p of itemPaths) {
-			const dirPath = p.slice(0, -1).join('.') // omit last, making it a dirPath
-			pathsSet.add(dirPath)
-		}
-		return itemPaths
-			.filter((p) => {
-				const myPath = p.join('.')
-				return !pathsSet.has(myPath) // If myPath exists in the set, it means I'm a folder
-			})
-			.map((itemPath) => {
-				return {
-					realm: 'fxInput',
-					name: itemPath.slice(1)[itemPath.length - 2],
-					fxInputPath: itemPath.slice(1), // remove the "FXINPUTS" part
-				}
-			})
+		return this._filterAwayFolders(itemPaths).map((itemPath) => {
+			return {
+				realm: 'fxInput',
+				name: itemPath.slice(1)[itemPath.length - 2],
+				fxInputPath: itemPath.slice(1), // remove the "FXINPUTS" part
+			}
+		})
 	}
+
 	async getFxInput(fxInputRef: FxInputRef): Promise<FxInputObject> {
 		return this.#getObject(refToPath(fxInputRef), FxInputObjectEncodingDefinition)
 	}
@@ -1449,47 +1442,96 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	sounds
 	// 		file_name.wav
 
-	async listMediaClips(): Promise<string[]> {
-		// TODO: deep search
-		return this.getList('MEDIA.clips')
+	async listMediaClips(
+		path: MediaClipRef = { realm: 'media-clip', clipPath: [] },
+		deep?: boolean
+	): Promise<(MediaClipRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-clip',
+				name: itemPath[itemPath.length - 1],
+				clipPath: itemPath.slice(2), // remove the "MEDIA.clips" part
+			}
+		})
 	}
-	async getMediaClip(name: string): Promise<MediaObject | undefined> {
-		return this._getMediaObject(`MEDIA.clips`, name)
+	async getMediaClip(ref: MediaClipRef): Promise<MediaObject | undefined> {
+		return this._getMediaObject(ref)
 	}
-	async listMediaStills(): Promise<string[]> {
-		// TODO: deep search
-		return this.getList('MEDIA.stills')
-	}
-	async getMediaStill(name: string): Promise<MediaObject | undefined> {
-		return this._getMediaObject(`MEDIA.stills`, name)
-	}
-	async listMediaRamRec(): Promise<string[]> {
-		// TODO: deep search
-		return this.getList('MEDIA.ramrec')
-	}
-	async getMediaRamRec(name: string): Promise<MediaObject | undefined> {
-		return this._getMediaObject(`MEDIA.ramrec`, name)
-	}
-	async listMediaImage(): Promise<string[]> {
-		// TODO: deep search
-		return this.getList('MEDIA.images')
-	}
-	async getMediaImage(name: string): Promise<MediaObject | undefined> {
-		return this._getMediaObject(`MEDIA.images`, name)
-	}
-	async listMediaSounds(): Promise<string[]> {
-		// TODO: deep search
-		return this.getList('MEDIA.sounds')
-	}
-	async getMediaSound(name: string): Promise<MediaObject | undefined> {
-		return this._getMediaObject(`MEDIA.sounds`, name)
+	async listMediaStills(
+		path: MediaStillRef = { realm: 'media-still', clipPath: [] },
+		deep?: boolean
+	): Promise<(MediaStillRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-still',
+				name: itemPath[itemPath.length - 1],
+				clipPath: itemPath.slice(2), // remove the "MEDIA.stills" part
+			}
+		})
 	}
 
-	private async _getMediaObject(basePath: string, mediaName: string): Promise<MediaObject | undefined> {
-		return this.#getObject(`${basePath}.${mediaName}`, MediaObjectEncodingDefinition).catch(async (error) => {
+	async getMediaStill(ref: MediaStillRef): Promise<MediaObject | undefined> {
+		return this._getMediaObject(ref)
+	}
+
+	async listMediaRamRec(
+		path: MediaRamRecRef = { realm: 'media-ramrec', clipPath: [] },
+		deep?: boolean
+	): Promise<(MediaRamRecRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-ramrec',
+				name: itemPath[itemPath.length - 1],
+				clipPath: itemPath.slice(2), // remove the "MEDIA.ramrec" part
+			}
+		})
+	}
+	async getMediaRamRec(ref: MediaRamRecRef): Promise<MediaObject | undefined> {
+		return this._getMediaObject(ref)
+	}
+	async listMediaImage(
+		path: MediaImageRef = { realm: 'media-image', clipPath: [] },
+		deep?: boolean
+	): Promise<(MediaImageRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-image',
+				name: itemPath[itemPath.length - 1],
+				clipPath: itemPath.slice(2), // remove the "MEDIA.image" part
+			}
+		})
+	}
+	async getMediaImage(ref: MediaImageRef): Promise<MediaObject | undefined> {
+		return this._getMediaObject(ref)
+	}
+	async listMediaSounds(
+		path: MediaSoundRef = { realm: 'media-sound', clipPath: [] },
+		deep?: boolean
+	): Promise<(MediaSoundRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-sound',
+				name: itemPath[itemPath.length - 1],
+				clipPath: itemPath.slice(2), // remove the "MEDIA.image" part
+			}
+		})
+	}
+
+	async getMediaSound(ref: MediaSoundRef): Promise<MediaObject | undefined> {
+		return this._getMediaObject(ref)
+	}
+
+	private async _getMediaObject(
+		ref: MediaClipRef | MediaStillRef | MediaRamRecRef | MediaImageRef | MediaSoundRef
+	): Promise<MediaObject | undefined> {
+		const path = refToPath(ref)
+
+		return this.#getObject(path, MediaObjectEncodingDefinition).catch(async (error) => {
 			if (error instanceof ResponseError) {
+				const dirPath = path.split('.').slice(0, -1).join('.') // remove the last part (the media name)
+				const mediaName = path.split('.').slice(-1)[0]
 				// Check if the clip exists, or there actually was an error:
-				const objectList = await this.getList(basePath)
+				const objectList = await this.getList(dirPath)
 				if (!objectList.includes(mediaName)) {
 					// The object does not exist, so we return undefined
 					return undefined
@@ -2278,6 +2320,25 @@ export class KairosConnection extends MinimalKairosConnection {
 		}
 
 		return list
+	}
+
+	/**
+	 * Filter away folders from a list of items
+	 */
+	private _filterAwayFolders(itemPaths: RefPath[]): RefPath[] {
+		// Filter away folders, ie items that have other items "under" them:
+
+		/** Set of ALL paths */
+		const pathsSet = new Set<string>()
+		for (const p of itemPaths) {
+			const dirPath = p.slice(0, -1).join('.') // omit last, making it a dirPath
+			pathsSet.add(dirPath)
+		}
+
+		return itemPaths.filter((p) => {
+			const myPath = p.join('.')
+			return !pathsSet.has(myPath) // If myPath exists in the set, it means I'm a folder
+		})
 	}
 	/**
 	 * Loads a clip onto a player, and sets the position
