@@ -18,6 +18,7 @@ export type AnyRef =
 	| RamRecorderRef
 	| ClipPlayerRef
 	| ImageStoreRef
+	| AudioPlayerRef
 	| SourceBaseRef
 	| SourceIntRef
 	| GfxSceneRef
@@ -26,18 +27,21 @@ export type AnyRef =
 	| MattesRef
 	| AuxRef
 	| AuxEffectRef
-	| InputRef
-	| FxInputRef
-	| MatteRef
 	| IpInputRef
 	| SDIInputRef
 	| NDIInputRef
 	| StreamInputRef
-	| IpOutputRef
-	| SDIOutputRef
-	| NDIOutputRef
-	| StreamOutputRef
-	| AudioOutputRef
+	| FxInputRef
+	| MatteRef
+	| IpInputSettingRef
+	| SDIInputSettingRef
+	| NDIInputSettingRef
+	| StreamInputSettingRef
+	| IpOutputSettingRef
+	| SDIOutputSettingRef
+	| NDIOutputSettingRef
+	| StreamOutputSettingRef
+	| AudioOutputSettingRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -45,8 +49,12 @@ export function isRef(ref: unknown): ref is AnyRef {
 	return true
 }
 
-/** Any refs that can be used as sources */
-export type SourceRef =
+// --------------------------- Sources -----------------------------
+
+/**
+ * Any refs that can be used as sources
+ * */
+export type AnySourceRef =
 	| RamRecorderRef
 	| ClipPlayerRef
 	| ImageStoreRef
@@ -55,9 +63,10 @@ export type SourceRef =
 	| SceneRef
 	| MattesRef
 	| AuxRef
-	| InputRef
+	| FxInputRef
+	| AnyInputRef
 
-export function isSourceRef(ref: AnyRef): ref is SourceRef {
+export function isAnySourceRef(ref: AnyRef): ref is AnySourceRef {
 	return (
 		ref.realm === 'ramRecorder' ||
 		ref.realm === 'clipPlayer' ||
@@ -67,7 +76,7 @@ export function isSourceRef(ref: AnyRef): ref is SourceRef {
 		ref.realm === 'scene' ||
 		ref.realm === 'mattes' ||
 		ref.realm === 'aux' ||
-		ref.realm === 'input'
+		isAnyInputRef(ref)
 	)
 }
 
@@ -139,11 +148,13 @@ export function refToPath(ref: AnyRef): string {
 		case 'source-int':
 			return ['INTSOURCES', ...ref.path.map(protocolEncodeStr)].join('.')
 		case 'ramRecorder':
-			return [...ref.path].join('.')
+			return `RR${ref.playerIndex}`
 		case 'clipPlayer':
-			return [...ref.path].join('.')
+			return `CP${ref.playerIndex}`
 		case 'imageStore':
-			return [...ref.path].join('.')
+			return `IS${ref.storeIndex}`
+		case 'audio-player':
+			return `AP${ref.playerIndex}`
 		case 'gfxScene':
 			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr)].join('.')
 		case 'gfxScene-item':
@@ -164,30 +175,36 @@ export function refToPath(ref: AnyRef): string {
 			if (ref.auxPathIsName) path.unshift('AUX')
 			return path.join('.')
 		}
-		case 'input':
-			return protocolEncodeStr(ref.path)
+		case 'ip-input':
+			return `IP${ref.ipInput}`
+		case 'sdi-input':
+			return `SDI${ref.sdiInput}`
+		case 'ndi-input':
+			return `NDI${ref.ndiInput}`
+		case 'stream-input':
+			return `STREAM${ref.streamInput}`
 		case 'fxInput':
 			return ['FXINPUTS', ...ref.fxInputPath.map(protocolEncodeStr)].join('.')
 		case 'matte':
 			return ['MATTES', ...ref.mattePath.map(protocolEncodeStr)].join('.')
-		case 'ip-input':
-			return `IN_IP${ref.ipInput}`
-		case 'sdi-input':
-			return `IN_SDI${ref.sdiInput}`
-		case 'ndi-input':
-			return `IN_NDI${ref.ndiInput}`
-		case 'stream-input':
-			return `IN_STREAM${ref.streamInput}`
-		case 'ip-output':
-			return `OUT_IP${ref.ipOutput}`
-		case 'sdi-output':
-			return `OUT_SDI${ref.sdiOutput}`
-		case 'ndi-output':
-			return `OUT_NDI${ref.ndiOutput}`
-		case 'stream-output':
-			return `OUT_STREAM${ref.streamOutput}`
-		case 'audio-output':
-			return `OUT_AUDIO${ref.audioOutput}`
+		case 'ip-input-setting':
+			return `IN_IP${ref.ipInputSetting}`
+		case 'sdi-input-setting':
+			return `IN_SDI${ref.sdiInputSetting}`
+		case 'ndi-input-setting':
+			return `IN_NDI${ref.ndiInputSetting}`
+		case 'stream-input-setting':
+			return `IN_STREAM${ref.streamInputSetting}`
+		case 'ip-output-setting':
+			return `OUT_IP${ref.ipOutputSetting}`
+		case 'sdi-output-setting':
+			return `OUT_SDI${ref.sdiOutputSetting}`
+		case 'ndi-output-setting':
+			return `OUT_NDI${ref.ndiOutputSetting}`
+		case 'stream-output-setting':
+			return `OUT_STREAM${ref.streamOutputSetting}`
+		case 'audio-output-setting':
+			return `OUT_AUDIO${ref.audioOutputSetting}`
 		default:
 			assertNever(ref)
 
@@ -256,52 +273,19 @@ export function pathRoRef(ref: string): AnyRef | string {
 		}
 	} else if (path[0] === 'MACROS') {
 		return refMacro(path.slice(1))
-	} else if (path[0].startsWith('RR')) {
-		if (path.length === 1) {
-			const path0 = path[0] as RamRecorderRef['path'][0]
-			if (
-				path0 === 'RR1' ||
-				path0 === 'RR2' ||
-				path0 === 'RR3' ||
-				path0 === 'RR4' ||
-				path0 === 'RR5' ||
-				path0 === 'RR6' ||
-				path0 === 'RR7' ||
-				path0 === 'RR8'
-			) {
-				return refRamRecorder([path0])
-			} else {
-				assertNever(path0)
-			}
-		}
-	} else if (path[0].startsWith('CP')) {
-		if (path.length === 1) {
-			const path0 = path[0] as ClipPlayerRef['path'][0]
-			if (path0 === 'CP1' || path0 === 'CP2') {
-				return refClipPlayer([path0])
-			} else {
-				assertNever(path0)
-			}
-		}
-	} else if (path[0].startsWith('IS')) {
-		if (path.length === 1) {
-			const path0 = path[0] as ImageStoreRef['path'][0]
-			if (
-				path0 === 'IS1' ||
-				path0 === 'IS2' ||
-				path0 === 'IS3' ||
-				path0 === 'IS4' ||
-				path0 === 'IS5' ||
-				path0 === 'IS6' ||
-				path0 === 'IS7' ||
-				path0 === 'IS8'
-			) {
-				return refImageStore([path0])
-			} else {
-				assertNever(path0)
-			}
-		}
-	} else if (path[0] === 'BLACK' || path[0] === 'WHITE') {
+	} else if (path[0].startsWith('RR') && path.length === 1) {
+		const index = parseInt(path[0].slice(2), 10)
+		if (!Number.isNaN(index) && index > 0) return refRamRecorder(index)
+	} else if (path[0].startsWith('CP') && path.length === 1) {
+		const index = parseInt(path[0].slice(2), 10)
+		if (!Number.isNaN(index) && index > 0) return refClipPlayer(index)
+	} else if (path[0].startsWith('IS') && path.length === 1) {
+		const index = parseInt(path[0].slice(2), 10)
+		if (!Number.isNaN(index) && index > 0) return refImageStore(index)
+	} else if (path[0].startsWith('AP') && path.length === 1) {
+		const index = parseInt(path[0].slice(2), 10)
+		if (!Number.isNaN(index) && index > 0) return refAudioPlayer(index)
+	} else if ((path[0] === 'BLACK' || path[0] === 'WHITE') && path.length === 1) {
 		return refSourceBase([path[0]])
 	} else if (path[0] === 'INTSOURCES') {
 		if (path.length === 2) {
@@ -332,16 +316,45 @@ export function pathRoRef(ref: string): AnyRef | string {
 		if (path.length === 1) {
 			return refAuxId(path[0])
 		}
-	} else if (
-		path[0].startsWith('IP') ||
-		path[0].startsWith('NDI') ||
-		path[0].startsWith('STREAM') ||
-		path[0].startsWith('SDI')
-	) {
-		if (path.length === 1) {
-			// Inputs are refered to without a prefix
-			return refInput(path[0])
-		}
+	} else if (path[0].startsWith('IP') && path.length === 1) {
+		const index = parseInt(path[0].slice(2), 10)
+		if (Number.isNaN(index) && index > 0) return refIpInput(index)
+	} else if (path[0].startsWith('NDI') && path.length === 1) {
+		const index = parseInt(path[0].slice(3), 10)
+		if (Number.isNaN(index) && index > 0) return refNDIInput(index)
+	} else if (path[0].startsWith('STREAM') && path.length === 1) {
+		const index = parseInt(path[0].slice(6), 10)
+		if (Number.isNaN(index) && index > 0) return refStreamInput(index)
+	} else if (path[0].startsWith('SDI') && path.length === 1) {
+		const index = parseInt(path[0].slice(3), 10)
+		if (Number.isNaN(index) && index > 0) return refSDIInput(index)
+	} else if (path[0].startsWith('IN_IP') && path.length === 1) {
+		const index = parseInt(path[0].slice(5), 10)
+		if (Number.isNaN(index) && index > 0) return refIpInputSetting(index)
+	} else if (path[0].startsWith('IN_SDI') && path.length === 1) {
+		const index = parseInt(path[0].slice(6), 10)
+		if (Number.isNaN(index) && index > 0) return refSDIInputSetting(index)
+	} else if (path[0].startsWith('IN_NDI') && path.length === 1) {
+		const index = parseInt(path[0].slice(6), 10)
+		if (Number.isNaN(index) && index > 0) return refNDIInputSetting(index)
+	} else if (path[0].startsWith('IN_STREAM') && path.length === 1) {
+		const index = parseInt(path[0].slice(9), 10)
+		if (Number.isNaN(index) && index > 0) return refStreamInputSetting(index)
+	} else if (path[0].startsWith('OUT_IP') && path.length === 1) {
+		const index = parseInt(path[0].slice(6), 10)
+		if (Number.isNaN(index) && index > 0) return refIpOutputSetting(index)
+	} else if (path[0].startsWith('OUT_SDI') && path.length === 1) {
+		const index = parseInt(path[0].slice(7), 10)
+		if (Number.isNaN(index) && index > 0) return refSDIOutputSetting(index)
+	} else if (path[0].startsWith('OUT_NDI') && path.length === 1) {
+		const index = parseInt(path[0].slice(7), 10)
+		if (Number.isNaN(index) && index > 0) return refNDIOutputSetting(index)
+	} else if (path[0].startsWith('OUT_STREAM') && path.length === 1) {
+		const index = parseInt(path[0].slice(10), 10)
+		if (Number.isNaN(index) && index > 0) return refStreamOutputSetting(index)
+	} else if (path[0].startsWith('OUT_AUDIO') && path.length === 1) {
+		const index = parseInt(path[0].slice(9), 10)
+		if (Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
 	}
 
 	// If nothing else matched, return the original string
@@ -519,27 +532,35 @@ export function refMacro(macroPath: RefPath): MacroRef {
 // ---------------------------- RAMRECORDERS ---------------------------
 export type RamRecorderRef = {
 	realm: 'ramRecorder'
-	path: ['RR1' | 'RR2' | 'RR3' | 'RR4' | 'RR5' | 'RR6' | 'RR7' | 'RR8']
+	playerIndex: number
 }
-export function refRamRecorder(path: RamRecorderRef['path']): RamRecorderRef {
-	return { realm: 'ramRecorder', path }
+export function refRamRecorder(playerIndex: number): RamRecorderRef {
+	return { realm: 'ramRecorder', playerIndex }
 }
 // ---------------------------- PLAYERS --------------------------------
 
 export type ClipPlayerRef = {
 	realm: 'clipPlayer'
-	path: ['CP1' | 'CP2']
+	playerIndex: number
 }
-export function refClipPlayer(path: ClipPlayerRef['path']): ClipPlayerRef {
-	return { realm: 'clipPlayer', path }
+export function refClipPlayer(playerIndex: number): ClipPlayerRef {
+	return { realm: 'clipPlayer', playerIndex }
 }
 // ---------------------------- IMAGESTORES ----------------------------
 export type ImageStoreRef = {
 	realm: 'imageStore'
-	path: ['IS1' | 'IS2' | 'IS3' | 'IS4' | 'IS5' | 'IS6' | 'IS7' | 'IS8']
+	storeIndex: number
 }
-export function refImageStore(path: ImageStoreRef['path']): ImageStoreRef {
-	return { realm: 'imageStore', path }
+export function refImageStore(storeIndex: number): ImageStoreRef {
+	return { realm: 'imageStore', storeIndex }
+}
+// ---------------------------- AUDIOPLAYERS ----------------------------
+export type AudioPlayerRef = {
+	realm: 'audio-player'
+	playerIndex: number
+}
+export function refAudioPlayer(playerIndex: number): AudioPlayerRef {
+	return { realm: 'audio-player', playerIndex }
 }
 
 // ---------------------------- GFXSCENES ------------------------------
@@ -594,6 +615,10 @@ export type MattesRef = {
 export function refMattes(path: MattesRef['path']): MattesRef {
 	return { realm: 'mattes', path }
 }
+// ------------------------------- AUX ------------------------------
+
+// Note: we don't specify which type of aux it is, because it looks like there can be
+// other aux types that are not documented (like "HDMI-AUX1")
 
 export type AuxRef = {
 	realm: 'aux'
@@ -606,27 +631,13 @@ export function refAuxId(path: AuxRef['path']): AuxRef {
 export function refAuxName(path: AuxRef['path']): AuxRef {
 	return { realm: 'aux', path, pathIsName: true }
 }
-
-export type InputRef = {
-	realm: 'input'
-	path: string
-	// pathIsName: boolean // true if the path is a name, false if it is an id
+// ------------------------------- INPUTS ------------------------------
+export type AnyInputRef = IpInputRef | SDIInputRef | NDIInputRef | StreamInputRef
+export function isAnyInputRef(ref: AnyRef): ref is AnyInputRef {
+	return (
+		ref.realm === 'ip-input' || ref.realm === 'sdi-input' || ref.realm === 'ndi-input' || ref.realm === 'stream-input'
+	)
 }
-export function refInput(path: InputRef['path']): InputRef {
-	return { realm: 'input', path }
-}
-
-export type AuxEffectRef = {
-	realm: 'aux-effect'
-	auxPath: string
-	auxPathIsName: boolean //
-	effectPath: RefPath
-}
-export function refAuxEffect(auxRef: AuxRef, effectPath: RefPath): AuxEffectRef {
-	return { realm: 'aux-effect', auxPath: auxRef.path, auxPathIsName: auxRef.pathIsName, effectPath }
-}
-
-// ------------------------------- INPUTSETTINGS ----------------------------------
 
 export type IpInputRef = {
 	realm: 'ip-input'
@@ -656,39 +667,80 @@ export function refNDIInput(ndiInput: number): NDIInputRef {
 export function refStreamInput(streamInput: number): StreamInputRef {
 	return { realm: 'stream-input', streamInput }
 }
+
+export type AuxEffectRef = {
+	realm: 'aux-effect'
+	auxPath: string
+	auxPathIsName: boolean //
+	effectPath: RefPath
+}
+export function refAuxEffect(auxRef: AuxRef, effectPath: RefPath): AuxEffectRef {
+	return { realm: 'aux-effect', auxPath: auxRef.path, auxPathIsName: auxRef.pathIsName, effectPath }
+}
+
+// ------------------------------- INPUTSETTINGS ----------------------------------
+
+export type IpInputSettingRef = {
+	realm: 'ip-input-setting'
+	ipInputSetting: number
+}
+export type SDIInputSettingRef = {
+	realm: 'sdi-input-setting'
+	sdiInputSetting: number
+}
+export type NDIInputSettingRef = {
+	realm: 'ndi-input-setting'
+	ndiInputSetting: number
+}
+export type StreamInputSettingRef = {
+	realm: 'stream-input-setting'
+	streamInputSetting: number
+}
+export function refIpInputSetting(ipInput: number): IpInputSettingRef {
+	return { realm: 'ip-input-setting', ipInputSetting: ipInput }
+}
+export function refSDIInputSetting(sdiInput: number): SDIInputSettingRef {
+	return { realm: 'sdi-input-setting', sdiInputSetting: sdiInput }
+}
+export function refNDIInputSetting(ndiInput: number): NDIInputSettingRef {
+	return { realm: 'ndi-input-setting', ndiInputSetting: ndiInput }
+}
+export function refStreamInputSetting(streamInput: number): StreamInputSettingRef {
+	return { realm: 'stream-input-setting', streamInputSetting: streamInput }
+}
 // ------------------------------- OUTPUTSETTINGS ----------------------------------
-export type IpOutputRef = {
-	realm: 'ip-output'
-	ipOutput: number
+export type IpOutputSettingRef = {
+	realm: 'ip-output-setting'
+	ipOutputSetting: number
 }
-export type SDIOutputRef = {
-	realm: 'sdi-output'
-	sdiOutput: number
+export type SDIOutputSettingRef = {
+	realm: 'sdi-output-setting'
+	sdiOutputSetting: number
 }
-export type NDIOutputRef = {
-	realm: 'ndi-output'
-	ndiOutput: number
+export type NDIOutputSettingRef = {
+	realm: 'ndi-output-setting'
+	ndiOutputSetting: number
 }
-export type StreamOutputRef = {
-	realm: 'stream-output'
-	streamOutput: number
+export type StreamOutputSettingRef = {
+	realm: 'stream-output-setting'
+	streamOutputSetting: number
 }
-export type AudioOutputRef = {
-	realm: 'audio-output'
-	audioOutput: number
+export type AudioOutputSettingRef = {
+	realm: 'audio-output-setting'
+	audioOutputSetting: number
 }
-export function refIpOutput(ipOutput: number): IpOutputRef {
-	return { realm: 'ip-output', ipOutput }
+export function refIpOutputSetting(ipOutput: number): IpOutputSettingRef {
+	return { realm: 'ip-output-setting', ipOutputSetting: ipOutput }
 }
-export function refSDIOutput(sdiOutput: number): SDIOutputRef {
-	return { realm: 'sdi-output', sdiOutput }
+export function refSDIOutputSetting(sdiOutput: number): SDIOutputSettingRef {
+	return { realm: 'sdi-output-setting', sdiOutputSetting: sdiOutput }
 }
-export function refNDIOutput(ndiOutput: number): NDIOutputRef {
-	return { realm: 'ndi-output', ndiOutput }
+export function refNDIOutputSetting(ndiOutput: number): NDIOutputSettingRef {
+	return { realm: 'ndi-output-setting', ndiOutputSetting: ndiOutput }
 }
-export function refStreamOutput(streamOutput: number): StreamOutputRef {
-	return { realm: 'stream-output', streamOutput }
+export function refStreamOutputSetting(streamOutput: number): StreamOutputSettingRef {
+	return { realm: 'stream-output-setting', streamOutputSetting: streamOutput }
 }
-export function refAudioOutput(audioOutput: number): AudioOutputRef {
-	return { realm: 'audio-output', audioOutput }
+export function refAudioOutputSetting(audioOutput: number): AudioOutputSettingRef {
+	return { realm: 'audio-output-setting', audioOutputSetting: audioOutput }
 }

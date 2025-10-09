@@ -6,9 +6,9 @@ import {
 	passThroughString,
 	parseInteger,
 	parseEnum,
-	parseMediaRamRecRefOptional,
+	parseRefOptional,
 } from '../lib/data-parsers.js'
-import { ClipPlayerTMS } from '../main.js'
+import { MediaRamRecRef, PlayerTMS } from '../main.js'
 
 export const RamRecPlayerObjectEncodingDefinition: ObjectEncodingDefinition<RamRecPlayerObject> = {
 	colorOverwrite: { protocolName: 'color_overwrite', parser: parseBoolean },
@@ -19,9 +19,9 @@ export const RamRecPlayerObjectEncodingDefinition: ObjectEncodingDefinition<RamR
 	repeat: { protocolName: 'repeat', parser: parseBoolean },
 	tms: {
 		protocolName: 'tms',
-		parser: (value) => parseEnum<ClipPlayerTMS>(value, ClipPlayerTMS),
+		parser: (value) => parseEnum<PlayerTMS>(value, PlayerTMS),
 	},
-	clip: { protocolName: 'clip', parser: parseMediaRamRecRefOptional },
+	clip: { protocolName: 'clip', parser: (v) => parseRefOptional<MediaRamRecRef>('media-ramrec', v) },
 	tally: { protocolName: 'tally', parser: parseInteger },
 	autoplay: { protocolName: 'autoplay', parser: parseBoolean },
 }

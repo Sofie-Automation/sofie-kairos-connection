@@ -1,5 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
-import { SceneTransitionRef, SourceRef } from '../lib/reference.js'
+import { SceneTransitionRef, AnySourceRef } from '../lib/reference.js'
 import { ColorRGB, DissolveMode, Resolution } from './lib-types.js'
 
 export interface SceneObject {
@@ -85,6 +85,7 @@ export interface SceneObject {
 	/** ObjectID  */
 	keyPreview: string
 }
+
 export interface SceneLayerObject {
 	/**
 	 * The Opacity setting allows the User to adjust the Transparency level (opposite of
@@ -102,9 +103,14 @@ export interface SceneLayerObject {
 	 * selected source is displayed. Clicking on the symbol (Pen) right next to the setting,
 	 * will open the according Input selection menu to select from all available listed
 	 * external as well as internal sources.
+	 *
+	 * Layers within Scenes can use any source, regardless if it
+	 * derives straight from an input or an internal source such as Still Store, RamRecorder,
+	 * Clip Player, Color Mattes, Black, White, Color-Bars, Color-Circle, Pre-processed Inputs
+	 * (Fx-Inputs) or any other meanwhile existing Scene
 	 * [ ObjectID ]
 	 */
-	sourceA: SourceRef
+	sourceA: AnySourceRef
 
 	/**
 	 * Source A/B source selection allows the User to select a source for the appropriate
@@ -115,13 +121,13 @@ export interface SceneLayerObject {
 	 * external as well as internal sources.
 	 * [ ObjectID, read_only ]
 	 */
-	readonly sourceB: SourceRef | string
+	readonly sourceB: AnySourceRef | null //  | string
 
 	/** [ ObjectID ] */
-	sourcePgm: SourceRef
+	sourcePgm: AnySourceRef
 	/**
 	 * [ ObjectID ] */
-	sourcePst: SourceRef
+	sourcePst: AnySourceRef
 	/**
 	 * [ enum, read_only, min: 0, max: 1 ]
 	 */
@@ -172,7 +178,7 @@ export interface SceneLayerObject {
 	 * sources can be added and/or subtracted from the designated source option list.
 	 * Also the order of appearance within the “Source Options” list can be edited.
 	 * [ list[ObjectID] ] */
-	sourceOptions: SourceRef[]
+	sourceOptions: AnySourceRef[]
 
 	/**
 	 * [ enum, read_only, min: 0, max: 3 ]

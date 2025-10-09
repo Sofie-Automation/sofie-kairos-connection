@@ -1,12 +1,6 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { AudioPlayerObject, ClipPlayerTMS } from 'kairos-lib'
-import {
-	parseBoolean,
-	passThroughString,
-	parseInteger,
-	parseEnum,
-	parseMediaSoundRefOptional,
-} from '../lib/data-parsers.js'
+import { AudioPlayerObject, MediaSoundRef, PlayerTMS } from 'kairos-lib'
+import { parseBoolean, passThroughString, parseInteger, parseEnum, parseRefOptional } from '../lib/data-parsers.js'
 
 export const AudioPlayerObjectEncodingDefinition: ObjectEncodingDefinition<AudioPlayerObject> = {
 	timecode: { protocolName: 'timecode', parser: passThroughString },
@@ -15,9 +9,9 @@ export const AudioPlayerObjectEncodingDefinition: ObjectEncodingDefinition<Audio
 	repeat: { protocolName: 'repeat', parser: parseBoolean },
 	tms: {
 		protocolName: 'tms',
-		parser: (value) => parseEnum<ClipPlayerTMS>(value, ClipPlayerTMS),
+		parser: (value) => parseEnum<PlayerTMS>(value, PlayerTMS),
 	},
-	clip: { protocolName: 'clip', parser: parseMediaSoundRefOptional },
+	clip: { protocolName: 'clip', parser: (v) => parseRefOptional<MediaSoundRef>('media-sound', v) },
 	tally: { protocolName: 'tally', parser: parseInteger },
 	autoplay: { protocolName: 'autoplay', parser: parseBoolean },
 }

@@ -1,11 +1,11 @@
 import { ImageStoreScaleMode, type ImageStoreObject, DissolveMode, Resolution } from 'kairos-lib'
 import type { ObjectEncodingDefinition } from './types.js'
-import { parseBoolean, parseColorRGB, parseEnum, parseInteger } from '../lib/data-parsers.js'
+import { parseBoolean, parseColorRGB, parseEnum, parseImageStoreClip, parseInteger } from '../lib/data-parsers.js'
 
 export const ImageStoreObjectEncodingDefinition: ObjectEncodingDefinition<ImageStoreObject> = {
 	colorOverwrite: { protocolName: 'color_overwrite', parser: parseBoolean },
 	color: { protocolName: 'color', parser: parseColorRGB },
-	clip: { protocolName: 'clip', parser: (value) => value },
+	clip: { protocolName: 'clip', parser: parseImageStoreClip },
 	tally: { protocolName: 'tally', parser: parseInteger },
 	dissolveEnabled: { protocolName: 'dissolve_enabled', parser: parseBoolean },
 	dissolveTime: { protocolName: 'dissolve_time', parser: parseInteger },

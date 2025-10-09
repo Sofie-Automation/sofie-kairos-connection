@@ -1,4 +1,4 @@
-import type { SourceRef } from '../lib/reference.js'
+import type { AnySourceRef } from '../lib/reference.js'
 import type { OmitReadonly } from '../lib/omit-readonly.js'
 
 export interface AuxObject {
@@ -8,9 +8,9 @@ export interface AuxObject {
 
 	readonly available: boolean
 
-	sourceOptions: SourceRef[]
+	sourceOptions: AnySourceRef[]
 
-	source: SourceRef
+	source: AnySourceRef
 
 	/*
 	 * [ integer ]
@@ -23,9 +23,9 @@ export interface AudioAuxObject {
 
 	readonly available: boolean
 
-	sourceOptions: SourceRef[]
+	sourceOptions: AnySourceRef[]
 
-	source: SourceRef
+	source: AnySourceRef
 }
 
 // ------------------------- enums -----------------------------

@@ -7,7 +7,13 @@ import {
 	EffectLinearKeyObject,
 	EffectLinearKeyBlendMode,
 } from 'kairos-lib'
-import { parseBoolean, parseEnum, parseFloatValue, parseInteger, parseSourceRefOptional } from '../lib/data-parsers.js'
+import {
+	parseBoolean,
+	parseEnum,
+	parseFloatValue,
+	parseInteger,
+	parseAnySourceRefOptional,
+} from '../lib/data-parsers.js'
 
 export const EffectLuminanceKeyObjectEncodingDefinition: ObjectEncodingDefinition<EffectLuminanceKeyObject> = {
 	enabled: { protocolName: 'enabled', parser: parseBoolean },
@@ -20,7 +26,7 @@ export const EffectLuminanceKeyObjectEncodingDefinition: ObjectEncodingDefinitio
 		protocolName: 'blend_mode',
 		parser: (value) => parseEnum<EffectLuminanceKeyBlendMode>(value, EffectLuminanceKeyBlendMode),
 	},
-	sourceKey: { protocolName: 'sourceKey', parser: parseSourceRefOptional },
+	sourceKey: { protocolName: 'sourceKey', parser: parseAnySourceRefOptional },
 }
 
 export const EffectChromaKeyObjectEncodingDefinition: ObjectEncodingDefinition<EffectChromaKeyObject> = {
@@ -51,7 +57,7 @@ export const EffectChromaKeyObjectEncodingDefinition: ObjectEncodingDefinition<E
 export const EffectLinearKeyObjectEncodingDefinition: ObjectEncodingDefinition<EffectLinearKeyObject> = {
 	enabled: { protocolName: 'enabled', parser: parseBoolean },
 	invert: { protocolName: 'invert', parser: parseBoolean },
-	keySource: { protocolName: 'key_source', parser: parseSourceRefOptional },
+	keySource: { protocolName: 'key_source', parser: parseAnySourceRefOptional },
 	blendMode: {
 		protocolName: 'blend_mode',
 		parser: (value) => parseEnum<EffectLinearKeyBlendMode>(value, EffectLinearKeyBlendMode),

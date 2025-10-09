@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { parseBoolean, parseCommaSeparated, parseEnum, parseInteger, parseSourceRef } from '../lib/data-parsers.js'
+import { parseBoolean, parseCommaSeparated, parseEnum, parseInteger, parseAnySourceRef } from '../lib/data-parsers.js'
 import { AudioAuxObject, AuxObject, AuxRecordingStatus } from 'kairos-lib'
 
 export const AuxObjectEncodingDefinition: ObjectEncodingDefinition<AuxObject> = {
@@ -17,11 +17,11 @@ export const AuxObjectEncodingDefinition: ObjectEncodingDefinition<AuxObject> = 
 	},
 	sourceOptions: {
 		protocolName: 'sourceOptions',
-		parser: (val) => parseCommaSeparated(val).map(parseSourceRef),
+		parser: (val) => parseCommaSeparated(val).map(parseAnySourceRef),
 	},
 	source: {
 		protocolName: 'source',
-		parser: parseSourceRef,
+		parser: parseAnySourceRef,
 	},
 	tallyRoot: {
 		protocolName: 'tally_root',
@@ -40,10 +40,10 @@ export const AudioAuxObjectEncodingDefinition: ObjectEncodingDefinition<AudioAux
 	},
 	sourceOptions: {
 		protocolName: 'sourceOptions',
-		parser: (val) => parseCommaSeparated(val).map(parseSourceRef),
+		parser: (val) => parseCommaSeparated(val).map(parseAnySourceRef),
 	},
 	source: {
 		protocolName: 'source',
-		parser: parseSourceRef,
+		parser: parseAnySourceRef,
 	},
 }

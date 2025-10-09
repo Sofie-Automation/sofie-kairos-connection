@@ -1,7 +1,10 @@
 import type { OmitReadonly } from '../lib/omit-readonly.js'
+import { AnyInputRef } from '../lib/reference.js'
 import type { ColorRGB } from './lib-types.js'
 
 export interface InputObject {
+	type: AnyInputRef['realm']
+
 	name: string
 
 	/**

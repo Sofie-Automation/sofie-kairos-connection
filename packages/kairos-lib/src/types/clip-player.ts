@@ -14,7 +14,7 @@ export interface ClipPlayerObject {
 	/** int */
 	position: number
 	repeat: boolean
-	tms: ClipPlayerTMS
+	tms: PlayerTMS
 
 	/** [ ObjectID ] */
 	clip: MediaClipRef | null
@@ -25,7 +25,7 @@ export interface ClipPlayerObject {
 	autoplay: boolean
 }
 
-export enum ClipPlayerTMS {
+export enum PlayerTMS {
 	Pause = 'Pause',
 	Reverse = 'Reverse',
 	Rewind = 'Rewind',

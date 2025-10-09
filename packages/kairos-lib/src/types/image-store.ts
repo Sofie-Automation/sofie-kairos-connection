@@ -1,4 +1,5 @@
 import type { OmitReadonly } from '../lib/omit-readonly.js'
+import { MediaImageRef, MediaStillRef } from '../main.js'
 import type { ColorRGB, DissolveMode, Resolution } from './lib-types.js'
 
 export interface ImageStoreObject {
@@ -10,7 +11,7 @@ export interface ImageStoreObject {
 	color: ColorRGB
 
 	/** [ ObjectID ] */
-	clip: string
+	clip: MediaStillRef | MediaImageRef | null
 
 	/** int */
 	readonly tally: number

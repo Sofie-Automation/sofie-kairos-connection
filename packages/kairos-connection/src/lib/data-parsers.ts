@@ -3,17 +3,50 @@ import {
 	Pos2Df,
 	Pos2D,
 	ColorRGB,
-	GfxSceneRef,
 	isRef,
-	isSourceRef,
-	MediaClipRef,
-	MediaRamRecRef,
-	MediaSoundRef,
+	isAnySourceRef,
 	pathRoRef,
 	refToPath,
-	SceneTransitionRef,
-	SourceRef,
+	AnySourceRef,
+	AnyRef,
+	MediaStillRef,
+	MediaImageRef,
 } from 'kairos-lib'
+
+export function stringifyRef<Ref extends AnyRef>(
+	realm: Ref['realm'],
+	ref: (AnyRef & { realm: Ref['realm'] }) | null
+): string
+export function stringifyRef<Ref extends AnyRef>(
+	realm: Ref['realm'],
+	ref: (AnyRef & { realm: Ref['realm'] }) | string | null | undefined
+): string | undefined
+export function stringifyRef<Ref extends AnyRef>(
+	realm: Ref['realm'],
+	ref: (AnyRef & { realm: Ref['realm'] }) | string | null | undefined
+): string | undefined {
+	if (ref === undefined) return undefined
+	if (ref === null) return ''
+	if (typeof ref === 'string') return ref
+
+	if (realm !== ref.realm) throw new Error(`Unable to stringify ref, is a "${ref.realm}" (expected ${realm})`)
+
+	return refToPath(ref)
+}
+
+export function parseRefOptional<Ref extends AnyRef>(realm: Ref['realm'], value: string): Ref | null {
+	if (value === '<unknown>') return null as any // This is a special case for undefined sources
+	return parseRef(realm, value)
+}
+export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string): Ref {
+	const ref = pathRoRef(value)
+
+	if (!isRef(ref)) throw new Error(`Unable to parse string "${value}", unknown format`)
+	if (ref.realm !== realm)
+		throw new Error(`Unable to parse string "${value}", is a "${ref.realm}" (expected "${realm}")`)
+
+	return ref as Ref
+}
 
 export function passThroughString(value: string): string
 export function passThroughString(value: string | undefined): string | undefined
@@ -170,29 +203,29 @@ export function stringifyColorRGB(color: ColorRGB | undefined): string | undefin
 	return `rgb(${color.red},${color.green},${color.blue})`
 }
 
-export function parseSourceRefOptional(value: string): SourceRef | null {
+export function parseAnySourceRefOptional(value: string): AnySourceRef | null {
 	if (value === '<unknown>') return null as any // This is a special case for undefined sources
-	return parseSourceRef(value)
+	return parseAnySourceRef(value)
 }
-export function parseSourceRef(value: string): SourceRef {
+export function parseAnySourceRef(value: string): AnySourceRef {
 	const ref = pathRoRef(value)
 
-	if (!isRef(ref)) throw new Error(`Unable to parse SourceRef from string: "${value}"`)
-	if (!isSourceRef(ref)) throw new Error(`Unable to parse SourceRef, is a "${ref.realm}" (value: "${value}")`)
+	if (!isRef(ref)) throw new Error(`Unable to parse AnySourceRef from string: "${value}"`)
+	if (!isAnySourceRef(ref)) throw new Error(`Unable to parse AnySourceRef, is a "${ref.realm}" (value: "${value}")`)
 
 	return ref
 }
 
-export function stringifySourceRef(ref: undefined): undefined
-export function stringifySourceRef(ref: null): '<unknown>'
-export function stringifySourceRef(ref: string): string
-export function stringifySourceRef(ref: SourceRef): string
-export function stringifySourceRef(ref: SourceRef | string): string
-export function stringifySourceRef(ref: SourceRef | null | undefined): string | undefined
-export function stringifySourceRef(ref: SourceRef | string | undefined): string | undefined
-export function stringifySourceRef(ref: SourceRef | string | undefined): string | undefined
-export function stringifySourceRef(ref: SourceRef | string | null | undefined): string | undefined
-export function stringifySourceRef(ref: SourceRef | string | null | undefined): string | undefined {
+export function stringifyAnySourceRef(ref: undefined): undefined
+export function stringifyAnySourceRef(ref: null): '<unknown>'
+export function stringifyAnySourceRef(ref: string): string
+export function stringifyAnySourceRef(ref: AnySourceRef): string
+export function stringifyAnySourceRef(ref: AnySourceRef | string): string
+export function stringifyAnySourceRef(ref: AnySourceRef | null | undefined): string | undefined
+export function stringifyAnySourceRef(ref: AnySourceRef | string | undefined): string | undefined
+export function stringifyAnySourceRef(ref: AnySourceRef | string | undefined): string | undefined
+export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefined): string | undefined
+export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefined): string | undefined {
 	if (ref === undefined) return undefined
 	if (ref === null) return '<unknown>'
 	if (typeof ref === 'string') return ref
@@ -200,122 +233,23 @@ export function stringifySourceRef(ref: SourceRef | string | null | undefined): 
 	return refToPath(ref)
 }
 
-export function parseMediaClipRefOptional(value: string): MediaClipRef | null {
+export function parseImageStoreClip(value: string): MediaStillRef | MediaImageRef | null {
 	if (value === '<unknown>') return null as any // This is a special case for undefined sources
-	return parseMediaClipRef(value)
-}
-export function parseMediaClipRef(value: string): MediaClipRef {
+
 	const ref = pathRoRef(value)
 
-	if (!isRef(ref)) throw new Error(`Unable to parse MediaClipRef from string: "${value}"`)
-	if (ref.realm !== 'media-clip')
-		throw new Error(`Unable to parse MediaClipRef, is a "${ref.realm}" (value: "${value}")`)
+	if (!isRef(ref)) throw new Error(`Unable to parse string: "${value}"`)
+	if (ref.realm !== 'media-still' && ref.realm !== 'media-image') {
+		throw new Error(`Unable to parse string: "${value}", is a "${ref.realm}" expected "media-still" or "media-image"`)
+	}
 
 	return ref
 }
-export function stringifyMediaClipRef(ref: MediaClipRef): string
-export function stringifyMediaClipRef(ref: null): string
-export function stringifyMediaClipRef(ref: MediaClipRef | null): string
-export function stringifyMediaClipRef(ref: MediaClipRef | string | null | undefined): string | undefined
-export function stringifyMediaClipRef(ref: MediaClipRef | string | null | undefined): string | undefined {
+export function stringifyImageStoreClip(ref: MediaStillRef | MediaImageRef | null | undefined): string | undefined {
 	if (ref === undefined) return undefined
 	if (ref === null) return ''
-	if (typeof ref === 'string') return ref
 
-	if (ref.realm !== 'media-clip') throw new Error(`Unable to stringify MediaClipRef, is a "${ref.realm}"`)
-
-	return refToPath(ref)
-}
-export function parseMediaRamRecRefOptional(value: string): MediaRamRecRef | null {
-	if (value === '<unknown>') return null as any // This is a special case for undefined sources
-	return parseMediaRamRecRef(value)
-}
-export function parseMediaRamRecRef(value: string): MediaRamRecRef {
-	const ref = pathRoRef(value)
-
-	if (!isRef(ref)) throw new Error(`Unable to parse MediaRamRecRef from string: "${value}"`)
-	if (ref.realm !== 'media-ramrec')
-		throw new Error(`Unable to parse MediaRamRecRef, is a "${ref.realm}" (value: "${value}")`)
-
-	return ref
-}
-export function stringifyMediaRamRecRef(ref: MediaRamRecRef | null): string
-export function stringifyMediaRamRecRef(ref: MediaRamRecRef | string | null | undefined): string | undefined
-export function stringifyMediaRamRecRef(ref: MediaRamRecRef | string | null | undefined): string | undefined {
-	if (ref === undefined) return undefined
-	if (ref === null) return ''
-	if (typeof ref === 'string') return ref
-
-	if (ref.realm !== 'media-ramrec') throw new Error(`Unable to stringify MediaRamRecRef, is a "${ref.realm}"`)
-
-	return refToPath(ref)
-}
-
-export function parseMediaSoundRefOptional(value: string): MediaSoundRef | null {
-	if (value === '<unknown>') return null as any // This is a special case for undefined sources
-	return parseMediaSoundRef(value)
-}
-export function parseMediaSoundRef(value: string): MediaSoundRef {
-	const ref = pathRoRef(value)
-
-	if (!isRef(ref)) throw new Error(`Unable to parse MediaSoundRef from string: "${value}"`)
-	if (ref.realm !== 'media-sound')
-		throw new Error(`Unable to parse MediaSoundRef, is a "${ref.realm}" (value: "${value}")`)
-
-	return ref
-}
-export function stringifyMediaSoundRef(ref: MediaSoundRef | null): string
-export function stringifyMediaSoundRef(ref: MediaSoundRef | string | null | undefined): string | undefined
-export function stringifyMediaSoundRef(ref: MediaSoundRef | string | null | undefined): string | undefined {
-	if (ref === undefined) return undefined
-	if (ref === null) return ''
-	if (typeof ref === 'string') return ref
-
-	if (ref.realm !== 'media-sound') throw new Error(`Unable to stringify MediaSoundRef, is a "${ref.realm}"`)
-
-	return refToPath(ref)
-}
-
-export function parseSceneTransitionRef(value: string): SceneTransitionRef {
-	const ref = pathRoRef(value)
-
-	if (!isRef(ref)) throw new Error(`Unable to parse SourceRef from string: "${value}"`)
-	if (ref.realm !== 'scene-transition')
-		throw new Error(`Unable to parse SceneTransitionRef, is a "${ref.realm}" (value: "${value}")`)
-
-	return ref
-}
-
-export function stringifySceneTransitionRef(ref: undefined): undefined
-export function stringifySceneTransitionRef(ref: string): string
-export function stringifySceneTransitionRef(ref: SceneTransitionRef): string
-export function stringifySceneTransitionRef(ref: SceneTransitionRef | string): string
-export function stringifySceneTransitionRef(ref: SceneTransitionRef | string | undefined): string | undefined
-export function stringifySceneTransitionRef(ref: SceneTransitionRef | string | undefined): string | undefined {
-	if (ref === undefined) return undefined
-	if (typeof ref === 'string') return ref
-
-	return refToPath(ref)
-}
-
-export function parseGfxSceneRef(value: string): GfxSceneRef {
-	const ref = pathRoRef(value)
-
-	if (!isRef(ref)) throw new Error(`Unable to parse GfxSceneRef from string: "${value}"`)
-	if (ref.realm !== 'gfxScene') throw new Error(`Unable to parse GfxSceneRef, is a "${ref.realm}" (value: "${value}")`)
-
-	return ref
-}
-
-export function stringifyGfxSceneRef(ref: undefined): undefined
-export function stringifyGfxSceneRef(ref: string): string
-export function stringifyGfxSceneRef(ref: GfxSceneRef): string
-export function stringifyGfxSceneRef(ref: GfxSceneRef | string): string
-export function stringifyGfxSceneRef(ref: GfxSceneRef | string | undefined): string | undefined
-export function stringifyGfxSceneRef(ref: GfxSceneRef | string | null | undefined): string | undefined {
-	if (ref === undefined) return undefined
-	if (ref === null) return '<unknown>'
-	if (typeof ref === 'string') return ref
+	// Note: we don't really know how to use a MediaImage, we assume it's valid to use it like this.
 
 	return refToPath(ref)
 }

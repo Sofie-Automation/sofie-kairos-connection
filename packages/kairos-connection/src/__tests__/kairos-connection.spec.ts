@@ -1,7 +1,7 @@
 import { expect, test, describe, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest'
 import {
 	ClipPlayerObject,
-	ClipPlayerTMS,
+	PlayerTMS,
 	KairosConnection,
 	MacroObject,
 	MacroStatus,
@@ -93,7 +93,6 @@ import {
 	refFxInput,
 	FxInputObject,
 	ScaleMode,
-	refInput,
 	IpInputSettingObject,
 	SDIInputSettingObject,
 	NDIInputSettingObject,
@@ -121,8 +120,11 @@ import {
 	refAudioOutputSetting,
 	AudioOutputSettingObject,
 	AudioOutputSettingRef,
+	refIpInput,
+	MediaClipRef,
+	MediaSoundRef,
 } from 'kairos-lib'
-import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
+import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
 // Mock the MinimalKairosConnection class
 vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
@@ -1397,24 +1399,24 @@ describe('KairosConnection', () => {
 					sourceCleanMask: 0,
 					sourceOptions: [
 						refSourceBase(['BLACK']),
-						refClipPlayer(['CP1']),
-						refClipPlayer(['CP2']),
-						refRamRecorder(['RR1']),
-						refRamRecorder(['RR2']),
-						refRamRecorder(['RR3']),
-						refRamRecorder(['RR4']),
-						refRamRecorder(['RR5']),
-						refRamRecorder(['RR6']),
-						refRamRecorder(['RR7']),
-						refRamRecorder(['RR8']),
-						refImageStore(['IS1']),
-						refImageStore(['IS2']),
-						refImageStore(['IS3']),
-						refImageStore(['IS4']),
-						refImageStore(['IS5']),
-						refImageStore(['IS6']),
-						refImageStore(['IS7']),
-						refImageStore(['IS8']),
+						refClipPlayer(1),
+						refClipPlayer(2),
+						refRamRecorder(1),
+						refRamRecorder(2),
+						refRamRecorder(3),
+						refRamRecorder(4),
+						refRamRecorder(5),
+						refRamRecorder(6),
+						refRamRecorder(7),
+						refRamRecorder(8),
+						refImageStore(1),
+						refImageStore(2),
+						refImageStore(3),
+						refImageStore(4),
+						refImageStore(5),
+						refImageStore(6),
+						refImageStore(7),
+						refImageStore(8),
 						refScene(['Templates', '2Box']),
 						refScene(['Templates', '4Box']),
 						refScene(['Templates', 'OTS Left']),
@@ -1449,24 +1451,24 @@ describe('KairosConnection', () => {
 				sourceCleanMask: 0,
 				sourceOptions: [
 					refSourceBase(['BLACK']),
-					refClipPlayer(['CP1']),
-					refClipPlayer(['CP2']),
-					refRamRecorder(['RR1']),
-					refRamRecorder(['RR2']),
-					refRamRecorder(['RR3']),
-					refRamRecorder(['RR4']),
-					refRamRecorder(['RR5']),
-					refRamRecorder(['RR6']),
-					refRamRecorder(['RR7']),
-					refRamRecorder(['RR8']),
-					refImageStore(['IS1']),
-					refImageStore(['IS2']),
-					refImageStore(['IS3']),
-					refImageStore(['IS4']),
-					refImageStore(['IS5']),
-					refImageStore(['IS6']),
-					refImageStore(['IS7']),
-					refImageStore(['IS8']),
+					refClipPlayer(1),
+					refClipPlayer(2),
+					refRamRecorder(1),
+					refRamRecorder(2),
+					refRamRecorder(3),
+					refRamRecorder(4),
+					refRamRecorder(5),
+					refRamRecorder(6),
+					refRamRecorder(7),
+					refRamRecorder(8),
+					refImageStore(1),
+					refImageStore(2),
+					refImageStore(3),
+					refImageStore(4),
+					refImageStore(5),
+					refImageStore(6),
+					refImageStore(7),
+					refImageStore(8),
 					refScene(['Templates', '2Box']),
 					refScene(['Templates', '4Box']),
 					refScene(['Templates', 'OTS Left']),
@@ -3360,7 +3362,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getRamRecorder(1)).toStrictEqual({
 				autoplay: false,
-				clip: parseMediaClipRefOptional('<unknown>'),
+				clip: parseRefOptional<MediaClipRef>('media-clip', '<unknown>'),
 				color: {
 					red: 255,
 					green: 255,
@@ -3372,7 +3374,7 @@ describe('KairosConnection', () => {
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: ClipPlayerTMS.Pause,
+				tms: PlayerTMS.Pause,
 			} satisfies ClipPlayerObject)
 
 			expect(await connection.ramRecorderBegin(1)).toBeUndefined()
@@ -3451,7 +3453,7 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getClipPlayer(1)).toStrictEqual({
 				autoplay: false,
-				clip: parseMediaClipRefOptional('<unknown>'),
+				clip: parseRefOptional<MediaClipRef>('media-clip', '<unknown>'),
 				color: {
 					red: 255,
 					green: 255,
@@ -3463,7 +3465,7 @@ describe('KairosConnection', () => {
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: ClipPlayerTMS.Stop,
+				tms: PlayerTMS.Stop,
 			} satisfies ClipPlayerObject)
 
 			expect(await connection.clipPlayerBegin(1)).toBeUndefined()
@@ -4630,7 +4632,8 @@ describe('KairosConnection', () => {
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
-			expect(await connection.getInput(refInput('IP1'))).toStrictEqual({
+			expect(await connection.getInput(refIpInput(1))).toStrictEqual({
+				type: 'ip-input',
 				name: 'IP1',
 				tally: 0,
 				available: true,
@@ -4643,7 +4646,7 @@ describe('KairosConnection', () => {
 				recordingStatus: InputRecordingStatus.Idle,
 			} satisfies InputObject)
 			expect(
-				await connection.updateInput(refInput('IP1'), {
+				await connection.updateInput(refIpInput(1), {
 					color: {
 						red: 0,
 						green: 0,
@@ -4651,10 +4654,10 @@ describe('KairosConnection', () => {
 					},
 				})
 			).toBeUndefined()
-			expect(await connection.grabInput(refInput('IP1'))).toBeUndefined()
-			expect(await connection.recordInput(refInput('IP1'))).toBeUndefined()
-			expect(await connection.recordLoopInput(refInput('IP1'))).toBeUndefined()
-			expect(await connection.stopRecordInput(refInput('IP1'))).toBeUndefined()
+			expect(await connection.grabInput(refIpInput(1))).toBeUndefined()
+			expect(await connection.recordInput(refIpInput(1))).toBeUndefined()
+			expect(await connection.recordLoopInput(refIpInput(1))).toBeUndefined()
+			expect(await connection.stopRecordInput(refIpInput(1))).toBeUndefined()
 		})
 
 		// TRIGGERS
@@ -4816,13 +4819,13 @@ describe('KairosConnection', () => {
 			).toBeUndefined()
 			expect(await connection.getAudioPlayer(1)).toStrictEqual({
 				autoplay: false,
-				clip: parseMediaSoundRefOptional('<unknown>'),
+				clip: parseRefOptional<MediaSoundRef>('media-sound', '<unknown>'),
 				position: 0,
 				remainingTime: '00:00:00:00',
 				repeat: false,
 				tally: 0,
 				timecode: '00:00:00:00',
-				tms: ClipPlayerTMS.Stop,
+				tms: PlayerTMS.Stop,
 			} satisfies AudioPlayerObject)
 
 			expect(await connection.audioPlayerBegin(1)).toBeUndefined()
@@ -4972,7 +4975,7 @@ describe('KairosConnection', () => {
 					green: 255,
 					blue: 255,
 				},
-				clip: '<unknown>',
+				clip: parseImageStoreClip('<unknown>'),
 				tally: 0,
 				dissolveEnabled: false,
 				dissolveTime: 50,
@@ -5057,7 +5060,7 @@ describe('KairosConnection', () => {
 				sourcePst: refSourceBase(['WHITE']),
 				activeBus: SceneLayerActiveBus.ABus,
 				pgmPstMode: SceneLayerPgmPstMode.Swap,
-				sourceOptions: [refSourceBase(['BLACK']), refClipPlayer(['CP1']), refClipPlayer(['CP2'])],
+				sourceOptions: [refSourceBase(['BLACK']), refClipPlayer(1), refClipPlayer(2)],
 				state: SceneLayerState.On,
 				mode: SceneLayerMode.FitScene,
 				fxEnabled: true,

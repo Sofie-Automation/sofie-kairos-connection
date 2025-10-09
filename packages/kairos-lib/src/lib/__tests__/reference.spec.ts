@@ -226,36 +226,36 @@ describe('ref conversions', () => {
 		test('RamRecorderRef', () => {
 			expect(pathRoRef('RR1')).toStrictEqual({
 				realm: 'ramRecorder',
-				path: ['RR1'],
+				playerIndex: 1,
 			} satisfies RamRecorderRef)
 
 			expect(pathRoRef('RR8')).toStrictEqual({
 				realm: 'ramRecorder',
-				path: ['RR8'],
+				playerIndex: 8,
 			} satisfies RamRecorderRef)
 		})
 
 		test('ClipPlayerRef', () => {
 			expect(pathRoRef('CP1')).toStrictEqual({
 				realm: 'clipPlayer',
-				path: ['CP1'],
+				playerIndex: 1,
 			} satisfies ClipPlayerRef)
 
 			expect(pathRoRef('CP2')).toStrictEqual({
 				realm: 'clipPlayer',
-				path: ['CP2'],
+				playerIndex: 2,
 			} satisfies ClipPlayerRef)
 		})
 
 		test('ImageStoreRef', () => {
 			expect(pathRoRef('IS1')).toStrictEqual({
 				realm: 'imageStore',
-				path: ['IS1'],
+				storeIndex: 1,
 			} satisfies ImageStoreRef)
 
 			expect(pathRoRef('IS8')).toStrictEqual({
 				realm: 'imageStore',
-				path: ['IS8'],
+				storeIndex: 8,
 			} satisfies ImageStoreRef)
 		})
 
@@ -318,9 +318,10 @@ describe('ref conversions', () => {
 		test('Unknown paths return original string', () => {
 			expect(pathRoRef('UNKNOWN.path')).toBe('UNKNOWN.path')
 			expect(pathRoRef('MEDIA.unknown.file')).toBe('MEDIA.unknown.file')
-			expect(pathRoRef('RR9')).toBe('RR9') // Invalid RAM recorder
-			expect(pathRoRef('CP3')).toBe('CP3') // Invalid clip player
-			expect(pathRoRef('IS9')).toBe('IS9') // Invalid image store
+			expect(pathRoRef('RRx')).toBe('RRx') // Invalid RAM recorder
+			expect(pathRoRef('RR0')).toBe('RR0') // Invalid RAM recorder
+			expect(pathRoRef('CPx')).toBe('CPx') // Invalid clip player
+			expect(pathRoRef('ISx')).toBe('ISx') // Invalid image store
 		})
 	})
 })
