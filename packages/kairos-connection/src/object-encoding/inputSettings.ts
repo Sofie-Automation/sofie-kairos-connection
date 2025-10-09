@@ -1,8 +1,13 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { IpInputObject, NDIInputObject, SDIInputObject, StreamInputObject } from 'kairos-lib'
+import {
+	IpInputSettingObject,
+	NDIInputSettingObject,
+	SDIInputSettingObject,
+	StreamInputSettingObject,
+} from 'kairos-lib'
 import { parseBoolean, parseInteger, parseString } from '../lib/data-parsers.js'
 
-export const IpInputEncodingDefinition: ObjectEncodingDefinition<IpInputObject> = {
+export const IpInputSettingEncodingDefinition: ObjectEncodingDefinition<IpInputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	tally: { protocolName: 'tally', parser: parseInteger },
@@ -10,18 +15,18 @@ export const IpInputEncodingDefinition: ObjectEncodingDefinition<IpInputObject> 
 	onDemand: { protocolName: 'on_demand', parser: parseBoolean },
 	requested: { protocolName: 'requested', parser: parseBoolean },
 }
-export const SDIInputEncodingDefinition: ObjectEncodingDefinition<SDIInputObject> = {
+export const SDIInputSettingEncodingDefinition: ObjectEncodingDefinition<SDIInputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	tally: { protocolName: 'tally', parser: parseInteger },
 	delay: { protocolName: 'delay', parser: parseInteger },
 }
-export const NDIInputEncodingDefinition: ObjectEncodingDefinition<NDIInputObject> = {
+export const NDIInputSettingEncodingDefinition: ObjectEncodingDefinition<NDIInputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	tally: { protocolName: 'tally', parser: parseInteger },
 }
-export const StreamInputEncodingDefinition: ObjectEncodingDefinition<StreamInputObject> = {
+export const StreamInputSettingEncodingDefinition: ObjectEncodingDefinition<StreamInputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	tally: { protocolName: 'tally', parser: parseInteger },

@@ -94,33 +94,33 @@ import {
 	FxInputObject,
 	ScaleMode,
 	refInput,
-	IpInputRef,
-	refIpInput,
-	IpInputObject,
-	SDIInputObject,
-	SDIInputRef,
-	refSDIInput,
-	NDIInputObject,
-	NDIInputRef,
-	refNDIInput,
-	StreamInputRef,
-	StreamInputObject,
-	refStreamInput,
-	IpOutputObject,
-	IpOutputRef,
-	refIpOutput,
-	SDIOutputObject,
-	SDIOutputRef,
-	refSDIOutput,
-	NDIOutputObject,
-	NDIOutputRef,
-	refNDIOutput,
-	StreamOutputObject,
-	StreamOutputRef,
-	refStreamOutput,
-	AudioOutputObject,
-	AudioOutputRef,
-	refAudioOutput,
+	IpInputSettingObject,
+	SDIInputSettingObject,
+	NDIInputSettingObject,
+	StreamInputSettingObject,
+	IpOutputSettingObject,
+	SDIOutputSettingObject,
+	NDIOutputSettingObject,
+	IpInputSettingRef,
+	SDIInputSettingRef,
+	NDIInputSettingRef,
+	StreamInputSettingRef,
+	refIpInputSetting,
+	refNDIInputSetting,
+	refSDIInputSetting,
+	refStreamInputSetting,
+	IpOutputSettingRef,
+	NDIOutputSettingRef,
+	SDIOutputSettingRef,
+	refIpOutputSetting,
+	refSDIOutputSetting,
+	refNDIOutputSetting,
+	refStreamOutputSetting,
+	StreamOutputSettingObject,
+	StreamOutputSettingRef,
+	refAudioOutputSetting,
+	AudioOutputSettingObject,
+	AudioOutputSettingRef,
 } from 'kairos-lib'
 import { parseMediaClipRefOptional, parseMediaSoundRefOptional } from '../lib/data-parsers.js'
 
@@ -672,23 +672,23 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: IpInputRef[] = []
+			const inputs: IpInputSettingRef[] = []
 			for (let i = 1; i <= 48; i++) {
-				inputs.push(refIpInput(i))
+				inputs.push(refIpInputSetting(i))
 			}
-			expect(await connection.listIpInputs()).toStrictEqual(inputs)
+			expect(await connection.listIpInputSettings()).toStrictEqual(inputs)
 
-			expect(await connection.getIpInput(refIpInput(1))).toStrictEqual({
+			expect(await connection.getIpInputSetting(refIpInputSetting(1))).toStrictEqual({
 				delay: 0,
 				onDemand: false,
 				requested: true,
 				status: 3,
 				statusText: 'disabled',
 				tally: 0,
-			} satisfies IpInputObject)
+			} satisfies IpInputSettingObject)
 
 			expect(
-				await connection.updateIpInput(refIpInput(1), {
+				await connection.updateIpInputSetting(refIpInputSetting(1), {
 					delay: 5,
 					onDemand: true,
 				})
@@ -748,21 +748,21 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: SDIInputRef[] = []
+			const inputs: SDIInputSettingRef[] = []
 			for (let i = 1; i <= 32; i++) {
-				inputs.push(refSDIInput(i))
+				inputs.push(refSDIInputSetting(i))
 			}
-			expect(await connection.listSDIInputs()).toStrictEqual(inputs)
+			expect(await connection.listSDIInputSettings()).toStrictEqual(inputs)
 
-			expect(await connection.getSDIInput(refSDIInput(1))).toStrictEqual({
+			expect(await connection.getSDIInputSetting(refSDIInputSetting(1))).toStrictEqual({
 				delay: 5,
 				status: 3,
 				statusText: 'disabled',
 				tally: 0,
-			} satisfies SDIInputObject)
+			} satisfies SDIInputSettingObject)
 
 			expect(
-				await connection.updateSDIInput(refSDIInput(1), {
+				await connection.updateSDIInputSetting(refSDIInputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -784,17 +784,17 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: NDIInputRef[] = []
+			const inputs: NDIInputSettingRef[] = []
 			for (let i = 1; i <= 2; i++) {
-				inputs.push(refNDIInput(i))
+				inputs.push(refNDIInputSetting(i))
 			}
-			expect(await connection.listNDIInputs()).toStrictEqual(inputs)
+			expect(await connection.listNDIInputSettings()).toStrictEqual(inputs)
 
-			expect(await connection.getNDIInput(refNDIInput(1))).toStrictEqual({
+			expect(await connection.getNDIInputSetting(refNDIInputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				tally: 0,
-			} satisfies NDIInputObject)
+			} satisfies NDIInputSettingObject)
 		})
 		// 	STREAMINPUTS
 		// 		IN_STREAM<1-6>
@@ -824,21 +824,21 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: StreamInputRef[] = []
+			const inputs: StreamInputSettingRef[] = []
 			for (let i = 1; i <= 6; i++) {
-				inputs.push(refStreamInput(i))
+				inputs.push(refStreamInputSetting(i))
 			}
-			expect(await connection.listStreamInputs()).toStrictEqual(inputs)
+			expect(await connection.listStreamInputsSetting()).toStrictEqual(inputs)
 
-			expect(await connection.getStreamInput(refStreamInput(1))).toStrictEqual({
+			expect(await connection.getStreamInputSetting(refStreamInputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				tally: 0,
 				delay: 5,
-			} satisfies StreamInputObject)
+			} satisfies StreamInputSettingObject)
 
 			expect(
-				await connection.updateStreamInput(refStreamInput(1), {
+				await connection.updateStreamInputSetting(refStreamInputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -897,20 +897,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: IpOutputRef[] = []
+			const inputs: IpOutputSettingRef[] = []
 			for (let i = 1; i <= 32; i++) {
-				inputs.push(refIpOutput(i))
+				inputs.push(refIpOutputSetting(i))
 			}
-			expect(await connection.listIpOutputs()).toStrictEqual(inputs)
+			expect(await connection.listIpOutputSettings()).toStrictEqual(inputs)
 
-			expect(await connection.getIpOutput(refIpOutput(1))).toStrictEqual({
+			expect(await connection.getIpOutputSetting(refIpOutputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				delay: 5,
-			} satisfies IpOutputObject)
+			} satisfies IpOutputSettingObject)
 
 			expect(
-				await connection.updateIpOutput(refIpOutput(1), {
+				await connection.updateIpOutputSetting(refIpOutputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -956,20 +956,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: SDIOutputRef[] = []
+			const outputs: SDIOutputSettingRef[] = []
 			for (let i = 1; i <= 20; i++) {
-				inputs.push(refSDIOutput(i))
+				outputs.push(refSDIOutputSetting(i))
 			}
-			expect(await connection.listSDIOutputs()).toStrictEqual(inputs)
+			expect(await connection.listSDIOutputSettings()).toStrictEqual(outputs)
 
-			expect(await connection.getSDIOutput(refSDIOutput(1))).toStrictEqual({
+			expect(await connection.getSDIOutputSetting(refSDIOutputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				delay: 5,
-			} satisfies SDIOutputObject)
+			} satisfies SDIOutputSettingObject)
 
 			expect(
-				await connection.updateSDIOutput(refSDIOutput(1), {
+				await connection.updateSDIOutputSetting(refSDIOutputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -993,20 +993,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: NDIOutputRef[] = []
+			const outputs: NDIOutputSettingRef[] = []
 			for (let i = 1; i <= 2; i++) {
-				inputs.push(refNDIOutput(i))
+				outputs.push(refNDIOutputSetting(i))
 			}
-			expect(await connection.listNDIOutputs()).toStrictEqual(inputs)
+			expect(await connection.listNDIOutputSettings()).toStrictEqual(outputs)
 
-			expect(await connection.getNDIOutput(refNDIOutput(1))).toStrictEqual({
+			expect(await connection.getNDIOutputSetting(refNDIOutputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				delay: 5,
-			} satisfies NDIOutputObject)
+			} satisfies NDIOutputSettingObject)
 
 			expect(
-				await connection.updateNDIOutput(refNDIOutput(1), {
+				await connection.updateNDIOutputSetting(refNDIOutputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -1029,20 +1029,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: StreamOutputRef[] = []
+			const outputs: StreamOutputSettingRef[] = []
 			for (let i = 1; i <= 4; i++) {
-				inputs.push(refStreamOutput(i))
+				outputs.push(refStreamOutputSetting(i))
 			}
-			expect(await connection.listStreamOutputs()).toStrictEqual(inputs)
+			expect(await connection.listStreamOutputSettings()).toStrictEqual(outputs)
 
-			expect(await connection.getStreamOutput(refStreamOutput(1))).toStrictEqual({
+			expect(await connection.getStreamOutputSetting(refStreamOutputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				delay: 5,
-			} satisfies StreamOutputObject)
+			} satisfies StreamOutputSettingObject)
 
 			expect(
-				await connection.updateStreamOutput(refStreamOutput(1), {
+				await connection.updateStreamOutputSetting(refStreamOutputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -1076,20 +1076,20 @@ describe('KairosConnection', () => {
 				throw new Error(`Unexpected message: ${message}`)
 			})
 
-			const inputs: AudioOutputRef[] = []
+			const outputs: AudioOutputSettingRef[] = []
 			for (let i = 1; i <= 8; i++) {
-				inputs.push(refAudioOutput(i))
+				outputs.push(refAudioOutputSetting(i))
 			}
-			expect(await connection.listAudioOutputs()).toStrictEqual(inputs)
+			expect(await connection.listAudioOutputSettings()).toStrictEqual(outputs)
 
-			expect(await connection.getAudioOutput(refAudioOutput(1))).toStrictEqual({
+			expect(await connection.getAudioOutputSetting(refAudioOutputSetting(1))).toStrictEqual({
 				status: 3,
 				statusText: 'disabled',
 				delay: 0,
-			} satisfies AudioOutputObject)
+			} satisfies AudioOutputSettingObject)
 
 			expect(
-				await connection.updateAudioOutput(refAudioOutput(1), {
+				await connection.updateAudioOutputSetting(refAudioOutputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()

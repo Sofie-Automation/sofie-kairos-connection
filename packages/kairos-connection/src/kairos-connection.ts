@@ -124,42 +124,42 @@ import {
 	RefPathSingle,
 	RamRecPlayerObject,
 	UpdateRamRecPlayerObject,
+	IpInputSettingObject,
+	UpdateIpInputSettingObject,
+	refSDIInputSetting,
+	SDIInputSettingObject,
+	UpdateSDIInputSettingObject,
+	NDIInputSettingObject,
+	refNDIInputSetting,
+	refStreamInputSetting,
+	UpdateStreamInputSettingObject,
+	IpOutputSettingObject,
+	NDIInputSettingRef,
+	SDIOutputSettingObject,
+	SDIOutputSettingRef,
+	NDIOutputSettingObject,
+	IpInputSettingRef,
+	SDIInputSettingRef,
+	UpdateStreamOutputSettingObject,
+	refAudioOutputSetting,
+	refIpOutputSetting,
+	refStreamOutputSetting,
+	refNDIOutputSetting,
+	AudioOutputSettingRef,
+	UpdateAudioOutputSettingObject,
+	refIpInputSetting,
+	StreamInputSettingRef,
+	IpOutputSettingRef,
+	StreamInputSettingObject,
+	UpdateIpOutputSettingObject,
+	refSDIOutputSetting,
+	UpdateSDIOutputSettingObject,
+	NDIOutputSettingRef,
+	UpdateNDIOutputSettingObject,
+	StreamOutputSettingRef,
+	StreamOutputSettingObject,
+	AudioOutputSettingObject,
 	InputRef,
-	IpInputRef,
-	refIpInput,
-	IpInputObject,
-	UpdateIpInputObject,
-	refSDIInput,
-	SDIInputObject,
-	SDIInputRef,
-	UpdateSDIInputObject,
-	NDIInputObject,
-	NDIInputRef,
-	refNDIInput,
-	refStreamInput,
-	StreamInputObject,
-	StreamInputRef,
-	UpdateStreamInputObject,
-	IpOutputObject,
-	IpOutputRef,
-	refIpOutput,
-	UpdateIpOutputObject,
-	refSDIOutput,
-	SDIOutputObject,
-	SDIOutputRef,
-	UpdateSDIOutputObject,
-	NDIOutputObject,
-	NDIOutputRef,
-	refNDIOutput,
-	UpdateNDIOutputObject,
-	StreamOutputRef,
-	refStreamOutput,
-	StreamOutputObject,
-	UpdateStreamOutputObject,
-	AudioOutputObject,
-	AudioOutputRef,
-	refAudioOutput,
-	UpdateAudioOutputObject,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -218,17 +218,17 @@ import {
 } from './object-encoding/index.js'
 import { omitFalsy } from './lib/lib.js'
 import {
-	IpInputEncodingDefinition,
-	NDIInputEncodingDefinition,
-	SDIInputEncodingDefinition,
-	StreamInputEncodingDefinition,
+	IpInputSettingEncodingDefinition,
+	NDIInputSettingEncodingDefinition,
+	SDIInputSettingEncodingDefinition,
+	StreamInputSettingEncodingDefinition,
 } from './object-encoding/inputSettings.js'
 import {
-	AudioOutputEncodingDefinition,
-	IpOutputEncodingDefinition,
-	NDIOutputEncodingDefinition,
-	SDIOutputEncodingDefinition,
-	StreamOutputEncodingDefinition,
+	AudioOutputSettingEncodingDefinition,
+	IpOutputSettingEncodingDefinition,
+	NDIOutputSettingEncodingDefinition,
+	SDIOutputSettingEncodingDefinition,
+	StreamOutputSettingEncodingDefinition,
 } from './object-encoding/outputSettings.js'
 
 export class KairosConnection extends MinimalKairosConnection {
@@ -335,7 +335,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	STREAMINPUTS
 	// 		IN_STREAM<1-6>
 
-	async listIpInputs(): Promise<IpInputRef[]> {
+	async listIpInputSettings(): Promise<IpInputSettingRef[]> {
 		// "IN_IP4"
 		const list = await this.getList('IPINPUTS')
 
@@ -345,21 +345,24 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refIpInput(index)
+				return refIpInputSetting(index)
 			})
 		)
 	}
-	async getIpInput(ipInputRef: IpInputRef): Promise<IpInputObject> {
-		return this.#getObject(refToPath(ipInputRef), IpInputEncodingDefinition)
+	async getIpInputSetting(ipInputSettingRef: IpInputSettingRef): Promise<IpInputSettingObject> {
+		return this.#getObject(refToPath(ipInputSettingRef), IpInputSettingEncodingDefinition)
 	}
-	async updateIpInput(ipInputRef: IpInputRef, props: Partial<UpdateIpInputObject>): Promise<void> {
-		await this.setAttributes(refToPath(ipInputRef), [
+	async updateIpInputSetting(
+		ipInputSettingRef: IpInputSettingRef,
+		props: Partial<UpdateIpInputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(ipInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 			{ attribute: 'on_demand', value: stringifyBoolean(props.onDemand) },
 		])
 	}
 
-	async listSDIInputs(): Promise<SDIInputRef[]> {
+	async listSDIInputSettings(): Promise<SDIInputSettingRef[]> {
 		// "IN_SDI10"
 		const list = await this.getList('SDIINPUTS')
 
@@ -369,17 +372,22 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refSDIInput(index)
+				return refSDIInputSetting(index)
 			})
 		)
 	}
-	async getSDIInput(sdiInputRef: SDIInputRef): Promise<SDIInputObject> {
-		return this.#getObject(refToPath(sdiInputRef), SDIInputEncodingDefinition)
+	async getSDIInputSetting(sdiInputSettingRef: SDIInputSettingRef): Promise<SDIInputSettingObject> {
+		return this.#getObject(refToPath(sdiInputSettingRef), SDIInputSettingEncodingDefinition)
 	}
-	async updateSDIInput(sdiInputRef: SDIInputRef, props: Partial<UpdateSDIInputObject>): Promise<void> {
-		await this.setAttributes(refToPath(sdiInputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateSDIInputSetting(
+		sdiInputSettingRef: SDIInputSettingRef,
+		props: Partial<UpdateSDIInputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(sdiInputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
-	async listNDIInputs(): Promise<NDIInputRef[]> {
+	async listNDIInputSettings(): Promise<NDIInputSettingRef[]> {
 		// "IN_NDI1"
 		const list = await this.getList('NDIINPUTS')
 
@@ -389,14 +397,14 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refNDIInput(index)
+				return refNDIInputSetting(index)
 			})
 		)
 	}
-	async getNDIInput(ndiInputRef: NDIInputRef): Promise<NDIInputObject> {
-		return this.#getObject(refToPath(ndiInputRef), NDIInputEncodingDefinition)
+	async getNDIInputSetting(ndiInputSettingRef: NDIInputSettingRef): Promise<NDIInputSettingObject> {
+		return this.#getObject(refToPath(ndiInputSettingRef), NDIInputSettingEncodingDefinition)
 	}
-	async listStreamInputs(): Promise<StreamInputRef[]> {
+	async listStreamInputsSetting(): Promise<StreamInputSettingRef[]> {
 		// "IN_STREAM"
 		const list = await this.getList('STREAMINPUTS')
 
@@ -406,15 +414,20 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refStreamInput(index)
+				return refStreamInputSetting(index)
 			})
 		)
 	}
-	async getStreamInput(streamInputRef: StreamInputRef): Promise<StreamInputObject> {
-		return this.#getObject(refToPath(streamInputRef), StreamInputEncodingDefinition)
+	async getStreamInputSetting(streamInputSettingRef: StreamInputSettingRef): Promise<StreamInputSettingObject> {
+		return this.#getObject(refToPath(streamInputSettingRef), StreamInputSettingEncodingDefinition)
 	}
-	async updateStreamInput(streamInputRef: StreamInputRef, props: Partial<UpdateStreamInputObject>): Promise<void> {
-		await this.setAttributes(refToPath(streamInputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateStreamInputSetting(
+		streamInputSettingRef: StreamInputSettingRef,
+		props: Partial<UpdateStreamInputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(streamInputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
 
 	// OUTPUTSETTINGS
@@ -429,7 +442,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	AUDIOOUTS
 	// 		OUT_AUDIO<1-8>
 
-	async listIpOutputs(): Promise<IpOutputRef[]> {
+	async listIpOutputSettings(): Promise<IpOutputSettingRef[]> {
 		// "OUT_IP"
 		const list = await this.getList('IPOUTS')
 
@@ -439,17 +452,22 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refIpOutput(index)
+				return refIpOutputSetting(index)
 			})
 		)
 	}
-	async getIpOutput(ipOutputRef: IpOutputRef): Promise<IpOutputObject> {
-		return this.#getObject(refToPath(ipOutputRef), IpOutputEncodingDefinition)
+	async getIpOutputSetting(ipOutputSettingRef: IpOutputSettingRef): Promise<IpOutputSettingObject> {
+		return this.#getObject(refToPath(ipOutputSettingRef), IpOutputSettingEncodingDefinition)
 	}
-	async updateIpOutput(ipOutputRef: IpOutputRef, props: Partial<UpdateIpOutputObject>): Promise<void> {
-		await this.setAttributes(refToPath(ipOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateIpOutputSetting(
+		ipOutputSettingRef: IpOutputSettingRef,
+		props: Partial<UpdateIpOutputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(ipOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
-	async listSDIOutputs(): Promise<SDIOutputRef[]> {
+	async listSDIOutputSettings(): Promise<SDIOutputSettingRef[]> {
 		// "OUT_SDI"
 		const list = await this.getList('SDIOUTS')
 
@@ -459,17 +477,22 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refSDIOutput(index)
+				return refSDIOutputSetting(index)
 			})
 		)
 	}
-	async getSDIOutput(sdiOutputRef: SDIOutputRef): Promise<SDIOutputObject> {
-		return this.#getObject(refToPath(sdiOutputRef), SDIOutputEncodingDefinition)
+	async getSDIOutputSetting(sdiOutputSettingRef: SDIOutputSettingRef): Promise<SDIOutputSettingObject> {
+		return this.#getObject(refToPath(sdiOutputSettingRef), SDIOutputSettingEncodingDefinition)
 	}
-	async updateSDIOutput(sdiOutputRef: SDIOutputRef, props: Partial<UpdateSDIOutputObject>): Promise<void> {
-		await this.setAttributes(refToPath(sdiOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateSDIOutputSetting(
+		sdiOutputSettingRef: SDIOutputSettingRef,
+		props: Partial<UpdateSDIOutputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(sdiOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
-	async listNDIOutputs(): Promise<NDIOutputRef[]> {
+	async listNDIOutputSettings(): Promise<NDIOutputSettingRef[]> {
 		// "OUT_NDI"
 		const list = await this.getList('NDIOUTS')
 
@@ -479,17 +502,22 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refNDIOutput(index)
+				return refNDIOutputSetting(index)
 			})
 		)
 	}
-	async getNDIOutput(NDIOutputRef: NDIOutputRef): Promise<NDIOutputObject> {
-		return this.#getObject(refToPath(NDIOutputRef), NDIOutputEncodingDefinition)
+	async getNDIOutputSetting(ndiOutputSettingRef: NDIOutputSettingRef): Promise<NDIOutputSettingObject> {
+		return this.#getObject(refToPath(ndiOutputSettingRef), NDIOutputSettingEncodingDefinition)
 	}
-	async updateNDIOutput(NDIOutputRef: NDIOutputRef, props: Partial<UpdateNDIOutputObject>): Promise<void> {
-		await this.setAttributes(refToPath(NDIOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateNDIOutputSetting(
+		ndiOutputSettingRef: NDIOutputSettingRef,
+		props: Partial<UpdateNDIOutputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(ndiOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
-	async listStreamOutputs(): Promise<StreamOutputRef[]> {
+	async listStreamOutputSettings(): Promise<StreamOutputSettingRef[]> {
 		// "OUT_STREAM"
 		const list = await this.getList('STREAMOUTS')
 
@@ -499,17 +527,20 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refStreamOutput(index)
+				return refStreamOutputSetting(index)
 			})
 		)
 	}
-	async getStreamOutput(StreamOutputRef: StreamOutputRef): Promise<StreamOutputObject> {
-		return this.#getObject(refToPath(StreamOutputRef), StreamOutputEncodingDefinition)
+	async getStreamOutputSetting(streamOutputSettingRef: StreamOutputSettingRef): Promise<StreamOutputSettingObject> {
+		return this.#getObject(refToPath(streamOutputSettingRef), StreamOutputSettingEncodingDefinition)
 	}
-	async updateStreamOutput(StreamOutputRef: StreamOutputRef, props: Partial<UpdateStreamOutputObject>): Promise<void> {
-		await this.setAttributes(refToPath(StreamOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateStreamOutputSetting(
+		streamOutputRef: StreamOutputSettingRef,
+		props: Partial<UpdateStreamOutputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(streamOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
 	}
-	async listAudioOutputs(): Promise<AudioOutputRef[]> {
+	async listAudioOutputSettings(): Promise<AudioOutputSettingRef[]> {
 		// "OUT_AUDIO"
 		const list = await this.getList('AUDIOOUTS')
 
@@ -519,15 +550,18 @@ export class KairosConnection extends MinimalKairosConnection {
 				if (!m) return null
 				const index = parseInt(m[1], 10)
 				if (Number.isNaN(index)) return null
-				return refAudioOutput(index)
+				return refAudioOutputSetting(index)
 			})
 		)
 	}
-	async getAudioOutput(AudioOutputRef: AudioOutputRef): Promise<AudioOutputObject> {
-		return this.#getObject(refToPath(AudioOutputRef), AudioOutputEncodingDefinition)
+	async getAudioOutputSetting(audioOutputRef: AudioOutputSettingRef): Promise<AudioOutputSettingObject> {
+		return this.#getObject(refToPath(audioOutputRef), AudioOutputSettingEncodingDefinition)
 	}
-	async updateAudioOutput(AudioOutputRef: AudioOutputRef, props: Partial<UpdateAudioOutputObject>): Promise<void> {
-		await this.setAttributes(refToPath(AudioOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+	async updateAudioOutputSetting(
+		audioOutputRef: AudioOutputSettingRef,
+		props: Partial<UpdateAudioOutputSettingObject>
+	): Promise<void> {
+		await this.setAttributes(refToPath(audioOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
 	}
 
 	// SCENES

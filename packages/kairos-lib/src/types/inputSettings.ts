@@ -1,6 +1,6 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
 
-export interface IpInputObject {
+export interface IpInputSettingObject {
 	/** int : status [ read_only ] **/
 	readonly status: number
 	/** string : status_text [ read_only ] **/
@@ -14,7 +14,7 @@ export interface IpInputObject {
 	/** bool : requested [ read_only ] **/
 	readonly requested: boolean
 }
-export interface SDIInputObject {
+export interface SDIInputSettingObject {
 	/** int : status [ read_only ] */
 	readonly status: number
 	/** string : status_text [ read_only ] */
@@ -24,7 +24,7 @@ export interface SDIInputObject {
 	/** int : delay [ min: 0 | max: 12 ] */
 	delay: number
 }
-export interface NDIInputObject {
+export interface NDIInputSettingObject {
 	/** int : status [ read_only ] */
 	readonly status: number
 	/** string : status_text [ read_only ] */
@@ -32,7 +32,7 @@ export interface NDIInputObject {
 	/** int : tally [ read_only ] */
 	readonly tally: number
 }
-export interface StreamInputObject {
+export interface StreamInputSettingObject {
 	/** int : status [ read_only ] */
 	readonly status: number
 	/** string : status_text [ read_only ] */
@@ -45,7 +45,7 @@ export interface StreamInputObject {
 
 // ------------------------- Update* types, used in update* methods --------------------------
 
-export type UpdateIpInputObject = OmitReadonly<IpInputObject>
-export type UpdateSDIInputObject = OmitReadonly<SDIInputObject>
-export type UpdateNDIInputObject = OmitReadonly<NDIInputObject>
-export type UpdateStreamInputObject = OmitReadonly<StreamInputObject>
+export type UpdateIpInputSettingObject = OmitReadonly<IpInputSettingObject>
+export type UpdateSDIInputSettingObject = OmitReadonly<SDIInputSettingObject>
+export type UpdateNDIInputSettingObject = OmitReadonly<NDIInputSettingObject>
+export type UpdateStreamInputSettingObject = OmitReadonly<StreamInputSettingObject>

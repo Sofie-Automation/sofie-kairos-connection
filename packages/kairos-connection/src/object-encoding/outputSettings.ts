@@ -1,28 +1,34 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { AudioOutputObject, IpOutputObject, NDIOutputObject, SDIOutputObject, StreamOutputObject } from 'kairos-lib'
+import {
+	AudioOutputSettingObject,
+	IpOutputSettingObject,
+	NDIOutputSettingObject,
+	SDIOutputSettingObject,
+	StreamOutputSettingObject,
+} from 'kairos-lib'
 import { parseInteger, parseString } from '../lib/data-parsers.js'
 
-export const IpOutputEncodingDefinition: ObjectEncodingDefinition<IpOutputObject> = {
+export const IpOutputSettingEncodingDefinition: ObjectEncodingDefinition<IpOutputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	delay: { protocolName: 'delay', parser: parseInteger },
 }
-export const SDIOutputEncodingDefinition: ObjectEncodingDefinition<SDIOutputObject> = {
+export const SDIOutputSettingEncodingDefinition: ObjectEncodingDefinition<SDIOutputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	delay: { protocolName: 'delay', parser: parseInteger },
 }
-export const NDIOutputEncodingDefinition: ObjectEncodingDefinition<NDIOutputObject> = {
+export const NDIOutputSettingEncodingDefinition: ObjectEncodingDefinition<NDIOutputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	delay: { protocolName: 'delay', parser: parseInteger },
 }
-export const StreamOutputEncodingDefinition: ObjectEncodingDefinition<StreamOutputObject> = {
+export const StreamOutputSettingEncodingDefinition: ObjectEncodingDefinition<StreamOutputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	delay: { protocolName: 'delay', parser: parseInteger },
 }
-export const AudioOutputEncodingDefinition: ObjectEncodingDefinition<AudioOutputObject> = {
+export const AudioOutputSettingEncodingDefinition: ObjectEncodingDefinition<AudioOutputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	delay: { protocolName: 'delay', parser: parseInteger },
