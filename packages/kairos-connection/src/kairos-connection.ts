@@ -1257,6 +1257,16 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	// RAMRECORDERS
 	// 	RR<1-8>
+	async listRamRecorders(): Promise<ImageStoreRef[]> {
+		return omitFalsy(
+			(await this.getList('RAMRECORDERS')).map((path) => {
+				// "RR1"
+				if (!path.startsWith('RR')) return undefined
+				const playerId = parseInt(path.slice(2), 10)
+				return refImageStore(playerId)
+			})
+		)
+	}
 	async getRamRecorder(ramRecorderId: number): Promise<RamRecPlayerObject> {
 		this._assertPlayerIdIsValid(ramRecorderId)
 		return this.#getObject(refToPath(refRamRecorder(ramRecorderId)), RamRecPlayerObjectEncodingDefinition)
@@ -1342,6 +1352,16 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	// PLAYERS
 	// 	CP<1-2>
+	async listClipPlayers(): Promise<ClipPlayerRef[]> {
+		return omitFalsy(
+			(await this.getList('PLAYERS')).map((path) => {
+				// "CP1"
+				if (!path.startsWith('CP')) return undefined
+				const playerId = parseInt(path.slice(2), 10)
+				return refClipPlayer(playerId)
+			})
+		)
+	}
 	async getClipPlayer(playerId: number): Promise<ClipPlayerObject> {
 		this._assertPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refClipPlayer(playerId)), ClipPlayerObjectEncodingDefinition)
@@ -2014,6 +2034,16 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	GEN<1-2>
 	// AUDIOPLAYERS
 	// 	AP<1-4>
+	async listAudioPlayers(): Promise<AudioPlayerRef[]> {
+		return omitFalsy(
+			(await this.getList('AUDIOPLAYERS')).map((path) => {
+				// "AP1"
+				if (!path.startsWith('AP')) return undefined
+				const playerId = parseInt(path.slice(2), 10)
+				return refAudioPlayer(playerId)
+			})
+		)
+	}
 	async getAudioPlayer(playerId: number): Promise<AudioPlayerObject> {
 		this._assertPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refAudioPlayer(playerId)), AudioPlayerObjectEncodingDefinition)
@@ -2144,6 +2174,16 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	// IMAGESTORES
 	// 	IS<1-8>
+	async listImageStores(): Promise<ImageStoreRef[]> {
+		return omitFalsy(
+			(await this.getList('IMAGESTORES')).map((path) => {
+				// "IS1"
+				if (!path.startsWith('IS')) return undefined
+				const playerId = parseInt(path.slice(2), 10)
+				return refImageStore(playerId)
+			})
+		)
+	}
 	async getImageStore(storeId: number): Promise<ImageStoreObject> {
 		this._assertImageStoreIdIsValid(storeId)
 		return this.#getObject(refToPath(refImageStore(storeId)), ImageStoreObjectEncodingDefinition)
