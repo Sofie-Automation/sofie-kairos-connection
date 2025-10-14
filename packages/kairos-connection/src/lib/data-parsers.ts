@@ -25,9 +25,12 @@ export function stringifyRef<Ref extends AnyRef>(
 	realm: Ref['realm'],
 	ref: (AnyRef & { realm: Ref['realm'] }) | string | null | undefined
 ): string | undefined {
+	if (typeof ref === 'string') {
+		// pass through parseRef to ensure that the string is of the correct type / realm:
+		ref = parseRef(realm, ref)
+	}
 	if (ref === undefined) return undefined
 	if (ref === null) return ''
-	if (typeof ref === 'string') return ref
 
 	if (realm !== ref.realm) throw new Error(`Unable to stringify ref, is a "${ref.realm}" (expected ${realm})`)
 
@@ -215,7 +218,6 @@ export function parseAnySourceRef(value: string): AnySourceRef {
 
 	return ref
 }
-
 export function stringifyAnySourceRef(ref: undefined): undefined
 export function stringifyAnySourceRef(ref: null): '<unknown>'
 export function stringifyAnySourceRef(ref: string): string
@@ -226,9 +228,12 @@ export function stringifyAnySourceRef(ref: AnySourceRef | string | undefined): s
 export function stringifyAnySourceRef(ref: AnySourceRef | string | undefined): string | undefined
 export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefined): string | undefined
 export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefined): string | undefined {
+	if (typeof ref === 'string') {
+		// pass through parseAnySourceRef to ensure that the string is of the correct type / realm:
+		ref = parseAnySourceRef(ref)
+	}
 	if (ref === undefined) return undefined
 	if (ref === null) return '<unknown>'
-	if (typeof ref === 'string') return ref
 
 	return refToPath(ref)
 }
@@ -245,10 +250,15 @@ export function parseImageStoreClip(value: string): MediaStillRef | MediaImageRe
 
 	return ref
 }
-export function stringifyImageStoreClip(ref: MediaStillRef | MediaImageRef | null | undefined): string | undefined {
+export function stringifyImageStoreClip(
+	ref: MediaStillRef | MediaImageRef | string | null | undefined
+): string | undefined {
+	if (typeof ref === 'string') {
+		// pass through parseImageStoreClip to ensure that the string is of the correct type / realm:
+		ref = parseImageStoreClip(ref)
+	}
 	if (ref === undefined) return undefined
 	if (ref === null) return ''
-
 	// Note: we don't really know how to use a MediaImage, we assume it's valid to use it like this.
 
 	return refToPath(ref)

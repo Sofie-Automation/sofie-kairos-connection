@@ -6,4 +6,7 @@ export type AudioPlayerObject = Omit<ClipPlayerObject, 'color' | 'colorOverwrite
 	clip: MediaSoundRef | null
 }
 
-export type UpdateAudioPlayerObject = OmitReadonly<AudioPlayerObject>
+export type UpdateAudioPlayerObject = Omit<OmitReadonly<AudioPlayerObject>, 'clip'> & {
+	// Also allow string as input, for convenience:
+	clip: AudioPlayerObject['clip'] | string
+}

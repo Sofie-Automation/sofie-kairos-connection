@@ -3533,7 +3533,6 @@ describe('KairosConnection', () => {
 					'MEDIA.images.nonexistent.load_progress': ['Error'],
 					'MEDIA.sounds.nonexistent.name': ['Error'],
 				}[message]
-				// console.log('message', message)
 				if (reply) {
 					return reply
 				}

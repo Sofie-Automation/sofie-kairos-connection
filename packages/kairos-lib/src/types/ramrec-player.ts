@@ -6,4 +6,7 @@ export type RamRecPlayerObject = Omit<ClipPlayerObject, 'clip'> & {
 	clip: MediaRamRecRef | null
 }
 
-export type UpdateRamRecPlayerObject = OmitReadonly<RamRecPlayerObject>
+export type UpdateRamRecPlayerObject = Omit<OmitReadonly<RamRecPlayerObject>, 'clip'> & {
+	// Also allow string as input, for convenience:
+	clip: RamRecPlayerObject['clip'] | string
+}

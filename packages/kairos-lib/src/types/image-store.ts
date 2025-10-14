@@ -48,4 +48,7 @@ export enum ImageStoreScaleMode {
 	None = 'None',
 }
 
-export type UpdateImageStoreObject = OmitReadonly<ImageStoreObject>
+export type UpdateImageStoreObject = Omit<OmitReadonly<ImageStoreObject>, 'clip'> & {
+	// Also allow string as input, for convenience:
+	clip: ImageStoreObject['clip'] | string
+}

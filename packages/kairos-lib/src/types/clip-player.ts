@@ -36,4 +36,7 @@ export enum PlayerTMS {
 	Begin = 'Begin',
 	End = 'End',
 }
-export type UpdateClipPlayerObject = OmitReadonly<ClipPlayerObject>
+export type UpdateClipPlayerObject = Omit<OmitReadonly<ClipPlayerObject>, 'clip'> & {
+	// Also allow string as input, for convenience:
+	clip: ClipPlayerObject['clip'] | string
+}

@@ -6,4 +6,7 @@ export interface GfxChannelObject {
 	scene: GfxSceneRef
 }
 
-export type UpdateGfxChannelObject = OmitReadonly<GfxChannelObject>
+export type UpdateGfxChannelObject = Omit<OmitReadonly<GfxChannelObject>, 'scene'> & {
+	// Also allow string as input, for convenience:
+	scene: GfxChannelObject['scene'] | string
+}

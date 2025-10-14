@@ -1265,14 +1265,19 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this.#getObject(refToPath(refRamRecorder(ramRecorderId)), RamRecPlayerObjectEncodingDefinition)
 	}
 	async loadRamRecorderClip(ramRecorderId: number, clip: RamRecPlayerObject['clip'], position?: number): Promise<void> {
-		await this._loadPlayerClip(refToPath(refRamRecorder(ramRecorderId)), stringifyRef('media-ramrec', clip), position)
+		await this._loadPlayerClip(
+			refToPath(refRamRecorder(ramRecorderId)),
+			stringifyRef<MediaRamRecRef>('media-ramrec', clip),
+			position
+		)
 	}
 	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateRamRecPlayerObject>): Promise<void> {
 		this._assertPlayerIdIsValid(ramRecorderId)
+
 		await this.setAttributes(refToPath(refRamRecorder(ramRecorderId)), [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
-			{ attribute: 'clip', value: stringifyRef('media-ramrec', props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
+			{ attribute: 'clip', value: stringifyRef<MediaRamRecRef>('media-ramrec', props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
 			{ attribute: 'remaining_time', value: props.remainingTime },
 			{ attribute: 'position', value: stringifyInteger(props.position) },
@@ -2232,6 +2237,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async updateImageStore(storeId: number, props: Partial<UpdateImageStoreObject>): Promise<void> {
 		this._assertImageStoreIdIsValid(storeId)
+
 		await this.setAttributes(refToPath(refImageStore(storeId)), [
 			{ attribute: 'clip', value: stringifyImageStoreClip(props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },

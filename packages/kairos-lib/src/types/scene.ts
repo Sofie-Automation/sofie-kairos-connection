@@ -457,7 +457,17 @@ export enum SceneSnapshotPriorityRecall {
 
 // ------------------------- Update* types, used in update* methods --------------------------
 export type UpdateSceneObject = OmitReadonly<SceneObject>
-export type UpdateSceneLayerObject = OmitReadonly<SceneLayerObject>
+export type UpdateSceneLayerObject = Omit<
+	OmitReadonly<SceneLayerObject>,
+	'sourceA' | 'sourceB' | 'sourcePgm' | 'sourcePst' | 'sourceOptions'
+> & {
+	// Also allow string as input, for convenience:
+	sourceA: SceneLayerObject['sourceA'] | string
+	sourceB: SceneLayerObject['sourceB'] | string
+	sourcePgm: SceneLayerObject['sourcePgm'] | string
+	sourcePst: SceneLayerObject['sourcePst'] | string
+	sourceOptions: (SceneLayerObject['sourceOptions'][0] | string)[]
+}
 export type UpdateSceneTransitionObject = OmitReadonly<SceneTransitionObject>
 export type UpdateSceneTransitionMixEffectObject = OmitReadonly<SceneTransitionMixEffectObject>
 export type UpdateSceneSnapshotObject = OmitReadonly<SceneSnapshotObject>
