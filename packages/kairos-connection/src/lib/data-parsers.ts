@@ -15,6 +15,10 @@ import {
 
 export function stringifyRef<Ref extends AnyRef>(
 	realm: Ref['realm'],
+	ref: (AnyRef & { realm: Ref['realm'] }) | string | null
+): string
+export function stringifyRef<Ref extends AnyRef>(
+	realm: Ref['realm'],
 	ref: (AnyRef & { realm: Ref['realm'] }) | null
 ): string
 export function stringifyRef<Ref extends AnyRef>(

@@ -1364,7 +1364,11 @@ export class KairosConnection extends MinimalKairosConnection {
 		this._assertPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refClipPlayer(playerId)), ClipPlayerObjectEncodingDefinition)
 	}
-	async loadClipPlayerClip(playerId: number, clip: ClipPlayerObject['clip'], position?: number): Promise<void> {
+	async loadClipPlayerClip(
+		playerId: number,
+		clip: Required<UpdateClipPlayerObject>['clip'],
+		position?: number
+	): Promise<void> {
 		await this._loadPlayerClip(
 			refToPath(refClipPlayer(playerId)),
 			stringifyRef<MediaClipRef>('media-clip', clip),
