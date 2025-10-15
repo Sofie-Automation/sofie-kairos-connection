@@ -1,6 +1,9 @@
 export type ColorRGB = {
+	/** 0 - 255 */
 	red: number
+	/** 0 - 255 */
 	green: number
+	/** 0 - 255 */
 	blue: number
 }
 
