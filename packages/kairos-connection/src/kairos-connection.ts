@@ -362,13 +362,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getIpInputSetting(ipInputSettingRef: IpInputSettingRef): Promise<IpInputSettingObject> {
+	async getIpInputSetting(ipInputSettingRef: IpInputSettingRef | number): Promise<IpInputSettingObject> {
+		if (typeof ipInputSettingRef === 'number') ipInputSettingRef = refIpInputSetting(ipInputSettingRef)
 		return this.#getObject(refToPath(ipInputSettingRef), IpInputSettingEncodingDefinition)
 	}
 	async updateIpInputSetting(
-		ipInputSettingRef: IpInputSettingRef,
+		ipInputSettingRef: IpInputSettingRef | number,
 		props: Partial<UpdateIpInputSettingObject>
 	): Promise<void> {
+		if (typeof ipInputSettingRef === 'number') ipInputSettingRef = refIpInputSetting(ipInputSettingRef)
 		await this.setAttributes(refToPath(ipInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 			{ attribute: 'on_demand', value: stringifyBoolean(props.onDemand) },
@@ -389,13 +391,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getSDIInputSetting(sdiInputSettingRef: SDIInputSettingRef): Promise<SDIInputSettingObject> {
+	async getSDIInputSetting(sdiInputSettingRef: SDIInputSettingRef | number): Promise<SDIInputSettingObject> {
+		if (typeof sdiInputSettingRef === 'number') sdiInputSettingRef = refSDIInputSetting(sdiInputSettingRef)
 		return this.#getObject(refToPath(sdiInputSettingRef), SDIInputSettingEncodingDefinition)
 	}
 	async updateSDIInputSetting(
-		sdiInputSettingRef: SDIInputSettingRef,
+		sdiInputSettingRef: SDIInputSettingRef | number,
 		props: Partial<UpdateSDIInputSettingObject>
 	): Promise<void> {
+		if (typeof sdiInputSettingRef === 'number') sdiInputSettingRef = refSDIInputSetting(sdiInputSettingRef)
 		await this.setAttributes(refToPath(sdiInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -414,7 +418,8 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getNDIInputSetting(ndiInputSettingRef: NDIInputSettingRef): Promise<NDIInputSettingObject> {
+	async getNDIInputSetting(ndiInputSettingRef: NDIInputSettingRef | number): Promise<NDIInputSettingObject> {
+		if (typeof ndiInputSettingRef === 'number') ndiInputSettingRef = refNDIInputSetting(ndiInputSettingRef)
 		return this.#getObject(refToPath(ndiInputSettingRef), NDIInputSettingEncodingDefinition)
 	}
 	async listStreamInputsSetting(): Promise<StreamInputSettingRef[]> {
@@ -431,13 +436,17 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getStreamInputSetting(streamInputSettingRef: StreamInputSettingRef): Promise<StreamInputSettingObject> {
+	async getStreamInputSetting(
+		streamInputSettingRef: StreamInputSettingRef | number
+	): Promise<StreamInputSettingObject> {
+		if (typeof streamInputSettingRef === 'number') streamInputSettingRef = refStreamInputSetting(streamInputSettingRef)
 		return this.#getObject(refToPath(streamInputSettingRef), StreamInputSettingEncodingDefinition)
 	}
 	async updateStreamInputSetting(
-		streamInputSettingRef: StreamInputSettingRef,
+		streamInputSettingRef: StreamInputSettingRef | number,
 		props: Partial<UpdateStreamInputSettingObject>
 	): Promise<void> {
+		if (typeof streamInputSettingRef === 'number') streamInputSettingRef = refStreamInputSetting(streamInputSettingRef)
 		await this.setAttributes(refToPath(streamInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -469,13 +478,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getIpOutputSetting(ipOutputSettingRef: IpOutputSettingRef): Promise<IpOutputSettingObject> {
+	async getIpOutputSetting(ipOutputSettingRef: IpOutputSettingRef | number): Promise<IpOutputSettingObject> {
+		if (typeof ipOutputSettingRef === 'number') ipOutputSettingRef = refIpOutputSetting(ipOutputSettingRef)
 		return this.#getObject(refToPath(ipOutputSettingRef), IpOutputSettingEncodingDefinition)
 	}
 	async updateIpOutputSetting(
-		ipOutputSettingRef: IpOutputSettingRef,
+		ipOutputSettingRef: IpOutputSettingRef | number,
 		props: Partial<UpdateIpOutputSettingObject>
 	): Promise<void> {
+		if (typeof ipOutputSettingRef === 'number') ipOutputSettingRef = refIpOutputSetting(ipOutputSettingRef)
 		await this.setAttributes(refToPath(ipOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -494,13 +505,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getSDIOutputSetting(sdiOutputSettingRef: SDIOutputSettingRef): Promise<SDIOutputSettingObject> {
+	async getSDIOutputSetting(sdiOutputSettingRef: SDIOutputSettingRef | number): Promise<SDIOutputSettingObject> {
+		if (typeof sdiOutputSettingRef === 'number') sdiOutputSettingRef = refSDIOutputSetting(sdiOutputSettingRef)
 		return this.#getObject(refToPath(sdiOutputSettingRef), SDIOutputSettingEncodingDefinition)
 	}
 	async updateSDIOutputSetting(
-		sdiOutputSettingRef: SDIOutputSettingRef,
+		sdiOutputSettingRef: SDIOutputSettingRef | number,
 		props: Partial<UpdateSDIOutputSettingObject>
 	): Promise<void> {
+		if (typeof sdiOutputSettingRef === 'number') sdiOutputSettingRef = refSDIOutputSetting(sdiOutputSettingRef)
 		await this.setAttributes(refToPath(sdiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -519,13 +532,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getNDIOutputSetting(ndiOutputSettingRef: NDIOutputSettingRef): Promise<NDIOutputSettingObject> {
+	async getNDIOutputSetting(ndiOutputSettingRef: NDIOutputSettingRef | number): Promise<NDIOutputSettingObject> {
+		if (typeof ndiOutputSettingRef === 'number') ndiOutputSettingRef = refNDIOutputSetting(ndiOutputSettingRef)
 		return this.#getObject(refToPath(ndiOutputSettingRef), NDIOutputSettingEncodingDefinition)
 	}
 	async updateNDIOutputSetting(
-		ndiOutputSettingRef: NDIOutputSettingRef,
+		ndiOutputSettingRef: NDIOutputSettingRef | number,
 		props: Partial<UpdateNDIOutputSettingObject>
 	): Promise<void> {
+		if (typeof ndiOutputSettingRef === 'number') ndiOutputSettingRef = refNDIOutputSetting(ndiOutputSettingRef)
 		await this.setAttributes(refToPath(ndiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -544,14 +559,22 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getStreamOutputSetting(streamOutputSettingRef: StreamOutputSettingRef): Promise<StreamOutputSettingObject> {
+	async getStreamOutputSetting(
+		streamOutputSettingRef: StreamOutputSettingRef | number
+	): Promise<StreamOutputSettingObject> {
+		if (typeof streamOutputSettingRef === 'number')
+			streamOutputSettingRef = refStreamOutputSetting(streamOutputSettingRef)
 		return this.#getObject(refToPath(streamOutputSettingRef), StreamOutputSettingEncodingDefinition)
 	}
 	async updateStreamOutputSetting(
-		streamOutputRef: StreamOutputSettingRef,
+		streamOutputSettingRef: StreamOutputSettingRef | number,
 		props: Partial<UpdateStreamOutputSettingObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(streamOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+		if (typeof streamOutputSettingRef === 'number')
+			streamOutputSettingRef = refStreamOutputSetting(streamOutputSettingRef)
+		await this.setAttributes(refToPath(streamOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
 	async listAudioOutputSettings(): Promise<AudioOutputSettingRef[]> {
 		// "OUT_AUDIO"
@@ -567,14 +590,20 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getAudioOutputSetting(audioOutputRef: AudioOutputSettingRef): Promise<AudioOutputSettingObject> {
-		return this.#getObject(refToPath(audioOutputRef), AudioOutputSettingEncodingDefinition)
+	async getAudioOutputSetting(
+		audioOutputSettingRef: AudioOutputSettingRef | number
+	): Promise<AudioOutputSettingObject> {
+		if (typeof audioOutputSettingRef === 'number') audioOutputSettingRef = refAudioOutputSetting(audioOutputSettingRef)
+		return this.#getObject(refToPath(audioOutputSettingRef), AudioOutputSettingEncodingDefinition)
 	}
 	async updateAudioOutputSetting(
-		audioOutputRef: AudioOutputSettingRef,
+		audioOutputSettingRef: AudioOutputSettingRef | number,
 		props: Partial<UpdateAudioOutputSettingObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(audioOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+		if (typeof audioOutputSettingRef === 'number') audioOutputSettingRef = refAudioOutputSetting(audioOutputSettingRef)
+		await this.setAttributes(refToPath(audioOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
 
 	// SCENES
@@ -592,11 +621,12 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 	async getScene(sceneRef: SceneRef | string): Promise<SceneObject> {
-		if (typeof sceneRef === 'string') sceneRef = parseRef<SceneRef>('scene', sceneRef)
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 
 		return this.#getObject(refToPath(sceneRef), SceneObjectEncodingDefinition)
 	}
-	async updateScene(sceneRef: SceneRef, props: Partial<UpdateSceneObject>): Promise<void> {
+	async updateScene(sceneRef: SceneRef | string, props: Partial<UpdateSceneObject>): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 		await this.setAttributes(refToPath(sceneRef), [
 			{ attribute: 'advanced_resolution_control', value: stringifyBoolean(props.advancedResolutionControl) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
@@ -618,20 +648,31 @@ export class KairosConnection extends MinimalKairosConnection {
 			// resolutionX, resolutionY, tally are read-only
 		])
 	}
-	async sceneAuto(sceneRef: SceneRef): Promise<void> {
+	async sceneAuto(sceneRef: SceneRef | string): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 		return this.executeFunction(`${refToPath(sceneRef)}.auto`)
 	}
-	async sceneCut(sceneRef: SceneRef): Promise<void> {
+	async sceneCut(sceneRef: SceneRef | string): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 		return this.executeFunction(`${refToPath(sceneRef)}.cut`)
 	}
-	async sceneAllSelectedAuto(sceneRef: SceneRef): Promise<void> {
+	async sceneAllSelectedAuto(sceneRef: SceneRef | string): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 		return this.executeFunction(`${refToPath(sceneRef)}.all_selected_auto`)
 	}
-	async sceneAllSelectedCut(sceneRef: SceneRef): Promise<void> {
+	async sceneAllSelectedCut(sceneRef: SceneRef | string): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 		return this.executeFunction(`${refToPath(sceneRef)}.all_selected_cut`)
 	}
-	// omitting "strore_snapshot", it must be a typo, right?
-	async sceneStoreSnapshot(sceneRef: SceneRef): Promise<void> {
+	/**
+	 * @deprecated This exists in the documentation, but must be a typo, right?
+	 */
+	async sceneStroreSnapshot(sceneRef: SceneRef | string): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
+		return this.executeFunction(`${refToPath(sceneRef)}.strore_snapshot`)
+	}
+	async sceneStoreSnapshot(sceneRef: SceneRef | string): Promise<void> {
+		sceneRef = parseRef<SceneRef>('scene', sceneRef)
 		return this.executeFunction(`${refToPath(sceneRef)}.store_snapshot`)
 	}
 
@@ -1143,11 +1184,16 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 		})
 	}
-	async getSceneSnapshot(snapshotRef: SceneSnapshotRef): Promise<SceneSnapshotObject> {
+	async getSceneSnapshot(snapshotRef: SceneSnapshotRef | string): Promise<SceneSnapshotObject> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.#getObject(refToPath(snapshotRef), SceneSnapshotObjectEncodingDefinition)
 	}
 
-	async updateSceneSnapshot(snapshotRef: SceneSnapshotRef, props: Partial<UpdateSceneSnapshotObject>): Promise<void> {
+	async updateSceneSnapshot(
+		snapshotRef: SceneSnapshotRef | string,
+		props: Partial<UpdateSceneSnapshotObject>
+	): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		await this.setAttributes(refToPath(snapshotRef), [
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
@@ -1160,22 +1206,28 @@ export class KairosConnection extends MinimalKairosConnection {
 			// status is read only
 		])
 	}
-	async sceneSnapshotRecall(snapshotRef: SceneSnapshotRef): Promise<void> {
+	async sceneSnapshotRecall(snapshotRef: SceneSnapshotRef | string): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.executeFunction(`${refToPath(snapshotRef)}.recall`)
 	}
-	async sceneSnapshotForceDissolve(snapshotRef: SceneSnapshotRef): Promise<void> {
+	async sceneSnapshotForceDissolve(snapshotRef: SceneSnapshotRef | string): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.executeFunction(`${refToPath(snapshotRef)}.force_dissolve`)
 	}
-	async sceneSnapshotForceRecall(snapshotRef: SceneSnapshotRef): Promise<void> {
+	async sceneSnapshotForceRecall(snapshotRef: SceneSnapshotRef | string): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.executeFunction(`${refToPath(snapshotRef)}.force_recall`)
 	}
-	async sceneSnapshotUpdate(snapshotRef: SceneSnapshotRef): Promise<void> {
+	async sceneSnapshotUpdate(snapshotRef: SceneSnapshotRef | string): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.executeFunction(`${refToPath(snapshotRef)}.update`)
 	}
-	async sceneSnapshotAbort(snapshotRef: SceneSnapshotRef): Promise<void> {
+	async sceneSnapshotAbort(snapshotRef: SceneSnapshotRef | string): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.executeFunction(`${refToPath(snapshotRef)}.abort`)
 	}
-	async sceneSnapshotDeleteEx(snapshotRef: SceneSnapshotRef): Promise<void> {
+	async sceneSnapshotDeleteEx(snapshotRef: SceneSnapshotRef | string): Promise<void> {
+		snapshotRef = parseRef<SceneSnapshotRef>('scene-snapshot', snapshotRef)
 		return this.executeFunction(`${refToPath(snapshotRef)}.delete_ex`)
 	}
 	// SOURCES:
@@ -1193,10 +1245,12 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 
-	async getFxInput(fxInputRef: FxInputRef): Promise<FxInputObject> {
+	async getFxInput(fxInputRef: FxInputRef | string): Promise<FxInputObject> {
+		fxInputRef = parseRef<FxInputRef>('fxInput', fxInputRef)
 		return this.#getObject(refToPath(fxInputRef), FxInputObjectEncodingDefinition)
 	}
-	async updateFxInput(fxInputRef: FxInputRef, props: Partial<UpdateFxInputObject>): Promise<void> {
+	async updateFxInput(fxInputRef: FxInputRef | string, props: Partial<UpdateFxInputObject>): Promise<void> {
+		fxInputRef = parseRef<FxInputRef>('fxInput', fxInputRef)
 		await this.setAttributes(refToPath(fxInputRef), [
 			{ attribute: 'name', value: props.name },
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
@@ -1499,6 +1553,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	sounds
 	// 		file_name.wav
 
+	/**
+	 * @example kairos.listMediaClips(undefined, true) // List all media clips, in all sub-folders
+	 */
 	async listMediaClips(
 		path: MediaClipRef = { realm: 'media-clip', clipPath: [] },
 		deep?: boolean
@@ -1514,6 +1571,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaClip(ref: MediaClipRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	/**
+	 * @example kairos.listMediaStills(undefined, true) // List all media stills, in all sub-folders
+	 */
 	async listMediaStills(
 		path: MediaStillRef = { realm: 'media-still', clipPath: [] },
 		deep?: boolean
@@ -1530,7 +1590,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaStill(ref: MediaStillRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
-
+	/**
+	 * @example kairos.listMediaRamRec(undefined, true) // List all media ramrecs, in all sub-folders
+	 */
 	async listMediaRamRec(
 		path: MediaRamRecRef = { realm: 'media-ramrec', clipPath: [] },
 		deep?: boolean
@@ -1546,6 +1608,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaRamRec(ref: MediaRamRecRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	/**
+	 * @example kairos.listMediaImage(undefined, true) // List all media images, in all sub-folders
+	 */
 	async listMediaImage(
 		path: MediaImageRef = { realm: 'media-image', clipPath: [] },
 		deep?: boolean
@@ -1561,6 +1626,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaImage(ref: MediaImageRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	/**
+	 * @example kairos.listMediaSounds(undefined, true) // List all media sounds, in all sub-folders
+	 */
 	async listMediaSounds(
 		path: MediaSoundRef = { realm: 'media-sound', clipPath: [] },
 		deep?: boolean
@@ -1713,39 +1781,49 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 		})
 	}
-	async getMacro(macroRef: MacroRef): Promise<MacroObject> {
+	async getMacro(macroRef: MacroRef | string): Promise<MacroObject> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.#getObject(refToPath(macroRef), MacroObjectEncodingDefinition)
 	}
 
-	async updateMacro(macroRef: MacroRef, props: Partial<UpdateMacroObject>): Promise<void> {
+	async updateMacro(macroRef: MacroRef | string, props: Partial<UpdateMacroObject>): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		await this.setAttributes(refToPath(macroRef), [
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			// status is read only
 		])
 	}
-	async macroRecall(macroRef: MacroRef): Promise<void> {
+	async macroRecall(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.recall`)
 	}
 
-	async macroPlay(macroRef: MacroRef): Promise<void> {
+	async macroPlay(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.play`)
 	}
-	async macroContinue(macroRef: MacroRef): Promise<void> {
+	async macroContinue(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.continue`)
 	}
-	async macroRecord(macroRef: MacroRef): Promise<void> {
+	async macroRecord(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.record`)
 	}
-	async macroStopRecord(macroRef: MacroRef): Promise<void> {
+	async macroStopRecord(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.stop_record`)
 	}
-	async macroPause(macroRef: MacroRef): Promise<void> {
+	async macroPause(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.pause`)
 	}
-	async macroStop(macroRef: MacroRef): Promise<void> {
+	async macroStop(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.stop`)
 	}
-	async macroDeleteEx(macroRef: MacroRef): Promise<void> {
+	async macroDeleteEx(macroRef: MacroRef | string): Promise<void> {
+		macroRef = parseRef<MacroRef>('macro', macroRef)
 		return this.executeFunction(`${refToPath(macroRef)}.delete_ex`)
 	}
 	// AUX
@@ -1809,10 +1887,12 @@ export class KairosConnection extends MinimalKairosConnection {
 
 		return auxes
 	}
-	async getAux(auxRef: AuxRef): Promise<AuxObject> {
+	async getAux(auxRef: AuxRef | string): Promise<AuxObject> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		return this.#getObject(refToPath(auxRef), AuxObjectEncodingDefinition)
 	}
-	async updateAux(auxRef: AuxRef, props: Partial<UpdateAuxObject>): Promise<void> {
+	async updateAux(auxRef: AuxRef | string, props: Partial<UpdateAuxObject>): Promise<void> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		await this.setAttributes(refToPath(auxRef), [
 			{ attribute: 'name', value: props.name },
 			{
@@ -1825,7 +1905,8 @@ export class KairosConnection extends MinimalKairosConnection {
 		])
 	}
 
-	async auxRecord(auxRef: AuxRef, frameCount = -1, filename?: string): Promise<void> {
+	async auxRecord(auxRef: AuxRef | string, frameCount = -1, filename?: string): Promise<void> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		const args: string[] = []
 		if (frameCount >= 0) {
 			args.push(frameCount.toString())
@@ -1837,7 +1918,8 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this.executeFunction(`${refToPath(auxRef)}.record`, ...args)
 	}
 
-	async auxRecordLoop(auxRef: AuxRef, frameCount = -1, filename?: string): Promise<void> {
+	async auxRecordLoop(auxRef: AuxRef | string, frameCount = -1, filename?: string): Promise<void> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		const args: string[] = []
 		if (frameCount >= 0) {
 			args.push(frameCount.toString())
@@ -1849,11 +1931,13 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this.executeFunction(`${refToPath(auxRef)}.record_loop`, ...args)
 	}
 
-	async auxRecordStop(auxRef: AuxRef): Promise<void> {
+	async auxRecordStop(auxRef: AuxRef | string): Promise<void> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		return this.executeFunction(`${refToPath(auxRef)}.stop_record`)
 	}
 
-	async auxGrabStill(auxRef: AuxRef, filename?: string): Promise<void> {
+	async auxGrabStill(auxRef: AuxRef | string, filename?: string): Promise<void> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		const args: string[] = []
 		if (filename) {
 			args.push(filename)
@@ -1862,7 +1946,8 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this.executeFunction(`${refToPath(auxRef)}.grab`, ...args)
 	}
 
-	async listAuxEffects(auxRef: AuxRef, deep?: boolean): Promise<(AuxEffectRef & { name: string })[]> {
+	async listAuxEffects(auxRef: AuxRef | string, deep?: boolean): Promise<(AuxEffectRef & { name: string })[]> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		return (await this._listDeep(`${refToPath(auxRef)}.Effects`, [], deep)).map((itemPath) => {
 			const paths = splitPath(itemPath, 'Effects')
 			if (paths.length !== 2)
@@ -1991,10 +2076,12 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	// 	AUDIO-AUX<1-8>
-	async getAudioAux(auxRef: AuxRef): Promise<AudioAuxObject> {
+	async getAudioAux(auxRef: AuxRef | string): Promise<AudioAuxObject> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		return this.#getObject(refToPath(auxRef), AudioAuxObjectEncodingDefinition)
 	}
-	async updateAudioAux(auxRef: AuxRef, props: Partial<UpdateAudioAuxObject>): Promise<void> {
+	async updateAudioAux(auxRef: AuxRef | string, props: Partial<UpdateAudioAuxObject>): Promise<void> {
+		auxRef = parseRef<AuxRef>('aux', auxRef)
 		await this.setAttributes(refToPath(auxRef), [
 			{ attribute: 'name', value: props.name },
 			{
@@ -2100,15 +2187,18 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 		})
 	}
-	async getGfxScene(gfxSceneRef: GfxSceneRef): Promise<GfxSceneObject> {
+	async getGfxScene(gfxSceneRef: GfxSceneRef | string): Promise<GfxSceneObject> {
+		gfxSceneRef = parseRef<GfxSceneRef>('gfxScene', gfxSceneRef)
 		return this.#getObject(refToPath(gfxSceneRef), GfxSceneObjectEncodingDefinition)
 	}
 	async updateGfxScene(gfxSceneRef: GfxSceneRef, props: Partial<UpdateGfxSceneObject>): Promise<void> {
+		gfxSceneRef = parseRef<GfxSceneRef>('gfxScene', gfxSceneRef)
 		await this.setAttributes(refToPath(gfxSceneRef), [
 			{ attribute: 'resolution', value: stringifyEnum<Resolution>(props.resolution, Resolution) },
 		])
 	}
 	async listGfxSceneItems(gfxSceneRef: GfxSceneRef): Promise<(GfxSceneItemRef & { name: string })[]> {
+		gfxSceneRef = parseRef<GfxSceneRef>('gfxScene', gfxSceneRef)
 		return (await this._listDeep(refToPath(gfxSceneRef), [], false)).map((itemPath) => {
 			return {
 				realm: 'gfxScene-item',
@@ -2273,13 +2363,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'mute', value: stringifyBoolean(props.mute) },
 		])
 	}
-	async getAudioMixerChannel(channelRef: AudioMixerChannelRef): Promise<AudioMixerObject> {
+	async getAudioMixerChannel(channelRef: AudioMixerChannelRef | string): Promise<AudioMixerObject> {
+		channelRef = parseRef<AudioMixerChannelRef>('audioMixer-channel', channelRef)
 		return this.#getObject(`${refToPath(channelRef)}`, AudioMixerObjectEncodingDefinition)
 	}
 	async updateAudioMixerChannel(
-		channelRef: AudioMixerChannelRef,
+		channelRef: AudioMixerChannelRef | string,
 		props: Partial<UpdateAudioMixerObject>
 	): Promise<void> {
+		channelRef = parseRef<AudioMixerChannelRef>('audioMixer-channel', channelRef)
 		await this.setAttributes(`${refToPath(channelRef)}`, [
 			{ attribute: 'volume', value: stringifyFloat(props.volume) },
 			{ attribute: 'mute', value: stringifyBoolean(props.mute) },

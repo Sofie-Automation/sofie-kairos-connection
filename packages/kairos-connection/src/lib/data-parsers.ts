@@ -46,13 +46,15 @@ export function parseRefOptional<Ref extends AnyRef>(realm: Ref['realm'], value:
 	if (value === '<unknown>') return null as any // This is a special case for undefined sources
 	return parseRef(realm, value)
 }
-export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string): Ref {
-	const ref = pathRoRef(value)
+export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string | Ref): Ref {
+	const ref = typeof value === 'string' ? pathRoRef(value) : value
 
 	if (!isRef(ref))
-		throw new Error(`Unable to parse string "${value}", unknown format (expected "${refToPath(exampleRef(realm))}")`)
+		throw new Error(
+			`Unable to parse  ${JSON.stringify(value)}, unknown format (expected "${refToPath(exampleRef(realm))}")`
+		)
 	if (ref.realm !== realm)
-		throw new Error(`Unable to parse string "${value}", is a "${ref.realm}" (expected "${realm}")`)
+		throw new Error(`Unable to parse ${JSON.stringify(value)}, is a "${ref.realm}" (expected "${realm}")`)
 
 	return ref as Ref
 }
