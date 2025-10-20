@@ -1,7 +1,8 @@
 {
 	"entryPointStrategy": "packages",
 	"entryPoints": [
-		"packages/kairos-connection"
+		"packages/kairos-connection",
+		"packages/kairos-lib"
 	],
 	"packageOptions": {
 		"entryPoints": [
