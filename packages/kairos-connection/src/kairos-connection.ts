@@ -170,6 +170,8 @@ import {
 	MediaRamRecRef,
 	MediaImageRef,
 	RamRecorderRef,
+	GfxChannelRef,
+	refGfxChannel,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -1476,7 +1478,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	private _assertPlayerIdIsValid(playerId: number): void {
 		// Note: documentation mention upper limits, but we've seen higher numbers in the wild
 		if (typeof playerId !== 'number' || playerId < 1 || Number.isNaN(playerId)) {
-			throw new Error(`Invalid playerId: ${playerId}.`)
+			throw new Error(`Invalid index: ${playerId}.`)
 		}
 	}
 
@@ -2048,23 +2050,39 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			<1-36>
 	// GFXCHANNELS
 	// 	GFX<1-2>
-	async getGfxChannel(gfxChannelId: number): Promise<GfxChannelObject> {
-		this._assertGfxChannelIdIsValid(gfxChannelId)
-		return this.#getObject(`GFX${gfxChannelId}`, GfxChannelObjectEncodingDefinition)
+	async listGfxChannels(): Promise<GfxChannelRef[]> {
+		return omitFalsy(
+			(await this.getList('GFXCHANNELS')).map((path) => {
+				// "AP1"
+				if (!path.startsWith('GFX')) return undefined
+				const gfxChannelIndex = parseInt(path.slice(3), 10)
+				return refGfxChannel(gfxChannelIndex)
+			})
+		)
 	}
-	async updateGfxChannel(gfxChannelId: number, props: Partial<UpdateGfxChannelObject>): Promise<void> {
-		this._assertGfxChannelIdIsValid(gfxChannelId)
-		await this.setAttributes(`GFX${gfxChannelId}`, [
+
+	async getGfxChannel(gfxChannelId: number | GfxChannelRef): Promise<GfxChannelObject> {
+		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
+		return this.#getObject(refToPath(refGfxChannel(gfxChannelId)), GfxChannelObjectEncodingDefinition)
+	}
+	async updateGfxChannel(gfxChannelId: number | GfxChannelRef, props: Partial<UpdateGfxChannelObject>): Promise<void> {
+		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
+		await this.setAttributes(refToPath(refGfxChannel(gfxChannelId)), [
 			{ attribute: 'scene', value: stringifyRef<GfxSceneRef>('gfxScene', props.scene) },
 		])
 	}
-	private _assertGfxChannelIdIsValid(gfxChannelId: number): void {
-		if (typeof gfxChannelId !== 'number' || gfxChannelId < 1 || gfxChannelId > 2) {
-			throw new Error(`Invalid gfxChannelId: ${gfxChannelId}. Must be between 1 and 2.`)
+	private _assertGfxChannelIdIsValid(gfxChannelId: number | GfxChannelRef): number {
+		if (typeof gfxChannelId === 'object') {
+			if (gfxChannelId.realm !== 'gfx-channel') throw new Error(`Invalid gfxChannelId realm: ${gfxChannelId.realm}.`)
+			gfxChannelId = gfxChannelId.gfxChannelIndex
 		}
+		this._assertPlayerIdIsValid(gfxChannelId)
+
+		return gfxChannelId
 	}
 	// GFXSCENES
 	// 	GfxScene
+
 	async listGfxScenes(
 		gfxSceneRef: GfxSceneRef = { realm: 'gfxScene', scenePath: [] },
 		deep?: boolean

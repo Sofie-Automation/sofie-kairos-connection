@@ -128,6 +128,7 @@ import {
 	refMediaRamRec,
 	refMediaImage,
 	refMediaSound,
+	GfxChannelRef,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -4692,6 +4693,7 @@ describe('KairosConnection', () => {
 		test('GFXCHANNELS commands', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
+					'list_ex:GFXCHANNELS': ['list_ex:GFXCHANNELS=', 'GFX1', 'GFX2', ''],
 					'GFX1.scene': ['GFX1.scene=GFXSCENES.Old'],
 					'GFX1.scene=GFXSCENES.Subfolder.New': ['OK'],
 				}[message]
@@ -4699,6 +4701,17 @@ describe('KairosConnection', () => {
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
+			expect(await connection.listGfxChannels()).toStrictEqual([
+				{
+					realm: 'gfx-channel',
+					gfxChannelIndex: 1,
+				},
+				{
+					realm: 'gfx-channel',
+					gfxChannelIndex: 2,
+				},
+			] satisfies GfxChannelRef[])
+
 			expect(await connection.getGfxChannel(1)).toStrictEqual({
 				scene: refGfxScene(['Old']),
 			} satisfies GfxChannelObject)

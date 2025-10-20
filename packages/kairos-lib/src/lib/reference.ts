@@ -21,6 +21,7 @@ export type AnyRef =
 	| AudioPlayerRef
 	| SourceBaseRef
 	| SourceIntRef
+	| GfxChannelRef
 	| GfxSceneRef
 	| GfxSceneItemRef
 	| AudioMixerChannelRef
@@ -155,6 +156,8 @@ export function refToPath(ref: AnyRef): string {
 			return `IS${ref.storeIndex}`
 		case 'audio-player':
 			return `AP${ref.playerIndex}`
+		case 'gfx-channel':
+			return `GFX${ref.gfxChannelIndex}`
 		case 'gfxScene':
 			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr)].join('.')
 		case 'gfxScene-item':
@@ -305,6 +308,9 @@ export function pathRoRef(ref: string): AnyRef | string {
 		}
 	} else if (path[0] === 'MATTES') {
 		return refMattes(path.slice(1))
+	} else if (path[0].startsWith('GFX') && path.length === 1) {
+		const index = parseInt(path[0].slice(3), 10)
+		if (Number.isNaN(index) && index > 0) return refGfxChannel(index)
 	} else if (path[0] === 'GFXSCENES') {
 		return refGfxScene(path.slice(1))
 	} else if (path[0] === 'AUX') {
@@ -563,6 +569,14 @@ export function refAudioPlayer(playerIndex: number): AudioPlayerRef {
 	return { realm: 'audio-player', playerIndex }
 }
 
+// ---------------------------- GFXCHANNELS ------------------------------
+export type GfxChannelRef = {
+	realm: 'gfx-channel'
+	gfxChannelIndex: number
+}
+export function refGfxChannel(gfxChannelIndex: number): GfxChannelRef {
+	return { realm: 'gfx-channel', gfxChannelIndex }
+}
 // ---------------------------- GFXSCENES ------------------------------
 export type GfxSceneRef = {
 	realm: 'gfxScene'
