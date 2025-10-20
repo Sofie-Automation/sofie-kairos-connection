@@ -11,6 +11,7 @@ import {
 	AnyRef,
 	MediaStillRef,
 	MediaImageRef,
+	exampleRef,
 } from 'kairos-lib'
 
 export function stringifyRef<Ref extends AnyRef>(
@@ -36,7 +37,7 @@ export function stringifyRef<Ref extends AnyRef>(
 	if (ref === undefined) return undefined
 	if (ref === null) return ''
 
-	if (realm !== ref.realm) throw new Error(`Unable to stringify ref, is a "${ref.realm}" (expected ${realm})`)
+	if (realm !== ref.realm) throw new Error(`Unable to stringify ref, is a "${ref.realm}" (expected format: ${realm})`)
 
 	return refToPath(ref)
 }
@@ -48,7 +49,8 @@ export function parseRefOptional<Ref extends AnyRef>(realm: Ref['realm'], value:
 export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string): Ref {
 	const ref = pathRoRef(value)
 
-	if (!isRef(ref)) throw new Error(`Unable to parse string "${value}", unknown format`)
+	if (!isRef(ref))
+		throw new Error(`Unable to parse string "${value}", unknown format (expected "${refToPath(exampleRef(realm))}")`)
 	if (ref.realm !== realm)
 		throw new Error(`Unable to parse string "${value}", is a "${ref.realm}" (expected "${realm}")`)
 

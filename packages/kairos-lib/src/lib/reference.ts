@@ -81,6 +81,7 @@ export function isAnySourceRef(ref: AnyRef): ref is AnySourceRef {
 	)
 }
 
+/** Converts a Ref to a Kairos path */
 export function refToPath(ref: AnyRef): string {
 	switch (ref.realm) {
 		case 'scene':
@@ -365,6 +366,102 @@ export function pathRoRef(ref: string): AnyRef | string {
 
 	// If nothing else matched, return the original string
 	return ref
+}
+
+/** Returns an example of a Ref of the given realm */
+export function exampleRef(realm: AnyRef['realm']): AnyRef {
+	switch (realm) {
+		case 'scene':
+			return refScene(['Scene1'])
+		case 'scene-layer':
+			return refSceneLayer(refScene(['Scene1']), ['Layer1'])
+		case 'scene-layer-effect':
+			return refSceneLayerEffect(refSceneLayer(refScene(['Scene1']), ['Layer1']), ['Effect1'])
+		case 'media-clip':
+			return refMediaClip(['Clip1'])
+
+		case 'media-still':
+			return refMediaStill(['Still1'])
+		case 'media-ramrec':
+			return refMediaRamRec(['RamRec1'])
+		case 'media-image':
+			return refMediaImage(['Image1'])
+		case 'media-sound':
+			return refMediaSound(['Sound1'])
+		case 'scene-transition':
+			return refSceneTransition(refScene(['Scene1']), ['Transition1'])
+		case 'scene-transition-mix':
+			return refSceneTransitionMix(refSceneTransition(refScene(['Scene1']), ['Transition1']), ['Mix1'])
+		case 'scene-transition-mix-effect':
+			return refSceneTransitionMixEffect(
+				refSceneTransitionMix(refSceneTransition(refScene(['Scene1']), ['Transition1']), ['Mix1']),
+				['Effect1']
+			)
+		case 'scene-snapshot':
+			return refSceneSnapshot(refScene(['Scene1']), ['Snapshot1'])
+		case 'macro':
+			return refMacro(['Macro1'])
+		case 'source-base':
+			return refSourceBase(['BLACK'])
+		case 'source-int':
+			return refSourceInt(['ColorBar'])
+		case 'ramRecorder':
+			return refRamRecorder(1)
+		case 'clipPlayer':
+			return refClipPlayer(1)
+		case 'imageStore':
+			return refImageStore(1)
+		case 'audio-player':
+			return refAudioPlayer(1)
+		case 'gfx-channel':
+			return refGfxChannel(1)
+		case 'gfxScene':
+			return refGfxScene(['GfxScene1'])
+		case 'gfxScene-item':
+			return refGfxSceneItem(refGfxScene(['GfxScene1']), ['Item1'])
+		case 'audioMixer-channel':
+			return refAudioMixerChannel(['Channel1'])
+		case 'mattes':
+			return refMattes(['Matte1'])
+		case 'aux':
+			return refAuxName('AUX1')
+		case 'aux-effect':
+			return refAuxEffect(refAuxName('AUX1'), ['Effect1'])
+		case 'ip-input':
+			return refIpInput(1)
+		case 'sdi-input':
+			return refSDIInput(1)
+		case 'ndi-input':
+			return refNDIInput(1)
+		case 'stream-input':
+			return refStreamInput(1)
+		case 'fxInput':
+			return refFxInput(['FxInput1'])
+		case 'matte':
+			return refMatte(['Matte1'])
+		case 'ip-input-setting':
+			return refIpInputSetting(1)
+		case 'sdi-input-setting':
+			return refSDIInputSetting(1)
+		case 'ndi-input-setting':
+			return refNDIInputSetting(1)
+		case 'stream-input-setting':
+			return refStreamInputSetting(1)
+		case 'ip-output-setting':
+			return refIpOutputSetting(1)
+		case 'sdi-output-setting':
+			return refSDIOutputSetting(1)
+		case 'ndi-output-setting':
+			return refNDIOutputSetting(1)
+		case 'stream-output-setting':
+			return refStreamOutputSetting(1)
+		case 'audio-output-setting':
+			return refAudioOutputSetting(1)
+		default:
+			assertNever(realm)
+
+			throw new Error(`Unknown realm: ${JSON.stringify(realm)}`)
+	}
 }
 
 /**
