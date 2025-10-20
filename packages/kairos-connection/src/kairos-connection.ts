@@ -1261,20 +1261,27 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getRamRecorder(ramRecorderId: number): Promise<RamRecPlayerObject> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async getRamRecorder(ramRecorderId: number | RamRecorderRef): Promise<RamRecPlayerObject> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.#getObject(refToPath(refRamRecorder(ramRecorderId)), RamRecPlayerObjectEncodingDefinition)
 	}
-	async loadRamRecorderClip(ramRecorderId: number, clip: RamRecPlayerObject['clip'], position?: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async loadRamRecorderClip(
+		ramRecorderId: number | RamRecorderRef,
+		clip: RamRecPlayerObject['clip'],
+		position?: number
+	): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		await this._loadPlayerClip(
 			refToPath(refRamRecorder(ramRecorderId)),
 			stringifyRef<MediaRamRecRef>('media-ramrec', clip),
 			position
 		)
 	}
-	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateRamRecPlayerObject>): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async updateRamRecorder(
+		ramRecorderId: number | RamRecorderRef,
+		props: Partial<UpdateRamRecPlayerObject>
+	): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 
 		await this.setAttributes(refToPath(refRamRecorder(ramRecorderId)), [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
@@ -1289,65 +1296,73 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async ramRecorderBegin(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderBegin(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.begin`)
 	}
-	async ramRecorderRewind(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderRewind(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.rewind`)
 	}
-	async ramRecorderStepBack(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderStepBack(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.step_back`)
 	}
-	async ramRecorderReverse(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderReverse(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.reverse`)
 	}
-	async ramRecorderPlay(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlay(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.play`)
 	}
-	async ramRecorderPlayLoop(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlayLoop(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.play_loop`)
 	}
-	async ramRecorderPause(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPause(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.pause`)
 	}
-	async ramRecorderStop(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderStop(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.stop`)
 	}
-	async ramRecorderStepForward(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderStepForward(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.step_forward`)
 	}
-	async ramRecorderFastForward(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderFastForward(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.fast_forward`)
 	}
-	async ramRecorderEnd(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderEnd(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.end`)
 	}
-	async ramRecorderPlaylistBegin(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistBegin(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_begin`)
 	}
-	async ramRecorderPlaylistBack(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistBack(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_back`)
 	}
-	async ramRecorderPlaylistNext(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistNext(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_next`)
 	}
-	async ramRecorderPlaylistEnd(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistEnd(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_end`)
+	}
+	private _assertRamRecIdIsValid(ramRecorderId: number | RamRecorderRef): number {
+		if (typeof ramRecorderId === 'object') {
+			if (ramRecorderId.realm !== 'ramRecorder') throw new Error(`Invalid ramRecorderId realm: ${ramRecorderId.realm}.`)
+			ramRecorderId = ramRecorderId.playerIndex
+		}
+		this._assertPlayerIdIsValid(ramRecorderId)
+		return ramRecorderId
 	}
 
 	// PLAYERS
@@ -1362,24 +1377,24 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getClipPlayer(playerId: number): Promise<ClipPlayerObject> {
-		this._assertPlayerIdIsValid(playerId)
+	async getClipPlayer(playerId: number | ClipPlayerRef): Promise<ClipPlayerObject> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refClipPlayer(playerId)), ClipPlayerObjectEncodingDefinition)
 	}
 	async loadClipPlayerClip(
-		playerId: number,
+		playerId: number | ClipPlayerRef,
 		clip: Required<UpdateClipPlayerObject>['clip'],
 		position?: number
 	): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		await this._loadPlayerClip(
 			refToPath(refClipPlayer(playerId)),
 			stringifyRef<MediaClipRef>('media-clip', clip),
 			position
 		)
 	}
-	async updateClipPlayer(playerId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async updateClipPlayer(playerId: number | ClipPlayerRef, props: Partial<UpdateClipPlayerObject>): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		await this.setAttributes(refToPath(refClipPlayer(playerId)), [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
@@ -1393,61 +1408,69 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async clipPlayerBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerBegin(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.begin`)
 	}
-	async clipPlayerRewind(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerRewind(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.rewind`)
 	}
-	async clipPlayerStepBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerStepBack(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.step_back`)
 	}
-	async clipPlayerReverse(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerReverse(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.reverse`)
 	}
-	async clipPlayerPlay(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlay(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.play`)
 	}
-	async clipPlayerPause(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPause(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.pause`)
 	}
-	async clipPlayerStop(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerStop(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.stop`)
 	}
-	async clipPlayerStepForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerStepForward(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.step_forward`)
 	}
-	async clipPlayerFastForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerFastForward(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.fast_forward`)
 	}
-	async clipPlayerEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerEnd(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.end`)
 	}
-	async clipPlayerPlaylistBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistBegin(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_begin`)
 	}
-	async clipPlayerPlaylistBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistBack(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_back`)
 	}
-	async clipPlayerPlaylistNext(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistNext(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_next`)
 	}
-	async clipPlayerPlaylistEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistEnd(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_end`)
+	}
+	private _assertClipPlayerIdIsValid(playerId: number | ClipPlayerRef): number {
+		if (typeof playerId === 'object') {
+			if (playerId.realm !== 'clipPlayer') throw new Error(`Invalid playerId realm: ${playerId.realm}.`)
+			playerId = playerId.playerIndex
+		}
+		this._assertPlayerIdIsValid(playerId)
+		return playerId
 	}
 	/** Verifies that the id of a imageStore, ramRec, Audio or clip-player is reasonable, throws otherwise */
 	private _assertPlayerIdIsValid(playerId: number): void {
@@ -2113,20 +2136,24 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getAudioPlayer(playerId: number): Promise<AudioPlayerObject> {
-		this._assertPlayerIdIsValid(playerId)
+	async getAudioPlayer(playerId: number | AudioPlayerRef): Promise<AudioPlayerObject> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refAudioPlayer(playerId)), AudioPlayerObjectEncodingDefinition)
 	}
-	async loadAudioPLayerClip(playerId: number, clip: AudioPlayerObject['clip'], position?: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async loadAudioPLayerClip(
+		playerId: number | AudioPlayerRef,
+		clip: AudioPlayerObject['clip'],
+		position?: number
+	): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		await this._loadPlayerClip(
 			refToPath(refAudioPlayer(playerId)),
 			stringifyRef<MediaSoundRef>('media-sound', clip),
 			position
 		)
 	}
-	async updateAudioPlayer(playerId: number, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async updateAudioPlayer(playerId: number | AudioPlayerRef, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		await this.setAttributes(refToPath(refAudioPlayer(playerId)), [
 			{ attribute: 'clip', value: stringifyRef<MediaSoundRef>('media-sound', props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
@@ -2138,61 +2165,69 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async audioPlayerBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerBegin(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.begin`)
 	}
-	async audioPlayerRewind(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerRewind(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.rewind`)
 	}
-	async audioPlayerStepBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerStepBack(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.step_back`)
 	}
-	async audioPlayerReverse(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerReverse(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.reverse`)
 	}
-	async audioPlayerPlay(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlay(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.play`)
 	}
-	async audioPlayerPause(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPause(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.pause`)
 	}
-	async audioPlayerStop(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerStop(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.stop`)
 	}
-	async audioPlayerStepForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerStepForward(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.step_forward`)
 	}
-	async audioPlayerFastForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerFastForward(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.fast_forward`)
 	}
-	async audioPlayerEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerEnd(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.end`)
 	}
-	async audioPlayerPlaylistBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistBegin(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_begin`)
 	}
-	async audioPlayerPlaylistBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistBack(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_back`)
 	}
-	async audioPlayerPlaylistNext(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistNext(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_next`)
 	}
-	async audioPlayerPlaylistEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistEnd(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_end`)
+	}
+	private _assertAudioPlayerIdIsValid(playerId: number | AudioPlayerRef): number {
+		if (typeof playerId === 'object') {
+			if (playerId.realm !== 'audio-player') throw new Error(`Invalid playerId realm: ${playerId.realm}.`)
+			playerId = playerId.playerIndex
+		}
+		this._assertPlayerIdIsValid(playerId)
+		return playerId
 	}
 
 	// AUDIOMIXERS
@@ -2249,12 +2284,12 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getImageStore(storeId: number): Promise<ImageStoreObject> {
-		this._assertPlayerIdIsValid(storeId)
+	async getImageStore(storeId: number | ImageStoreRef): Promise<ImageStoreObject> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.#getObject(refToPath(refImageStore(storeId)), ImageStoreObjectEncodingDefinition)
 	}
-	async updateImageStore(storeId: number, props: Partial<UpdateImageStoreObject>): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async updateImageStore(storeId: number | ImageStoreRef, props: Partial<UpdateImageStoreObject>): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 
 		await this.setAttributes(refToPath(refImageStore(storeId)), [
 			{ attribute: 'clip', value: stringifyImageStoreClip(props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
@@ -2272,21 +2307,29 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async imageStorePlaylistBegin(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistBegin(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_begin`)
 	}
-	async imageStorePlaylistBack(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistBack(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_back`)
 	}
-	async imageStorePlaylistNext(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistNext(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_next`)
 	}
-	async imageStorePlaylistEnd(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistEnd(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_end`)
+	}
+	private _assertImageStoreIdIsValid(playerId: number | ImageStoreRef): number {
+		if (typeof playerId === 'object') {
+			if (playerId.realm !== 'imageStore') throw new Error(`Invalid playerId realm: ${playerId.realm}.`)
+			playerId = playerId.storeIndex
+		}
+		this._assertPlayerIdIsValid(playerId)
+		return playerId
 	}
 
 	// SPANELPROFILES
