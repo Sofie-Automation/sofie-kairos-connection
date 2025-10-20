@@ -985,7 +985,8 @@ export enum EffectFilmLookColorMode {
 
 export type UpdateEffectCropObject = OmitReadonly<EffectCropObject>
 export type UpdateEffectLuminanceKeyObject = OmitReadonly<EffectLuminanceKeyObject> & {
-	sourceKey: AnySourceRef // Cannot be null in updates
+	// Also allow string as input, for convenience:
+	sourceKey: AnySourceRef | string // Cannot be null in updates
 }
 export type UpdateEffectTransform2DObject = OmitReadonly<EffectTransform2DObject>
 export type UpdateEffectChromaKeyObject = OmitReadonly<EffectChromaKeyObject>
@@ -997,7 +998,8 @@ export type UpdateEffectToneCurveCorrectionObject = OmitReadonly<EffectToneCurve
 export type UpdateEffectMatrixCorrectionObject = OmitReadonly<EffectMatrixCorrectionObject>
 export type UpdateEffectTemperatureCorrectionObject = OmitReadonly<EffectTemperatureCorrectionObject>
 export type UpdateEffectLinearKeyObject = OmitReadonly<EffectLinearKeyObject> & {
-	keySource: AnySourceRef // Cannot be null in updates
+	// Also allow string as input, for convenience:
+	keySource: AnySourceRef | string // Cannot be null in updates
 }
 export type UpdateEffectPositionObject = OmitReadonly<EffectPositionObject>
 export type UpdateEffectPCropObject = OmitReadonly<EffectPCropObject>

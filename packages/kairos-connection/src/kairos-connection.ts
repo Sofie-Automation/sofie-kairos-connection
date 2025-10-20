@@ -9,6 +9,7 @@ import {
 	stringifyAnySourceRef,
 	stringifyRef,
 	stringifyImageStoreClip,
+	parseRef,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -590,7 +591,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 		})
 	}
-	async getScene(sceneRef: SceneRef): Promise<SceneObject> {
+	async getScene(sceneRef: SceneRef | string): Promise<SceneObject> {
+		if (typeof sceneRef === 'string') sceneRef = parseRef<SceneRef>('scene', sceneRef)
+
 		return this.#getObject(refToPath(sceneRef), SceneObjectEncodingDefinition)
 	}
 	async updateScene(sceneRef: SceneRef, props: Partial<UpdateSceneObject>): Promise<void> {
@@ -611,7 +614,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'fader_sync', value: stringifyBoolean(props.faderSync) },
 			{ attribute: 'limit_off_action', value: stringifyEnum(props.limitOffAction, SceneLimitOffAction) },
 			{ attribute: 'limit_return_time', value: stringifyInteger(props.limitReturnTime) },
-			{ attribute: 'key_preview', value: props.keyPreview },
+			{ attribute: 'key_preview', value: stringifyRef<SceneLayerEffectRef>('scene-layer-effect', props.keyPreview) },
 			// resolutionX, resolutionY, tally are read-only
 		])
 	}
@@ -653,7 +656,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		})
 	}
 
-	async getSceneLayer(layerRef: SceneLayerRef): Promise<SceneLayerObject> {
+	async getSceneLayer(layerRef: SceneLayerRef | string): Promise<SceneLayerObject> {
+		if (typeof layerRef === 'string') layerRef = parseRef<SceneLayerRef>('scene-layer', layerRef)
+
 		return this.#getObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition)
 	}
 

@@ -1249,7 +1249,7 @@ describe('KairosConnection', () => {
 				},
 				faderReverse: false,
 				faderSync: false,
-				keyPreview: '<unknown>',
+				keyPreview: null,
 				limitOffAction: SceneLimitOffAction.None,
 				limitReturnTime: 20,
 				nextTransition: [refSceneTransition(refMain, ['BgdMix'])],
