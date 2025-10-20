@@ -1,8 +1,13 @@
 {
 	"entryPointStrategy": "packages",
-	"entryPoints": ["packages/kairos-state", "packages/kairos-connection"],
+	"entryPoints": [
+		"packages/kairos-connection",
+		"packages/kairos-lib"
+	],
 	"packageOptions": {
-		"entryPoints": ["src/main.ts"],
+		"entryPoints": [
+			"src/main.ts"
+		],
 		"compilerOptions": {
 			// Vitest causes some errors
 			"skipLibCheck": true

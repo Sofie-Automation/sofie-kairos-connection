@@ -2509,7 +2509,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kairos-connection@npm:*, kairos-connection@npm:0.0.1, kairos-connection@workspace:packages/kairos-connection":
+"kairos-connection@npm:*, kairos-connection@workspace:packages/kairos-connection":
   version: 0.0.0-use.local
   resolution: "kairos-connection@workspace:packages/kairos-connection"
   dependencies:
@@ -2531,15 +2531,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "kairos-lib@workspace:packages/kairos-lib"
   dependencies:
-    tslib: "npm:^2.8.1"
-  languageName: unknown
-  linkType: soft
-
-"kairos-state@workspace:packages/kairos-state":
-  version: 0.0.0-use.local
-  resolution: "kairos-state@workspace:packages/kairos-state"
-  dependencies:
-    kairos-connection: "npm:0.0.1"
     tslib: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
