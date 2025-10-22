@@ -1253,7 +1253,7 @@ describe('KairosConnection', () => {
 				limitOffAction: SceneLimitOffAction.None,
 				limitReturnTime: 20,
 				nextTransition: [refSceneTransition(refMain, ['BgdMix'])],
-				nextTransitionType: '<unknown>',
+				// nextTransitionType: '<unknown>',
 				resolution: Resolution.Resolution1920x1080,
 				resolutionX: 1920,
 				resolutionY: 1080,

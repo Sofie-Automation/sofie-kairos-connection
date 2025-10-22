@@ -27,7 +27,7 @@ export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject
 	},
 	allDuration: { protocolName: 'all_duration', parser: parseInteger },
 	allFader: { protocolName: 'all_fader', parser: parseFloatValue },
-	nextTransitionType: { protocolName: 'next_transition_type', parser: (value) => value },
+	// nextTransitionType: { protocolName: 'next_transition_type', parser: (value) => value }, // We don't know what this is, so we leave it out
 	faderReverse: { protocolName: 'fader_reverse', parser: parseBoolean },
 	faderSync: { protocolName: 'fader_sync', parser: parseBoolean },
 	limitOffAction: {

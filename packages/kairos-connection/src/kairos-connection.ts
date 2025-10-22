@@ -639,7 +639,7 @@ export class KairosConnection extends MinimalKairosConnection {
 			},
 			{ attribute: 'all_duration', value: stringifyInteger(props.allDuration) },
 			{ attribute: 'all_fader', value: stringifyFloat(props.allFader) },
-			{ attribute: 'next_transition_type', value: props.nextTransitionType },
+			// { attribute: 'next_transition_type', value: props.nextTransitionType }, // we don't know what this is, so we leave it out
 			{ attribute: 'fader_reverse', value: stringifyBoolean(props.faderReverse) },
 			{ attribute: 'fader_sync', value: stringifyBoolean(props.faderSync) },
 			{ attribute: 'limit_off_action', value: stringifyEnum(props.limitOffAction, SceneLimitOffAction) },

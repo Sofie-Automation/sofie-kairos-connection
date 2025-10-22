@@ -73,12 +73,13 @@ export interface SceneObject {
 	allDuration: number
 	/** float  */
 	allFader: number
-	/**
-	 * [ ObjectID ]
-	 *  TODO: Figure out what this is, what is this a reference to?
-	 * @deprecated Parsing of this property is not implemented, use with caution.
-	 */
-	nextTransitionType: string
+	// /**
+	//  * [ ObjectID ]
+	//  *  TODO: Figure out what this is, what is this a reference to?
+	//  * @deprecated Parsing of this property is not implemented, use with caution.
+	//  */
+	// nextTransitionType: string
+
 	faderReverse: boolean
 	faderSync: boolean
 
