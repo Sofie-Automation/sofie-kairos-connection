@@ -1,4 +1,4 @@
-name: Publish prerelease
+name: Publish to NPM
 
 on:
   # Build tags on push
@@ -75,7 +75,7 @@ jobs:
               echo "Publishing experimental"
               echo "tag=experimental" >> $GITHUB_OUTPUT
             fi
-            
+
             HASH=$(git rev-parse --short HEAD)
             TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
             PRERELEASE_TAG=nightly-$(echo "${{ github.ref_name }}" | sed -r 's/[^a-z0-9]+/-/gi')
