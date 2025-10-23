@@ -79,7 +79,6 @@ import {
 	refGfxSceneItem,
 	refImageStore,
 	refMacro,
-	refMattes,
 	refRamRecorder,
 	refScene,
 	refSceneLayer,
@@ -129,6 +128,7 @@ import {
 	refMediaImage,
 	refMediaSound,
 	GfxChannelRef,
+	refMatte,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -3986,7 +3986,7 @@ describe('KairosConnection', () => {
 					name: 'Test name',
 					source: refSourceBase(['WHITE']),
 					tallyRoot: 1,
-					sourceOptions: [refMattes(['ColA']), refMattes(['ColB']), refMattes(['ColC'])],
+					sourceOptions: [refMatte(['ColA']), refMatte(['ColB']), refMatte(['ColC'])],
 					// recordingStatus, available is read only
 				})
 			).toBeUndefined()
@@ -3994,7 +3994,7 @@ describe('KairosConnection', () => {
 				recordingStatus: AuxRecordingStatus.Idle,
 				name: 'Test name',
 				available: false,
-				sourceOptions: [refMattes(['ColA']), refMattes(['ColB']), refMattes(['ColC'])],
+				sourceOptions: [refMatte(['ColA']), refMatte(['ColB']), refMatte(['ColC'])],
 				source: refSourceBase(['WHITE']),
 				tallyRoot: 1,
 			} satisfies AuxObject)

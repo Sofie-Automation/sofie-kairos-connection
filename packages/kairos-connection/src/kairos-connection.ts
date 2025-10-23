@@ -103,7 +103,7 @@ import {
 	GfxSceneRef,
 	isRef,
 	MacroRef,
-	pathRoRef,
+	pathToRef,
 	refToPath,
 	SceneLayerEffectRef,
 	SceneLayerRef,
@@ -1845,7 +1845,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		const auxes: AuxRef[] = []
 
 		for (const auxPath of rawAuxes) {
-			const ref = pathRoRef(auxPath)
+			const ref = pathToRef(auxPath)
 			if (!isRef(ref) || ref.realm !== 'aux') {
 				throw new Error(`Invalid aux path: ${auxPath}. Expected realm "aux".`)
 			}

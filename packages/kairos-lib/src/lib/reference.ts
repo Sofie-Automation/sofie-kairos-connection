@@ -25,7 +25,7 @@ export type AnyRef =
 	| GfxSceneRef
 	| GfxSceneItemRef
 	| AudioMixerChannelRef
-	| MattesRef
+	| MatteRef
 	| AuxRef
 	| AuxEffectRef
 	| IpInputRef
@@ -33,7 +33,6 @@ export type AnyRef =
 	| NDIInputRef
 	| StreamInputRef
 	| FxInputRef
-	| MatteRef
 	| IpInputSettingRef
 	| SDIInputSettingRef
 	| NDIInputSettingRef
@@ -62,7 +61,7 @@ export type AnySourceRef =
 	| SourceBaseRef
 	| SourceIntRef
 	| SceneRef
-	| MattesRef
+	| MatteRef
 	| AuxRef
 	| FxInputRef
 	| AnyInputRef
@@ -75,7 +74,7 @@ export function isAnySourceRef(ref: AnyRef): ref is AnySourceRef {
 		ref.realm === 'source-base' ||
 		ref.realm === 'source-int' ||
 		ref.realm === 'scene' ||
-		ref.realm === 'mattes' ||
+		ref.realm === 'matte' ||
 		ref.realm === 'aux' ||
 		isAnyInputRef(ref)
 	)
@@ -167,8 +166,6 @@ export function refToPath(ref: AnyRef): string {
 			)
 		case 'audioMixer-channel':
 			return ['AUDIOMIXER', ...ref.channelPath.map(protocolEncodeStr)].join('.')
-		case 'mattes':
-			return ['MATTES', ...ref.path.map(protocolEncodeStr)].join('.')
 		case 'aux': {
 			const path = [protocolEncodeStr(ref.path)]
 			if (ref.pathIsName) path.unshift('AUX')
@@ -215,7 +212,7 @@ export function refToPath(ref: AnyRef): string {
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
 	}
 }
-export function pathRoRef(ref: string): AnyRef | string {
+export function pathToRef(ref: string): AnyRef | string {
 	const path = protocolDecodePath(ref)
 
 	if (path[0] === 'SCENES') {
@@ -308,7 +305,7 @@ export function pathRoRef(ref: string): AnyRef | string {
 			}
 		}
 	} else if (path[0] === 'MATTES') {
-		return refMattes(path.slice(1))
+		return refMatte(path.slice(1))
 	} else if (path[0].startsWith('GFX') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
 		if (!Number.isNaN(index) && index > 0) return refGfxChannel(index)
@@ -317,6 +314,11 @@ export function pathRoRef(ref: string): AnyRef | string {
 	} else if (path[0] === 'AUX') {
 		if (path.length === 2) {
 			return refAuxName(path[1])
+		}
+
+		if (path.length >= 3 && path[2] === 'Effects') {
+			const auxRef = refAuxName(path[1])
+			return refAuxEffect(auxRef, path.slice(3))
 		}
 	} else if (path[0].includes('-AUX')) {
 		// Auxes are often refered to without the prefix
@@ -362,6 +364,10 @@ export function pathRoRef(ref: string): AnyRef | string {
 	} else if (path[0].startsWith('OUT_AUDIO') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
 		if (!Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
+	} else if (path[0] === 'AUDIOMIXER') {
+		return refAudioMixerChannel(path.slice(1)) // Omit 'AUDIOMIXER'
+	} else if (path[0] === 'FXINPUTS') {
+		return refFxInput(path.slice(1)) // Omit 'FXINPUTS'
 	}
 
 	// If nothing else matched, return the original string
@@ -421,8 +427,6 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refGfxSceneItem(refGfxScene(['GfxScene1']), ['Item1'])
 		case 'audioMixer-channel':
 			return refAudioMixerChannel(['Channel1'])
-		case 'mattes':
-			return refMattes(['Matte1'])
 		case 'aux':
 			return refAuxName('AUX1')
 		case 'aux-effect':
@@ -577,13 +581,6 @@ export type FxInputRef = {
 export function refFxInput(fxInputPath: RefPath): FxInputRef {
 	return { realm: 'fxInput', fxInputPath }
 }
-export type MatteRef = {
-	realm: 'matte'
-	mattePath: RefPath
-}
-export function refMatte(mattePath: RefPath): MatteRef {
-	return { realm: 'matte', mattePath }
-}
 
 // ---------------------------- MEDIA -----------------------------
 
@@ -719,12 +716,12 @@ export function refAudioMixerChannel(channelPath: RefPath): AudioMixerChannelRef
 }
 
 // ------------------------------- MATTES ------------------------------
-export type MattesRef = {
-	realm: 'mattes'
-	path: RefPath
+export type MatteRef = {
+	realm: 'matte'
+	mattePath: RefPath
 }
-export function refMattes(path: MattesRef['path']): MattesRef {
-	return { realm: 'mattes', path }
+export function refMatte(mattePath: MatteRef['mattePath']): MatteRef {
+	return { realm: 'matte', mattePath }
 }
 // ------------------------------- AUX ------------------------------
 

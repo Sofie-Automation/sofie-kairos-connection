@@ -5,7 +5,7 @@ import {
 	ColorRGB,
 	isRef,
 	isAnySourceRef,
-	pathRoRef,
+	pathToRef,
 	refToPath,
 	AnySourceRef,
 	AnyRef,
@@ -47,7 +47,7 @@ export function parseRefOptional<Ref extends AnyRef>(realm: Ref['realm'], value:
 	return parseRef(realm, value)
 }
 export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string | Ref): Ref {
-	const ref = typeof value === 'string' ? pathRoRef(value) : value
+	const ref = typeof value === 'string' ? pathToRef(value) : value
 
 	if (!isRef(ref))
 		throw new Error(
@@ -219,7 +219,7 @@ export function parseAnySourceRefOptional(value: string): AnySourceRef | null {
 	return parseAnySourceRef(value)
 }
 export function parseAnySourceRef(value: string): AnySourceRef {
-	const ref = pathRoRef(value)
+	const ref = pathToRef(value)
 
 	if (!isRef(ref)) throw new Error(`Unable to parse AnySourceRef from string: "${value}"`)
 	if (!isAnySourceRef(ref)) throw new Error(`Unable to parse AnySourceRef, is a "${ref.realm}" (value: "${value}")`)
@@ -249,7 +249,7 @@ export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefi
 export function parseImageStoreClip(value: string): MediaStillRef | MediaImageRef | null {
 	if (value === '<unknown>') return null as any // This is a special case for undefined sources
 
-	const ref = pathRoRef(value)
+	const ref = pathToRef(value)
 
 	if (!isRef(ref)) throw new Error(`Unable to parse string: "${value}"`)
 	if (ref.realm !== 'media-still' && ref.realm !== 'media-image') {
