@@ -311,7 +311,7 @@ export function pathRoRef(ref: string): AnyRef | string {
 		return refMattes(path.slice(1))
 	} else if (path[0].startsWith('GFX') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
-		if (Number.isNaN(index) && index > 0) return refGfxChannel(index)
+		if (!Number.isNaN(index) && index > 0) return refGfxChannel(index)
 	} else if (path[0] === 'GFXSCENES') {
 		return refGfxScene(path.slice(1))
 	} else if (path[0] === 'AUX') {
@@ -325,43 +325,43 @@ export function pathRoRef(ref: string): AnyRef | string {
 		}
 	} else if (path[0].startsWith('IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(2), 10)
-		if (Number.isNaN(index) && index > 0) return refIpInput(index)
+		if (!Number.isNaN(index) && index > 0) return refIpInput(index)
 	} else if (path[0].startsWith('NDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
-		if (Number.isNaN(index) && index > 0) return refNDIInput(index)
+		if (!Number.isNaN(index) && index > 0) return refNDIInput(index)
 	} else if (path[0].startsWith('STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refStreamInput(index)
+		if (!Number.isNaN(index) && index > 0) return refStreamInput(index)
 	} else if (path[0].startsWith('SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
-		if (Number.isNaN(index) && index > 0) return refSDIInput(index)
+		if (!Number.isNaN(index) && index > 0) return refSDIInput(index)
 	} else if (path[0].startsWith('IN_IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(5), 10)
-		if (Number.isNaN(index) && index > 0) return refIpInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refIpInputSetting(index)
 	} else if (path[0].startsWith('IN_SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refSDIInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refSDIInputSetting(index)
 	} else if (path[0].startsWith('IN_NDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refNDIInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refNDIInputSetting(index)
 	} else if (path[0].startsWith('IN_STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
-		if (Number.isNaN(index) && index > 0) return refStreamInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refStreamInputSetting(index)
 	} else if (path[0].startsWith('OUT_IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refIpOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refIpOutputSetting(index)
 	} else if (path[0].startsWith('OUT_SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(7), 10)
-		if (Number.isNaN(index) && index > 0) return refSDIOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refSDIOutputSetting(index)
 	} else if (path[0].startsWith('OUT_NDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(7), 10)
-		if (Number.isNaN(index) && index > 0) return refNDIOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refNDIOutputSetting(index)
 	} else if (path[0].startsWith('OUT_STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(10), 10)
-		if (Number.isNaN(index) && index > 0) return refStreamOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refStreamOutputSetting(index)
 	} else if (path[0].startsWith('OUT_AUDIO') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
-		if (Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
 	}
 
 	// If nothing else matched, return the original string

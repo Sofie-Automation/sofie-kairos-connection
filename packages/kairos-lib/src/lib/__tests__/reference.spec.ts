@@ -21,6 +21,7 @@ import {
 	SourceBaseRef,
 	SourceIntRef,
 	MattesRef,
+	NDIOutputSettingRef,
 } from '../reference.js'
 
 describe('Reference', () => {
@@ -313,6 +314,12 @@ describe('ref conversions', () => {
 				realm: 'mattes',
 				path: ['Folder', 'Subfolder', 'AlphaMatte'],
 			} satisfies MattesRef)
+		})
+		test('OUT_NDI', () => {
+			expect(pathRoRef('OUT_NDI2')).toStrictEqual({
+				realm: 'ndi-output-setting',
+				ndiOutputSetting: 2,
+			} satisfies NDIOutputSettingRef)
 		})
 
 		test('Unknown paths return original string', () => {
