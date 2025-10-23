@@ -21,10 +21,11 @@ export type AnyRef =
 	| AudioPlayerRef
 	| SourceBaseRef
 	| SourceIntRef
+	| GfxChannelRef
 	| GfxSceneRef
 	| GfxSceneItemRef
 	| AudioMixerChannelRef
-	| MattesRef
+	| MatteRef
 	| AuxRef
 	| AuxEffectRef
 	| IpInputRef
@@ -32,7 +33,6 @@ export type AnyRef =
 	| NDIInputRef
 	| StreamInputRef
 	| FxInputRef
-	| MatteRef
 	| IpInputSettingRef
 	| SDIInputSettingRef
 	| NDIInputSettingRef
@@ -61,7 +61,7 @@ export type AnySourceRef =
 	| SourceBaseRef
 	| SourceIntRef
 	| SceneRef
-	| MattesRef
+	| MatteRef
 	| AuxRef
 	| FxInputRef
 	| AnyInputRef
@@ -74,12 +74,13 @@ export function isAnySourceRef(ref: AnyRef): ref is AnySourceRef {
 		ref.realm === 'source-base' ||
 		ref.realm === 'source-int' ||
 		ref.realm === 'scene' ||
-		ref.realm === 'mattes' ||
+		ref.realm === 'matte' ||
 		ref.realm === 'aux' ||
 		isAnyInputRef(ref)
 	)
 }
 
+/** Converts a Ref to a Kairos path */
 export function refToPath(ref: AnyRef): string {
 	switch (ref.realm) {
 		case 'scene':
@@ -155,6 +156,8 @@ export function refToPath(ref: AnyRef): string {
 			return `IS${ref.storeIndex}`
 		case 'audio-player':
 			return `AP${ref.playerIndex}`
+		case 'gfx-channel':
+			return `GFX${ref.gfxChannelIndex}`
 		case 'gfxScene':
 			return ['GFXSCENES', ...ref.scenePath.map(protocolEncodeStr)].join('.')
 		case 'gfxScene-item':
@@ -163,8 +166,6 @@ export function refToPath(ref: AnyRef): string {
 			)
 		case 'audioMixer-channel':
 			return ['AUDIOMIXER', ...ref.channelPath.map(protocolEncodeStr)].join('.')
-		case 'mattes':
-			return ['MATTES', ...ref.path.map(protocolEncodeStr)].join('.')
 		case 'aux': {
 			const path = [protocolEncodeStr(ref.path)]
 			if (ref.pathIsName) path.unshift('AUX')
@@ -211,7 +212,7 @@ export function refToPath(ref: AnyRef): string {
 			throw new Error(`Unknown ref: ${JSON.stringify(ref)}`)
 	}
 }
-export function pathRoRef(ref: string): AnyRef | string {
+export function pathToRef(ref: string): AnyRef | string {
 	const path = protocolDecodePath(ref)
 
 	if (path[0] === 'SCENES') {
@@ -304,12 +305,20 @@ export function pathRoRef(ref: string): AnyRef | string {
 			}
 		}
 	} else if (path[0] === 'MATTES') {
-		return refMattes(path.slice(1))
+		return refMatte(path.slice(1))
+	} else if (path[0].startsWith('GFX') && path.length === 1) {
+		const index = parseInt(path[0].slice(3), 10)
+		if (!Number.isNaN(index) && index > 0) return refGfxChannel(index)
 	} else if (path[0] === 'GFXSCENES') {
 		return refGfxScene(path.slice(1))
 	} else if (path[0] === 'AUX') {
 		if (path.length === 2) {
 			return refAuxName(path[1])
+		}
+
+		if (path.length >= 3 && path[2] === 'Effects') {
+			const auxRef = refAuxName(path[1])
+			return refAuxEffect(auxRef, path.slice(3))
 		}
 	} else if (path[0].includes('-AUX')) {
 		// Auxes are often refered to without the prefix
@@ -318,47 +327,145 @@ export function pathRoRef(ref: string): AnyRef | string {
 		}
 	} else if (path[0].startsWith('IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(2), 10)
-		if (Number.isNaN(index) && index > 0) return refIpInput(index)
+		if (!Number.isNaN(index) && index > 0) return refIpInput(index)
 	} else if (path[0].startsWith('NDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
-		if (Number.isNaN(index) && index > 0) return refNDIInput(index)
+		if (!Number.isNaN(index) && index > 0) return refNDIInput(index)
 	} else if (path[0].startsWith('STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refStreamInput(index)
+		if (!Number.isNaN(index) && index > 0) return refStreamInput(index)
 	} else if (path[0].startsWith('SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
-		if (Number.isNaN(index) && index > 0) return refSDIInput(index)
+		if (!Number.isNaN(index) && index > 0) return refSDIInput(index)
 	} else if (path[0].startsWith('IN_IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(5), 10)
-		if (Number.isNaN(index) && index > 0) return refIpInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refIpInputSetting(index)
 	} else if (path[0].startsWith('IN_SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refSDIInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refSDIInputSetting(index)
 	} else if (path[0].startsWith('IN_NDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refNDIInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refNDIInputSetting(index)
 	} else if (path[0].startsWith('IN_STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
-		if (Number.isNaN(index) && index > 0) return refStreamInputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refStreamInputSetting(index)
 	} else if (path[0].startsWith('OUT_IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
-		if (Number.isNaN(index) && index > 0) return refIpOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refIpOutputSetting(index)
 	} else if (path[0].startsWith('OUT_SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(7), 10)
-		if (Number.isNaN(index) && index > 0) return refSDIOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refSDIOutputSetting(index)
 	} else if (path[0].startsWith('OUT_NDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(7), 10)
-		if (Number.isNaN(index) && index > 0) return refNDIOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refNDIOutputSetting(index)
 	} else if (path[0].startsWith('OUT_STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(10), 10)
-		if (Number.isNaN(index) && index > 0) return refStreamOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refStreamOutputSetting(index)
 	} else if (path[0].startsWith('OUT_AUDIO') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
-		if (Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
+		if (!Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
+	} else if (path[0] === 'AUDIOMIXER') {
+		return refAudioMixerChannel(path.slice(1)) // Omit 'AUDIOMIXER'
+	} else if (path[0] === 'FXINPUTS') {
+		return refFxInput(path.slice(1)) // Omit 'FXINPUTS'
 	}
 
 	// If nothing else matched, return the original string
 	return ref
+}
+
+/** Returns an example of a Ref of the given realm */
+export function exampleRef(realm: AnyRef['realm']): AnyRef {
+	switch (realm) {
+		case 'scene':
+			return refScene(['Scene1'])
+		case 'scene-layer':
+			return refSceneLayer(refScene(['Scene1']), ['Layer1'])
+		case 'scene-layer-effect':
+			return refSceneLayerEffect(refSceneLayer(refScene(['Scene1']), ['Layer1']), ['Effect1'])
+		case 'media-clip':
+			return refMediaClip(['Clip1'])
+
+		case 'media-still':
+			return refMediaStill(['Still1'])
+		case 'media-ramrec':
+			return refMediaRamRec(['RamRec1'])
+		case 'media-image':
+			return refMediaImage(['Image1'])
+		case 'media-sound':
+			return refMediaSound(['Sound1'])
+		case 'scene-transition':
+			return refSceneTransition(refScene(['Scene1']), ['Transition1'])
+		case 'scene-transition-mix':
+			return refSceneTransitionMix(refSceneTransition(refScene(['Scene1']), ['Transition1']), ['Mix1'])
+		case 'scene-transition-mix-effect':
+			return refSceneTransitionMixEffect(
+				refSceneTransitionMix(refSceneTransition(refScene(['Scene1']), ['Transition1']), ['Mix1']),
+				['Effect1']
+			)
+		case 'scene-snapshot':
+			return refSceneSnapshot(refScene(['Scene1']), ['Snapshot1'])
+		case 'macro':
+			return refMacro(['Macro1'])
+		case 'source-base':
+			return refSourceBase(['BLACK'])
+		case 'source-int':
+			return refSourceInt(['ColorBar'])
+		case 'ramRecorder':
+			return refRamRecorder(1)
+		case 'clipPlayer':
+			return refClipPlayer(1)
+		case 'imageStore':
+			return refImageStore(1)
+		case 'audio-player':
+			return refAudioPlayer(1)
+		case 'gfx-channel':
+			return refGfxChannel(1)
+		case 'gfxScene':
+			return refGfxScene(['GfxScene1'])
+		case 'gfxScene-item':
+			return refGfxSceneItem(refGfxScene(['GfxScene1']), ['Item1'])
+		case 'audioMixer-channel':
+			return refAudioMixerChannel(['Channel1'])
+		case 'aux':
+			return refAuxName('AUX1')
+		case 'aux-effect':
+			return refAuxEffect(refAuxName('AUX1'), ['Effect1'])
+		case 'ip-input':
+			return refIpInput(1)
+		case 'sdi-input':
+			return refSDIInput(1)
+		case 'ndi-input':
+			return refNDIInput(1)
+		case 'stream-input':
+			return refStreamInput(1)
+		case 'fxInput':
+			return refFxInput(['FxInput1'])
+		case 'matte':
+			return refMatte(['Matte1'])
+		case 'ip-input-setting':
+			return refIpInputSetting(1)
+		case 'sdi-input-setting':
+			return refSDIInputSetting(1)
+		case 'ndi-input-setting':
+			return refNDIInputSetting(1)
+		case 'stream-input-setting':
+			return refStreamInputSetting(1)
+		case 'ip-output-setting':
+			return refIpOutputSetting(1)
+		case 'sdi-output-setting':
+			return refSDIOutputSetting(1)
+		case 'ndi-output-setting':
+			return refNDIOutputSetting(1)
+		case 'stream-output-setting':
+			return refStreamOutputSetting(1)
+		case 'audio-output-setting':
+			return refAudioOutputSetting(1)
+		default:
+			assertNever(realm)
+
+			throw new Error(`Unknown realm: ${JSON.stringify(realm)}`)
+	}
 }
 
 /**
@@ -474,13 +581,6 @@ export type FxInputRef = {
 export function refFxInput(fxInputPath: RefPath): FxInputRef {
 	return { realm: 'fxInput', fxInputPath }
 }
-export type MatteRef = {
-	realm: 'matte'
-	mattePath: RefPath
-}
-export function refMatte(mattePath: RefPath): MatteRef {
-	return { realm: 'matte', mattePath }
-}
 
 // ---------------------------- MEDIA -----------------------------
 
@@ -563,6 +663,14 @@ export function refAudioPlayer(playerIndex: number): AudioPlayerRef {
 	return { realm: 'audio-player', playerIndex }
 }
 
+// ---------------------------- GFXCHANNELS ------------------------------
+export type GfxChannelRef = {
+	realm: 'gfx-channel'
+	gfxChannelIndex: number
+}
+export function refGfxChannel(gfxChannelIndex: number): GfxChannelRef {
+	return { realm: 'gfx-channel', gfxChannelIndex }
+}
 // ---------------------------- GFXSCENES ------------------------------
 export type GfxSceneRef = {
 	realm: 'gfxScene'
@@ -608,12 +716,12 @@ export function refAudioMixerChannel(channelPath: RefPath): AudioMixerChannelRef
 }
 
 // ------------------------------- MATTES ------------------------------
-export type MattesRef = {
-	realm: 'mattes'
-	path: RefPath
+export type MatteRef = {
+	realm: 'matte'
+	mattePath: RefPath
 }
-export function refMattes(path: MattesRef['path']): MattesRef {
-	return { realm: 'mattes', path }
+export function refMatte(mattePath: MatteRef['mattePath']): MatteRef {
+	return { realm: 'matte', mattePath }
 }
 // ------------------------------- AUX ------------------------------
 

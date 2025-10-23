@@ -1,5 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
-import { SceneTransitionRef, AnySourceRef } from '../lib/reference.js'
+import { SceneTransitionRef, AnySourceRef, SceneLayerEffectRef } from '../lib/reference.js'
 import { ColorRGB, DissolveMode, Resolution } from './lib-types.js'
 
 export interface SceneObject {
@@ -73,8 +73,13 @@ export interface SceneObject {
 	allDuration: number
 	/** float  */
 	allFader: number
-	/** [ ObjectID ] */
-	nextTransitionType: string
+	// /**
+	//  * [ ObjectID ]
+	//  *  TODO: Figure out what this is, what is this a reference to?
+	//  * @deprecated Parsing of this property is not implemented, use with caution.
+	//  */
+	// nextTransitionType: string
+
 	faderReverse: boolean
 	faderSync: boolean
 
@@ -83,7 +88,7 @@ export interface SceneObject {
 	/** [ integer, min: 0, max: 9999 ] */
 	limitReturnTime: number
 	/** ObjectID  */
-	keyPreview: string
+	keyPreview: SceneLayerEffectRef | null
 }
 
 export interface SceneLayerObject {
@@ -121,7 +126,7 @@ export interface SceneLayerObject {
 	 * external as well as internal sources.
 	 * [ ObjectID, read_only ]
 	 */
-	readonly sourceB: AnySourceRef | null //  | string
+	readonly sourceB: AnySourceRef | null
 
 	/** [ ObjectID ] */
 	sourcePgm: AnySourceRef
@@ -316,6 +321,7 @@ export interface SceneTransitionObject {
 // }
 export interface SceneTransitionMixEffectObject {
 	curve: SceneCurve
+	/** [ objectId ] */
 	readonly effect: string
 	effectName: string
 }
@@ -456,14 +462,19 @@ export enum SceneSnapshotPriorityRecall {
 // ------------------------- types -----------------------------
 
 // ------------------------- Update* types, used in update* methods --------------------------
-export type UpdateSceneObject = OmitReadonly<SceneObject>
+export type UpdateSceneObject = Omit<OmitReadonly<SceneObject>, 'nextTransition' | 'keyPreview'> & {
+	// Also allow string as input, for convenience:
+	nextTransition: (SceneObject['nextTransition'][0] | string)[]
+	keyPreview: SceneObject['keyPreview'] | string
+}
+
 export type UpdateSceneLayerObject = Omit<
 	OmitReadonly<SceneLayerObject>,
-	'sourceA' | 'sourceB' | 'sourcePgm' | 'sourcePst' | 'sourceOptions'
+	'sourceA' | 'sourcePgm' | 'sourcePst' | 'sourceOptions'
 > & {
 	// Also allow string as input, for convenience:
 	sourceA: SceneLayerObject['sourceA'] | string
-	sourceB: SceneLayerObject['sourceB'] | string
+	// sourceB is readonly
 	sourcePgm: SceneLayerObject['sourcePgm'] | string
 	sourcePst: SceneLayerObject['sourcePst'] | string
 	sourceOptions: (SceneLayerObject['sourceOptions'][0] | string)[]

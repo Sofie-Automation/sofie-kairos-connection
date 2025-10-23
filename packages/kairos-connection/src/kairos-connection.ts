@@ -103,7 +103,7 @@ import {
 	GfxSceneRef,
 	isRef,
 	MacroRef,
-	pathRoRef,
+	pathToRef,
 	refToPath,
 	SceneLayerEffectRef,
 	SceneLayerRef,
@@ -170,6 +170,8 @@ import {
 	MediaRamRecRef,
 	MediaImageRef,
 	RamRecorderRef,
+	GfxChannelRef,
+	refGfxChannel,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -359,13 +361,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getIpInputSetting(ipInputSettingRef: IpInputSettingRef): Promise<IpInputSettingObject> {
+	async getIpInputSetting(ipInputSettingRef: IpInputSettingRef | number): Promise<IpInputSettingObject> {
+		if (typeof ipInputSettingRef === 'number') ipInputSettingRef = refIpInputSetting(ipInputSettingRef)
 		return this.#getObject(refToPath(ipInputSettingRef), IpInputSettingEncodingDefinition)
 	}
 	async updateIpInputSetting(
-		ipInputSettingRef: IpInputSettingRef,
+		ipInputSettingRef: IpInputSettingRef | number,
 		props: Partial<UpdateIpInputSettingObject>
 	): Promise<void> {
+		if (typeof ipInputSettingRef === 'number') ipInputSettingRef = refIpInputSetting(ipInputSettingRef)
 		await this.setAttributes(refToPath(ipInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 			{ attribute: 'on_demand', value: stringifyBoolean(props.onDemand) },
@@ -386,13 +390,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getSDIInputSetting(sdiInputSettingRef: SDIInputSettingRef): Promise<SDIInputSettingObject> {
+	async getSDIInputSetting(sdiInputSettingRef: SDIInputSettingRef | number): Promise<SDIInputSettingObject> {
+		if (typeof sdiInputSettingRef === 'number') sdiInputSettingRef = refSDIInputSetting(sdiInputSettingRef)
 		return this.#getObject(refToPath(sdiInputSettingRef), SDIInputSettingEncodingDefinition)
 	}
 	async updateSDIInputSetting(
-		sdiInputSettingRef: SDIInputSettingRef,
+		sdiInputSettingRef: SDIInputSettingRef | number,
 		props: Partial<UpdateSDIInputSettingObject>
 	): Promise<void> {
+		if (typeof sdiInputSettingRef === 'number') sdiInputSettingRef = refSDIInputSetting(sdiInputSettingRef)
 		await this.setAttributes(refToPath(sdiInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -411,10 +417,11 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getNDIInputSetting(ndiInputSettingRef: NDIInputSettingRef): Promise<NDIInputSettingObject> {
+	async getNDIInputSetting(ndiInputSettingRef: NDIInputSettingRef | number): Promise<NDIInputSettingObject> {
+		if (typeof ndiInputSettingRef === 'number') ndiInputSettingRef = refNDIInputSetting(ndiInputSettingRef)
 		return this.#getObject(refToPath(ndiInputSettingRef), NDIInputSettingEncodingDefinition)
 	}
-	async listStreamInputsSetting(): Promise<StreamInputSettingRef[]> {
+	async listStreamInputsSettings(): Promise<StreamInputSettingRef[]> {
 		// "IN_STREAM"
 		const list = await this.getList('STREAMINPUTS')
 
@@ -428,13 +435,17 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getStreamInputSetting(streamInputSettingRef: StreamInputSettingRef): Promise<StreamInputSettingObject> {
+	async getStreamInputSetting(
+		streamInputSettingRef: StreamInputSettingRef | number
+	): Promise<StreamInputSettingObject> {
+		if (typeof streamInputSettingRef === 'number') streamInputSettingRef = refStreamInputSetting(streamInputSettingRef)
 		return this.#getObject(refToPath(streamInputSettingRef), StreamInputSettingEncodingDefinition)
 	}
 	async updateStreamInputSetting(
-		streamInputSettingRef: StreamInputSettingRef,
+		streamInputSettingRef: StreamInputSettingRef | number,
 		props: Partial<UpdateStreamInputSettingObject>
 	): Promise<void> {
+		if (typeof streamInputSettingRef === 'number') streamInputSettingRef = refStreamInputSetting(streamInputSettingRef)
 		await this.setAttributes(refToPath(streamInputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -466,13 +477,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getIpOutputSetting(ipOutputSettingRef: IpOutputSettingRef): Promise<IpOutputSettingObject> {
+	async getIpOutputSetting(ipOutputSettingRef: IpOutputSettingRef | number): Promise<IpOutputSettingObject> {
+		if (typeof ipOutputSettingRef === 'number') ipOutputSettingRef = refIpOutputSetting(ipOutputSettingRef)
 		return this.#getObject(refToPath(ipOutputSettingRef), IpOutputSettingEncodingDefinition)
 	}
 	async updateIpOutputSetting(
-		ipOutputSettingRef: IpOutputSettingRef,
+		ipOutputSettingRef: IpOutputSettingRef | number,
 		props: Partial<UpdateIpOutputSettingObject>
 	): Promise<void> {
+		if (typeof ipOutputSettingRef === 'number') ipOutputSettingRef = refIpOutputSetting(ipOutputSettingRef)
 		await this.setAttributes(refToPath(ipOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -491,13 +504,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getSDIOutputSetting(sdiOutputSettingRef: SDIOutputSettingRef): Promise<SDIOutputSettingObject> {
+	async getSDIOutputSetting(sdiOutputSettingRef: SDIOutputSettingRef | number): Promise<SDIOutputSettingObject> {
+		if (typeof sdiOutputSettingRef === 'number') sdiOutputSettingRef = refSDIOutputSetting(sdiOutputSettingRef)
 		return this.#getObject(refToPath(sdiOutputSettingRef), SDIOutputSettingEncodingDefinition)
 	}
 	async updateSDIOutputSetting(
-		sdiOutputSettingRef: SDIOutputSettingRef,
+		sdiOutputSettingRef: SDIOutputSettingRef | number,
 		props: Partial<UpdateSDIOutputSettingObject>
 	): Promise<void> {
+		if (typeof sdiOutputSettingRef === 'number') sdiOutputSettingRef = refSDIOutputSetting(sdiOutputSettingRef)
 		await this.setAttributes(refToPath(sdiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -516,13 +531,15 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getNDIOutputSetting(ndiOutputSettingRef: NDIOutputSettingRef): Promise<NDIOutputSettingObject> {
+	async getNDIOutputSetting(ndiOutputSettingRef: NDIOutputSettingRef | number): Promise<NDIOutputSettingObject> {
+		if (typeof ndiOutputSettingRef === 'number') ndiOutputSettingRef = refNDIOutputSetting(ndiOutputSettingRef)
 		return this.#getObject(refToPath(ndiOutputSettingRef), NDIOutputSettingEncodingDefinition)
 	}
 	async updateNDIOutputSetting(
-		ndiOutputSettingRef: NDIOutputSettingRef,
+		ndiOutputSettingRef: NDIOutputSettingRef | number,
 		props: Partial<UpdateNDIOutputSettingObject>
 	): Promise<void> {
+		if (typeof ndiOutputSettingRef === 'number') ndiOutputSettingRef = refNDIOutputSetting(ndiOutputSettingRef)
 		await this.setAttributes(refToPath(ndiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
@@ -541,14 +558,22 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getStreamOutputSetting(streamOutputSettingRef: StreamOutputSettingRef): Promise<StreamOutputSettingObject> {
+	async getStreamOutputSetting(
+		streamOutputSettingRef: StreamOutputSettingRef | number
+	): Promise<StreamOutputSettingObject> {
+		if (typeof streamOutputSettingRef === 'number')
+			streamOutputSettingRef = refStreamOutputSetting(streamOutputSettingRef)
 		return this.#getObject(refToPath(streamOutputSettingRef), StreamOutputSettingEncodingDefinition)
 	}
 	async updateStreamOutputSetting(
-		streamOutputRef: StreamOutputSettingRef,
+		streamOutputSettingRef: StreamOutputSettingRef | number,
 		props: Partial<UpdateStreamOutputSettingObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(streamOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+		if (typeof streamOutputSettingRef === 'number')
+			streamOutputSettingRef = refStreamOutputSetting(streamOutputSettingRef)
+		await this.setAttributes(refToPath(streamOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
 	async listAudioOutputSettings(): Promise<AudioOutputSettingRef[]> {
 		// "OUT_AUDIO"
@@ -564,14 +589,20 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getAudioOutputSetting(audioOutputRef: AudioOutputSettingRef): Promise<AudioOutputSettingObject> {
-		return this.#getObject(refToPath(audioOutputRef), AudioOutputSettingEncodingDefinition)
+	async getAudioOutputSetting(
+		audioOutputSettingRef: AudioOutputSettingRef | number
+	): Promise<AudioOutputSettingObject> {
+		if (typeof audioOutputSettingRef === 'number') audioOutputSettingRef = refAudioOutputSetting(audioOutputSettingRef)
+		return this.#getObject(refToPath(audioOutputSettingRef), AudioOutputSettingEncodingDefinition)
 	}
 	async updateAudioOutputSetting(
-		audioOutputRef: AudioOutputSettingRef,
+		audioOutputSettingRef: AudioOutputSettingRef | number,
 		props: Partial<UpdateAudioOutputSettingObject>
 	): Promise<void> {
-		await this.setAttributes(refToPath(audioOutputRef), [{ attribute: 'delay', value: stringifyInteger(props.delay) }])
+		if (typeof audioOutputSettingRef === 'number') audioOutputSettingRef = refAudioOutputSetting(audioOutputSettingRef)
+		await this.setAttributes(refToPath(audioOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
 	}
 
 	// SCENES
@@ -588,6 +619,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 		})
 	}
+	/**
+	 * @example getScene(refScene(['MyFolder', 'MyScene']))
+	 */
 	async getScene(sceneRef: SceneRef): Promise<SceneObject> {
 		return this.#getObject(refToPath(sceneRef), SceneObjectEncodingDefinition)
 	}
@@ -604,12 +638,12 @@ export class KairosConnection extends MinimalKairosConnection {
 			},
 			{ attribute: 'all_duration', value: stringifyInteger(props.allDuration) },
 			{ attribute: 'all_fader', value: stringifyFloat(props.allFader) },
-			{ attribute: 'next_transition_type', value: props.nextTransitionType },
+			// { attribute: 'next_transition_type', value: props.nextTransitionType }, // we don't know what this is, so we leave it out
 			{ attribute: 'fader_reverse', value: stringifyBoolean(props.faderReverse) },
 			{ attribute: 'fader_sync', value: stringifyBoolean(props.faderSync) },
 			{ attribute: 'limit_off_action', value: stringifyEnum(props.limitOffAction, SceneLimitOffAction) },
 			{ attribute: 'limit_return_time', value: stringifyInteger(props.limitReturnTime) },
-			{ attribute: 'key_preview', value: props.keyPreview },
+			{ attribute: 'key_preview', value: stringifyRef<SceneLayerEffectRef>('scene-layer-effect', props.keyPreview) },
 			// resolutionX, resolutionY, tally are read-only
 		])
 	}
@@ -625,7 +659,12 @@ export class KairosConnection extends MinimalKairosConnection {
 	async sceneAllSelectedCut(sceneRef: SceneRef): Promise<void> {
 		return this.executeFunction(`${refToPath(sceneRef)}.all_selected_cut`)
 	}
-	// omitting "strore_snapshot", it must be a typo, right?
+	/**
+	 * @deprecated This exists in the documentation, but must be a typo, right?
+	 */
+	async sceneStroreSnapshot(sceneRef: SceneRef): Promise<void> {
+		return this.executeFunction(`${refToPath(sceneRef)}.strore_snapshot`)
+	}
 	async sceneStoreSnapshot(sceneRef: SceneRef): Promise<void> {
 		return this.executeFunction(`${refToPath(sceneRef)}.store_snapshot`)
 	}
@@ -1261,20 +1300,27 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getRamRecorder(ramRecorderId: number): Promise<RamRecPlayerObject> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async getRamRecorder(ramRecorderId: number | RamRecorderRef): Promise<RamRecPlayerObject> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.#getObject(refToPath(refRamRecorder(ramRecorderId)), RamRecPlayerObjectEncodingDefinition)
 	}
-	async loadRamRecorderClip(ramRecorderId: number, clip: RamRecPlayerObject['clip'], position?: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async loadRamRecorderClip(
+		ramRecorderId: number | RamRecorderRef,
+		clip: RamRecPlayerObject['clip'],
+		position?: number
+	): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		await this._loadPlayerClip(
 			refToPath(refRamRecorder(ramRecorderId)),
 			stringifyRef<MediaRamRecRef>('media-ramrec', clip),
 			position
 		)
 	}
-	async updateRamRecorder(ramRecorderId: number, props: Partial<UpdateRamRecPlayerObject>): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async updateRamRecorder(
+		ramRecorderId: number | RamRecorderRef,
+		props: Partial<UpdateRamRecPlayerObject>
+	): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 
 		await this.setAttributes(refToPath(refRamRecorder(ramRecorderId)), [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
@@ -1289,65 +1335,73 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async ramRecorderBegin(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderBegin(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.begin`)
 	}
-	async ramRecorderRewind(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderRewind(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.rewind`)
 	}
-	async ramRecorderStepBack(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderStepBack(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.step_back`)
 	}
-	async ramRecorderReverse(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderReverse(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.reverse`)
 	}
-	async ramRecorderPlay(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlay(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.play`)
 	}
-	async ramRecorderPlayLoop(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlayLoop(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.play_loop`)
 	}
-	async ramRecorderPause(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPause(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.pause`)
 	}
-	async ramRecorderStop(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderStop(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.stop`)
 	}
-	async ramRecorderStepForward(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderStepForward(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.step_forward`)
 	}
-	async ramRecorderFastForward(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderFastForward(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.fast_forward`)
 	}
-	async ramRecorderEnd(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderEnd(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.end`)
 	}
-	async ramRecorderPlaylistBegin(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistBegin(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_begin`)
 	}
-	async ramRecorderPlaylistBack(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistBack(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_back`)
 	}
-	async ramRecorderPlaylistNext(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistNext(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_next`)
 	}
-	async ramRecorderPlaylistEnd(ramRecorderId: number): Promise<void> {
-		this._assertPlayerIdIsValid(ramRecorderId)
+	async ramRecorderPlaylistEnd(ramRecorderId: number | RamRecorderRef): Promise<void> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.executeFunction(`${refToPath(refRamRecorder(ramRecorderId))}.playlist_end`)
+	}
+	private _assertRamRecIdIsValid(ramRecorderId: number | RamRecorderRef): number {
+		if (typeof ramRecorderId === 'object') {
+			if (ramRecorderId.realm !== 'ramRecorder') throw new Error(`Invalid ramRecorderId realm: ${ramRecorderId.realm}.`)
+			ramRecorderId = ramRecorderId.playerIndex
+		}
+		this._assertPlayerIdIsValid(ramRecorderId)
+		return ramRecorderId
 	}
 
 	// PLAYERS
@@ -1362,24 +1416,24 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getClipPlayer(playerId: number): Promise<ClipPlayerObject> {
-		this._assertPlayerIdIsValid(playerId)
+	async getClipPlayer(playerId: number | ClipPlayerRef): Promise<ClipPlayerObject> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refClipPlayer(playerId)), ClipPlayerObjectEncodingDefinition)
 	}
 	async loadClipPlayerClip(
-		playerId: number,
+		playerId: number | ClipPlayerRef,
 		clip: Required<UpdateClipPlayerObject>['clip'],
 		position?: number
 	): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		await this._loadPlayerClip(
 			refToPath(refClipPlayer(playerId)),
 			stringifyRef<MediaClipRef>('media-clip', clip),
 			position
 		)
 	}
-	async updateClipPlayer(playerId: number, props: Partial<UpdateClipPlayerObject>): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async updateClipPlayer(playerId: number | ClipPlayerRef, props: Partial<UpdateClipPlayerObject>): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		await this.setAttributes(refToPath(refClipPlayer(playerId)), [
 			{ attribute: 'color_overwrite', value: stringifyBoolean(props.colorOverwrite) },
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
@@ -1393,67 +1447,75 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async clipPlayerBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerBegin(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.begin`)
 	}
-	async clipPlayerRewind(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerRewind(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.rewind`)
 	}
-	async clipPlayerStepBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerStepBack(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.step_back`)
 	}
-	async clipPlayerReverse(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerReverse(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.reverse`)
 	}
-	async clipPlayerPlay(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlay(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.play`)
 	}
-	async clipPlayerPause(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPause(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.pause`)
 	}
-	async clipPlayerStop(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerStop(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.stop`)
 	}
-	async clipPlayerStepForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerStepForward(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.step_forward`)
 	}
-	async clipPlayerFastForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerFastForward(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.fast_forward`)
 	}
-	async clipPlayerEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerEnd(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.end`)
 	}
-	async clipPlayerPlaylistBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistBegin(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_begin`)
 	}
-	async clipPlayerPlaylistBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistBack(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_back`)
 	}
-	async clipPlayerPlaylistNext(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistNext(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_next`)
 	}
-	async clipPlayerPlaylistEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async clipPlayerPlaylistEnd(playerId: number | ClipPlayerRef): Promise<void> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refClipPlayer(playerId))}.playlist_end`)
+	}
+	private _assertClipPlayerIdIsValid(playerId: number | ClipPlayerRef): number {
+		if (typeof playerId === 'object') {
+			if (playerId.realm !== 'clipPlayer') throw new Error(`Invalid playerId realm: ${playerId.realm}.`)
+			playerId = playerId.playerIndex
+		}
+		this._assertPlayerIdIsValid(playerId)
+		return playerId
 	}
 	/** Verifies that the id of a imageStore, ramRec, Audio or clip-player is reasonable, throws otherwise */
 	private _assertPlayerIdIsValid(playerId: number): void {
 		// Note: documentation mention upper limits, but we've seen higher numbers in the wild
-		if (typeof playerId !== 'number' || playerId < 1 || Number.isNaN(playerId)) {
-			throw new Error(`Invalid playerId: ${playerId}.`)
+		if (typeof playerId !== 'number' || playerId < 1 || Number.isNaN(playerId) || !Number.isInteger(playerId)) {
+			throw new Error(`Invalid index: ${playerId}.`)
 		}
 	}
 
@@ -1469,6 +1531,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	sounds
 	// 		file_name.wav
 
+	/**
+	 * @example kairos.listMediaClips(undefined, true) // List all media clips, in all sub-folders
+	 */
 	async listMediaClips(
 		path: MediaClipRef = { realm: 'media-clip', clipPath: [] },
 		deep?: boolean
@@ -1484,6 +1549,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaClip(ref: MediaClipRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	/**
+	 * @example kairos.listMediaStills(undefined, true) // List all media stills, in all sub-folders
+	 */
 	async listMediaStills(
 		path: MediaStillRef = { realm: 'media-still', clipPath: [] },
 		deep?: boolean
@@ -1500,8 +1568,10 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaStill(ref: MediaStillRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
-
-	async listMediaRamRec(
+	/**
+	 * @example kairos.listMediaRamRec(undefined, true) // List all media ramrecs, in all sub-folders
+	 */
+	async listMediaRamRecs(
 		path: MediaRamRecRef = { realm: 'media-ramrec', clipPath: [] },
 		deep?: boolean
 	): Promise<(MediaRamRecRef & { name: string })[]> {
@@ -1516,7 +1586,10 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaRamRec(ref: MediaRamRecRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
-	async listMediaImage(
+	/**
+	 * @example kairos.listMediaImage(undefined, true) // List all media images, in all sub-folders
+	 */
+	async listMediaImages(
 		path: MediaImageRef = { realm: 'media-image', clipPath: [] },
 		deep?: boolean
 	): Promise<(MediaImageRef & { name: string })[]> {
@@ -1531,6 +1604,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaImage(ref: MediaImageRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	/**
+	 * @example kairos.listMediaSounds(undefined, true) // List all media sounds, in all sub-folders
+	 */
 	async listMediaSounds(
 		path: MediaSoundRef = { realm: 'media-sound', clipPath: [] },
 		deep?: boolean
@@ -1769,7 +1845,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		const auxes: AuxRef[] = []
 
 		for (const auxPath of rawAuxes) {
-			const ref = pathRoRef(auxPath)
+			const ref = pathToRef(auxPath)
 			if (!isRef(ref) || ref.realm !== 'aux') {
 				throw new Error(`Invalid aux path: ${auxPath}. Expected realm "aux".`)
 			}
@@ -2025,23 +2101,39 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			<1-36>
 	// GFXCHANNELS
 	// 	GFX<1-2>
-	async getGfxChannel(gfxChannelId: number): Promise<GfxChannelObject> {
-		this._assertGfxChannelIdIsValid(gfxChannelId)
-		return this.#getObject(`GFX${gfxChannelId}`, GfxChannelObjectEncodingDefinition)
+	async listGfxChannels(): Promise<GfxChannelRef[]> {
+		return omitFalsy(
+			(await this.getList('GFXCHANNELS')).map((path) => {
+				// "AP1"
+				if (!path.startsWith('GFX')) return undefined
+				const gfxChannelIndex = parseInt(path.slice(3), 10)
+				return refGfxChannel(gfxChannelIndex)
+			})
+		)
 	}
-	async updateGfxChannel(gfxChannelId: number, props: Partial<UpdateGfxChannelObject>): Promise<void> {
-		this._assertGfxChannelIdIsValid(gfxChannelId)
-		await this.setAttributes(`GFX${gfxChannelId}`, [
+
+	async getGfxChannel(gfxChannelId: number | GfxChannelRef): Promise<GfxChannelObject> {
+		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
+		return this.#getObject(refToPath(refGfxChannel(gfxChannelId)), GfxChannelObjectEncodingDefinition)
+	}
+	async updateGfxChannel(gfxChannelId: number | GfxChannelRef, props: Partial<UpdateGfxChannelObject>): Promise<void> {
+		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
+		await this.setAttributes(refToPath(refGfxChannel(gfxChannelId)), [
 			{ attribute: 'scene', value: stringifyRef<GfxSceneRef>('gfxScene', props.scene) },
 		])
 	}
-	private _assertGfxChannelIdIsValid(gfxChannelId: number): void {
-		if (typeof gfxChannelId !== 'number' || gfxChannelId < 1 || gfxChannelId > 2) {
-			throw new Error(`Invalid gfxChannelId: ${gfxChannelId}. Must be between 1 and 2.`)
+	private _assertGfxChannelIdIsValid(gfxChannelId: number | GfxChannelRef): number {
+		if (typeof gfxChannelId === 'object') {
+			if (gfxChannelId.realm !== 'gfx-channel') throw new Error(`Invalid gfxChannelId realm: ${gfxChannelId.realm}.`)
+			gfxChannelId = gfxChannelId.gfxChannelIndex
 		}
+		this._assertPlayerIdIsValid(gfxChannelId)
+
+		return gfxChannelId
 	}
 	// GFXSCENES
 	// 	GfxScene
+
 	async listGfxScenes(
 		gfxSceneRef: GfxSceneRef = { realm: 'gfxScene', scenePath: [] },
 		deep?: boolean
@@ -2113,20 +2205,24 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getAudioPlayer(playerId: number): Promise<AudioPlayerObject> {
-		this._assertPlayerIdIsValid(playerId)
+	async getAudioPlayer(playerId: number | AudioPlayerRef): Promise<AudioPlayerObject> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refAudioPlayer(playerId)), AudioPlayerObjectEncodingDefinition)
 	}
-	async loadAudioPLayerClip(playerId: number, clip: AudioPlayerObject['clip'], position?: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async loadAudioPlayerClip(
+		playerId: number | AudioPlayerRef,
+		clip: AudioPlayerObject['clip'],
+		position?: number
+	): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		await this._loadPlayerClip(
 			refToPath(refAudioPlayer(playerId)),
 			stringifyRef<MediaSoundRef>('media-sound', clip),
 			position
 		)
 	}
-	async updateAudioPlayer(playerId: number, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async updateAudioPlayer(playerId: number | AudioPlayerRef, props: Partial<UpdateAudioPlayerObject>): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		await this.setAttributes(refToPath(refAudioPlayer(playerId)), [
 			{ attribute: 'clip', value: stringifyRef<MediaSoundRef>('media-sound', props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
 			{ attribute: 'timecode', value: props.timecode },
@@ -2138,61 +2234,69 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async audioPlayerBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerBegin(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.begin`)
 	}
-	async audioPlayerRewind(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerRewind(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.rewind`)
 	}
-	async audioPlayerStepBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerStepBack(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.step_back`)
 	}
-	async audioPlayerReverse(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerReverse(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.reverse`)
 	}
-	async audioPlayerPlay(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlay(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.play`)
 	}
-	async audioPlayerPause(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPause(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.pause`)
 	}
-	async audioPlayerStop(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerStop(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.stop`)
 	}
-	async audioPlayerStepForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerStepForward(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.step_forward`)
 	}
-	async audioPlayerFastForward(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerFastForward(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.fast_forward`)
 	}
-	async audioPlayerEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerEnd(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.end`)
 	}
-	async audioPlayerPlaylistBegin(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistBegin(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_begin`)
 	}
-	async audioPlayerPlaylistBack(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistBack(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_back`)
 	}
-	async audioPlayerPlaylistNext(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistNext(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_next`)
 	}
-	async audioPlayerPlaylistEnd(playerId: number): Promise<void> {
-		this._assertPlayerIdIsValid(playerId)
+	async audioPlayerPlaylistEnd(playerId: number | AudioPlayerRef): Promise<void> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.executeFunction(`${refToPath(refAudioPlayer(playerId))}.playlist_end`)
+	}
+	private _assertAudioPlayerIdIsValid(playerId: number | AudioPlayerRef): number {
+		if (typeof playerId === 'object') {
+			if (playerId.realm !== 'audio-player') throw new Error(`Invalid playerId realm: ${playerId.realm}.`)
+			playerId = playerId.playerIndex
+		}
+		this._assertPlayerIdIsValid(playerId)
+		return playerId
 	}
 
 	// AUDIOMIXERS
@@ -2249,12 +2353,12 @@ export class KairosConnection extends MinimalKairosConnection {
 			})
 		)
 	}
-	async getImageStore(storeId: number): Promise<ImageStoreObject> {
-		this._assertPlayerIdIsValid(storeId)
+	async getImageStore(storeId: number | ImageStoreRef): Promise<ImageStoreObject> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.#getObject(refToPath(refImageStore(storeId)), ImageStoreObjectEncodingDefinition)
 	}
-	async updateImageStore(storeId: number, props: Partial<UpdateImageStoreObject>): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async updateImageStore(storeId: number | ImageStoreRef, props: Partial<UpdateImageStoreObject>): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 
 		await this.setAttributes(refToPath(refImageStore(storeId)), [
 			{ attribute: 'clip', value: stringifyImageStoreClip(props.clip) }, // Note: this needs to be before the other attributes, to ensure they affect the correct clip
@@ -2272,21 +2376,29 @@ export class KairosConnection extends MinimalKairosConnection {
 			// 'tally' is read-only, so can't be set
 		])
 	}
-	async imageStorePlaylistBegin(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistBegin(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_begin`)
 	}
-	async imageStorePlaylistBack(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistBack(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_back`)
 	}
-	async imageStorePlaylistNext(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistNext(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_next`)
 	}
-	async imageStorePlaylistEnd(storeId: number): Promise<void> {
-		this._assertPlayerIdIsValid(storeId)
+	async imageStorePlaylistEnd(storeId: number | ImageStoreRef): Promise<void> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.executeFunction(`${refToPath(refImageStore(storeId))}.playlist_end`)
+	}
+	private _assertImageStoreIdIsValid(playerId: number | ImageStoreRef): number {
+		if (typeof playerId === 'object') {
+			if (playerId.realm !== 'imageStore') throw new Error(`Invalid playerId realm: ${playerId.realm}.`)
+			playerId = playerId.storeIndex
+		}
+		this._assertPlayerIdIsValid(playerId)
+		return playerId
 	}
 
 	// SPANELPROFILES

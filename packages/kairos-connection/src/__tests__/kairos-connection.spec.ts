@@ -79,7 +79,6 @@ import {
 	refGfxSceneItem,
 	refImageStore,
 	refMacro,
-	refMattes,
 	refRamRecorder,
 	refScene,
 	refSceneLayer,
@@ -128,6 +127,8 @@ import {
 	refMediaRamRec,
 	refMediaImage,
 	refMediaSound,
+	GfxChannelRef,
+	refMatte,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -835,7 +836,7 @@ describe('KairosConnection', () => {
 			for (let i = 1; i <= 6; i++) {
 				inputs.push(refStreamInputSetting(i))
 			}
-			expect(await connection.listStreamInputsSetting()).toStrictEqual(inputs)
+			expect(await connection.listStreamInputsSettings()).toStrictEqual(inputs)
 
 			expect(await connection.getStreamInputSetting(refStreamInputSetting(1))).toStrictEqual({
 				status: 3,
@@ -1248,11 +1249,11 @@ describe('KairosConnection', () => {
 				},
 				faderReverse: false,
 				faderSync: false,
-				keyPreview: '<unknown>',
+				keyPreview: null,
 				limitOffAction: SceneLimitOffAction.None,
 				limitReturnTime: 20,
 				nextTransition: [refSceneTransition(refMain, ['BgdMix'])],
-				nextTransitionType: '<unknown>',
+				// nextTransitionType: '<unknown>',
 				resolution: Resolution.Resolution1920x1080,
 				resolutionX: 1920,
 				resolutionY: 1080,
@@ -3548,9 +3549,9 @@ describe('KairosConnection', () => {
 			expect(await connection.getMediaClip(refMediaClip(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaStills()).toStrictEqual([])
 			expect(await connection.getMediaStill(refMediaStill(['nonexistent']))).toBeUndefined()
-			expect(await connection.listMediaRamRec()).toStrictEqual([])
+			expect(await connection.listMediaRamRecs()).toStrictEqual([])
 			expect(await connection.getMediaRamRec(refMediaRamRec(['nonexistent']))).toBeUndefined()
-			expect(await connection.listMediaImage()).toStrictEqual([])
+			expect(await connection.listMediaImages()).toStrictEqual([])
 			expect(await connection.getMediaImage(refMediaImage(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaSounds()).toStrictEqual([])
 			expect(await connection.getMediaSound(refMediaSound(['nonexistent']))).toBeUndefined()
@@ -3985,7 +3986,7 @@ describe('KairosConnection', () => {
 					name: 'Test name',
 					source: refSourceBase(['WHITE']),
 					tallyRoot: 1,
-					sourceOptions: [refMattes(['ColA']), refMattes(['ColB']), refMattes(['ColC'])],
+					sourceOptions: [refMatte(['ColA']), refMatte(['ColB']), refMatte(['ColC'])],
 					// recordingStatus, available is read only
 				})
 			).toBeUndefined()
@@ -3993,7 +3994,7 @@ describe('KairosConnection', () => {
 				recordingStatus: AuxRecordingStatus.Idle,
 				name: 'Test name',
 				available: false,
-				sourceOptions: [refMattes(['ColA']), refMattes(['ColB']), refMattes(['ColC'])],
+				sourceOptions: [refMatte(['ColA']), refMatte(['ColB']), refMatte(['ColC'])],
 				source: refSourceBase(['WHITE']),
 				tallyRoot: 1,
 			} satisfies AuxObject)
@@ -4692,6 +4693,7 @@ describe('KairosConnection', () => {
 		test('GFXCHANNELS commands', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
+					'list_ex:GFXCHANNELS': ['list_ex:GFXCHANNELS=', 'GFX1', 'GFX2', ''],
 					'GFX1.scene': ['GFX1.scene=GFXSCENES.Old'],
 					'GFX1.scene=GFXSCENES.Subfolder.New': ['OK'],
 				}[message]
@@ -4699,6 +4701,17 @@ describe('KairosConnection', () => {
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
+			expect(await connection.listGfxChannels()).toStrictEqual([
+				{
+					realm: 'gfx-channel',
+					gfxChannelIndex: 1,
+				},
+				{
+					realm: 'gfx-channel',
+					gfxChannelIndex: 2,
+				},
+			] satisfies GfxChannelRef[])
+
 			expect(await connection.getGfxChannel(1)).toStrictEqual({
 				scene: refGfxScene(['Old']),
 			} satisfies GfxChannelObject)

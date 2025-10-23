@@ -5,12 +5,13 @@ import {
 	ColorRGB,
 	isRef,
 	isAnySourceRef,
-	pathRoRef,
+	pathToRef,
 	refToPath,
 	AnySourceRef,
 	AnyRef,
 	MediaStillRef,
 	MediaImageRef,
+	exampleRef,
 } from 'kairos-lib'
 
 export function stringifyRef<Ref extends AnyRef>(
@@ -36,7 +37,7 @@ export function stringifyRef<Ref extends AnyRef>(
 	if (ref === undefined) return undefined
 	if (ref === null) return ''
 
-	if (realm !== ref.realm) throw new Error(`Unable to stringify ref, is a "${ref.realm}" (expected ${realm})`)
+	if (realm !== ref.realm) throw new Error(`Unable to stringify ref, is a "${ref.realm}" (expected format: ${realm})`)
 
 	return refToPath(ref)
 }
@@ -45,12 +46,15 @@ export function parseRefOptional<Ref extends AnyRef>(realm: Ref['realm'], value:
 	if (value === '<unknown>') return null as any // This is a special case for undefined sources
 	return parseRef(realm, value)
 }
-export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string): Ref {
-	const ref = pathRoRef(value)
+export function parseRef<Ref extends AnyRef>(realm: Ref['realm'], value: string | Ref): Ref {
+	const ref = typeof value === 'string' ? pathToRef(value) : value
 
-	if (!isRef(ref)) throw new Error(`Unable to parse string "${value}", unknown format`)
+	if (!isRef(ref))
+		throw new Error(
+			`Unable to parse  ${JSON.stringify(value)}, unknown format (expected "${refToPath(exampleRef(realm))}")`
+		)
 	if (ref.realm !== realm)
-		throw new Error(`Unable to parse string "${value}", is a "${ref.realm}" (expected "${realm}")`)
+		throw new Error(`Unable to parse ${JSON.stringify(value)}, is a "${ref.realm}" (expected "${realm}")`)
 
 	return ref as Ref
 }
@@ -215,7 +219,7 @@ export function parseAnySourceRefOptional(value: string): AnySourceRef | null {
 	return parseAnySourceRef(value)
 }
 export function parseAnySourceRef(value: string): AnySourceRef {
-	const ref = pathRoRef(value)
+	const ref = pathToRef(value)
 
 	if (!isRef(ref)) throw new Error(`Unable to parse AnySourceRef from string: "${value}"`)
 	if (!isAnySourceRef(ref)) throw new Error(`Unable to parse AnySourceRef, is a "${ref.realm}" (value: "${value}")`)
@@ -245,7 +249,7 @@ export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefi
 export function parseImageStoreClip(value: string): MediaStillRef | MediaImageRef | null {
 	if (value === '<unknown>') return null as any // This is a special case for undefined sources
 
-	const ref = pathRoRef(value)
+	const ref = pathToRef(value)
 
 	if (!isRef(ref)) throw new Error(`Unable to parse string: "${value}"`)
 	if (ref.realm !== 'media-still' && ref.realm !== 'media-image') {

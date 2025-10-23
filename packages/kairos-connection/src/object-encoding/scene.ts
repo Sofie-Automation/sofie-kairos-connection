@@ -1,5 +1,5 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { SceneObject, SceneLimitOffAction, Resolution, SceneTransitionRef } from 'kairos-lib'
+import { SceneObject, SceneLimitOffAction, Resolution, SceneTransitionRef, SceneLayerEffectRef } from 'kairos-lib'
 import {
 	parseBoolean,
 	parseEnum,
@@ -8,6 +8,7 @@ import {
 	parseColorRGB,
 	parseCommaSeparated,
 	parseRef,
+	parseRefOptional,
 } from '../lib/data-parsers.js'
 
 export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject> = {
@@ -26,7 +27,7 @@ export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject
 	},
 	allDuration: { protocolName: 'all_duration', parser: parseInteger },
 	allFader: { protocolName: 'all_fader', parser: parseFloatValue },
-	nextTransitionType: { protocolName: 'next_transition_type', parser: (value) => value },
+	// nextTransitionType: { protocolName: 'next_transition_type', parser: (value) => value }, // We don't know what this is, so we leave it out
 	faderReverse: { protocolName: 'fader_reverse', parser: parseBoolean },
 	faderSync: { protocolName: 'fader_sync', parser: parseBoolean },
 	limitOffAction: {
@@ -34,5 +35,8 @@ export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject
 		parser: (value) => parseEnum<SceneLimitOffAction>(value, SceneLimitOffAction),
 	},
 	limitReturnTime: { protocolName: 'limit_return_time', parser: parseInteger },
-	keyPreview: { protocolName: 'key_preview', parser: (value) => value },
+	keyPreview: {
+		protocolName: 'key_preview',
+		parser: (value) => parseRefOptional<SceneLayerEffectRef>('scene-layer-effect', value),
+	},
 }
