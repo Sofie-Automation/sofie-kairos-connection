@@ -836,7 +836,7 @@ describe('KairosConnection', () => {
 			for (let i = 1; i <= 6; i++) {
 				inputs.push(refStreamInputSetting(i))
 			}
-			expect(await connection.listStreamInputsSetting()).toStrictEqual(inputs)
+			expect(await connection.listStreamInputsSettings()).toStrictEqual(inputs)
 
 			expect(await connection.getStreamInputSetting(refStreamInputSetting(1))).toStrictEqual({
 				status: 3,
@@ -3549,9 +3549,9 @@ describe('KairosConnection', () => {
 			expect(await connection.getMediaClip(refMediaClip(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaStills()).toStrictEqual([])
 			expect(await connection.getMediaStill(refMediaStill(['nonexistent']))).toBeUndefined()
-			expect(await connection.listMediaRamRec()).toStrictEqual([])
+			expect(await connection.listMediaRamRecs()).toStrictEqual([])
 			expect(await connection.getMediaRamRec(refMediaRamRec(['nonexistent']))).toBeUndefined()
-			expect(await connection.listMediaImage()).toStrictEqual([])
+			expect(await connection.listMediaImages()).toStrictEqual([])
 			expect(await connection.getMediaImage(refMediaImage(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaSounds()).toStrictEqual([])
 			expect(await connection.getMediaSound(refMediaSound(['nonexistent']))).toBeUndefined()

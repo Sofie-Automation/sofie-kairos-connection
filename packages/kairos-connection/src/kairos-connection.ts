@@ -421,7 +421,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof ndiInputSettingRef === 'number') ndiInputSettingRef = refNDIInputSetting(ndiInputSettingRef)
 		return this.#getObject(refToPath(ndiInputSettingRef), NDIInputSettingEncodingDefinition)
 	}
-	async listStreamInputsSetting(): Promise<StreamInputSettingRef[]> {
+	async listStreamInputsSettings(): Promise<StreamInputSettingRef[]> {
 		// "IN_STREAM"
 		const list = await this.getList('STREAMINPUTS')
 
@@ -1571,7 +1571,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	/**
 	 * @example kairos.listMediaRamRec(undefined, true) // List all media ramrecs, in all sub-folders
 	 */
-	async listMediaRamRec(
+	async listMediaRamRecs(
 		path: MediaRamRecRef = { realm: 'media-ramrec', clipPath: [] },
 		deep?: boolean
 	): Promise<(MediaRamRecRef & { name: string })[]> {
@@ -1589,7 +1589,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	/**
 	 * @example kairos.listMediaImage(undefined, true) // List all media images, in all sub-folders
 	 */
-	async listMediaImage(
+	async listMediaImages(
 		path: MediaImageRef = { realm: 'media-image', clipPath: [] },
 		deep?: boolean
 	): Promise<(MediaImageRef & { name: string })[]> {
@@ -2209,7 +2209,7 @@ export class KairosConnection extends MinimalKairosConnection {
 		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refAudioPlayer(playerId)), AudioPlayerObjectEncodingDefinition)
 	}
-	async loadAudioPLayerClip(
+	async loadAudioPlayerClip(
 		playerId: number | AudioPlayerRef,
 		clip: AudioPlayerObject['clip'],
 		position?: number
