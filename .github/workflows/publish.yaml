@@ -83,8 +83,11 @@ jobs:
 
           else
             # Otherwise (push by tag), keep the previous logic: compare published vs package.json
-            PUBLISHED_VERSION=$(yarn npm info --json . | jq -c '.version' -r)
+            PUBLISHED_VERSION=$(yarn npm info --json kairos-connection | jq -c '.version' -r)
             THIS_VERSION=$(node -p "require('./package.json').version")
+            echo "Published version: $PUBLISHED_VERSION"
+            echo "This version:      $THIS_VERSION"
+
             # Simple bash helper to compare version numbers
             verlte() {
               [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
