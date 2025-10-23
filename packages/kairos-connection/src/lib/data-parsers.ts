@@ -126,6 +126,7 @@ export function stringifyFloat(value: number | undefined): string | undefined {
 export function parseEnum<EnumType>(value: string, theEnum: { [key: string]: any }): EnumType {
 	const values = Object.values<any>(theEnum)
 	if (values.includes(value)) return value as any
+	else if (values.includes(parseInt(value, 10))) return parseInt(value, 10) as any
 
 	throw new Error(`Invalid enum value: ${JSON.stringify(value)}, valid values: ${values.join(', ')}`)
 }
@@ -144,6 +145,7 @@ export function stringifyEnum<EnumType>(
 	const values = Object.values<any>(theEnum)
 
 	if (values.includes(value)) return value as any
+	else if (values.includes(`${value}`)) return `${value}`
 
 	throw new Error(`Invalid enum value: ${JSON.stringify(value)}, valid values: ${values.join(', ')}`)
 }

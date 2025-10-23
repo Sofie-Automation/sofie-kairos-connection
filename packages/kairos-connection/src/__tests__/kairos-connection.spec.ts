@@ -129,6 +129,7 @@ import {
 	refMediaSound,
 	GfxChannelRef,
 	refMatte,
+	MediaStatus,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -3533,6 +3534,9 @@ describe('KairosConnection', () => {
 					'MEDIA.images.nonexistent.status': ['Error'],
 					'MEDIA.images.nonexistent.load_progress': ['Error'],
 					'MEDIA.sounds.nonexistent.name': ['Error'],
+					'MEDIA.clips.MyFile1&#46;mxf.name': ['MEDIA.clips.MyFile1&#46;mxf.name=MyFile1&#46;mxf'],
+					'MEDIA.clips.MyFile1&#46;mxf.status': ['MEDIA.clips.MyFile1&#46;mxf.status=0'],
+					'MEDIA.clips.MyFile1&#46;mxf.load_progress': ['MEDIA.clips.MyFile1&#46;mxf.load_progress=0'],
 				}[message]
 				if (reply) {
 					return reply
@@ -3547,6 +3551,11 @@ describe('KairosConnection', () => {
 				{ ...refMediaClip(['MyFolder', 'MyFile3.mxf']), name: 'MyFile3.mxf' },
 			])
 			expect(await connection.getMediaClip(refMediaClip(['nonexistent']))).toBeUndefined()
+			expect(await connection.getMediaClip(refMediaClip(['MyFile1.mxf']))).toStrictEqual({
+				name: 'MyFile1.mxf',
+				status: MediaStatus.NOT_LOADED,
+				loadProgress: 0,
+			})
 			expect(await connection.listMediaStills()).toStrictEqual([])
 			expect(await connection.getMediaStill(refMediaStill(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaRamRecs()).toStrictEqual([])

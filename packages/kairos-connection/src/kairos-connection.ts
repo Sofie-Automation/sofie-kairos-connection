@@ -9,6 +9,7 @@ import {
 	stringifyAnySourceRef,
 	stringifyRef,
 	stringifyImageStoreClip,
+	stringifyString,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -172,6 +173,8 @@ import {
 	RamRecorderRef,
 	GfxChannelRef,
 	refGfxChannel,
+	UpdateMediaObject,
+	MediaStatus,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -1549,6 +1552,14 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaClip(ref: MediaClipRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	async updateMediaClip(ref: MediaClipRef, props: Partial<UpdateMediaObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'name', value: stringifyString(props.name) },
+			{ attribute: 'status', value: stringifyEnum<MediaStatus>(props.status, MediaStatus) },
+			// loadProgress is read only
+		])
+	}
+
 	/**
 	 * @example kairos.listMediaStills(undefined, true) // List all media stills, in all sub-folders
 	 */
@@ -1567,6 +1578,13 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async getMediaStill(ref: MediaStillRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
+	}
+	async updateMediaStill(ref: MediaStillRef, props: Partial<UpdateMediaObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'name', value: stringifyString(props.name) },
+			{ attribute: 'status', value: stringifyEnum<MediaStatus>(props.status, MediaStatus) },
+			// loadProgress is read only
+		])
 	}
 	/**
 	 * @example kairos.listMediaRamRec(undefined, true) // List all media ramrecs, in all sub-folders
@@ -1587,6 +1605,16 @@ export class KairosConnection extends MinimalKairosConnection {
 		return this._getMediaObject(ref)
 	}
 	/**
+	 * To load a ramrec into RAM, do .updateMediaRamRec(..., {status: MediaStatus.LOAD})
+	 */
+	async updateMediaRamRec(ref: MediaRamRecRef, props: Partial<UpdateMediaObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'name', value: stringifyString(props.name) },
+			{ attribute: 'status', value: stringifyEnum<MediaStatus>(props.status, MediaStatus) },
+			// loadProgress is read only
+		])
+	}
+	/**
 	 * @example kairos.listMediaImage(undefined, true) // List all media images, in all sub-folders
 	 */
 	async listMediaImages(
@@ -1603,6 +1631,13 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getMediaImage(ref: MediaImageRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
+	}
+	async updateMediaImage(ref: MediaImageRef, props: Partial<UpdateMediaObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'name', value: stringifyString(props.name) },
+			{ attribute: 'status', value: stringifyEnum<MediaStatus>(props.status, MediaStatus) },
+			// loadProgress is read only
+		])
 	}
 	/**
 	 * @example kairos.listMediaSounds(undefined, true) // List all media sounds, in all sub-folders
@@ -1622,6 +1657,13 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async getMediaSound(ref: MediaSoundRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
+	}
+	async updateMediaSound(ref: MediaSoundRef, props: Partial<UpdateMediaObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'name', value: stringifyString(props.name) },
+			{ attribute: 'status', value: stringifyEnum<MediaStatus>(props.status, MediaStatus) },
+			// loadProgress is read only
+		])
 	}
 
 	private async _getMediaObject(
