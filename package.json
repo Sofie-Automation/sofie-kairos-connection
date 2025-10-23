@@ -1,6 +1,6 @@
 {
   "name": "sofie-kairos-connection",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "packageManager": "yarn@4.10.3",
   "private": true,
