@@ -1,6 +1,6 @@
 import type { OmitReadonly } from '../lib/omit-readonly.js'
 import type { AnySourceRef } from '../lib/reference.js'
-import type { ColorRGB, Pos2D, Pos2Df, Pos3Df } from './lib-types.js'
+import type { ColorRGB, Pos2D, Pos2Df, Pos3Df, Rotate } from './lib-types.js'
 
 export interface EffectCropObject {
 	enabled: boolean
@@ -841,7 +841,7 @@ export interface EffectPositionObject {
 	/**
 	 * [ enum, min: 0, max: 3 ]
 	 */
-	rotate: EffectPositionRotate
+	rotate: Rotate
 }
 export interface EffectPCropObject {
 	enabled: boolean
@@ -968,12 +968,7 @@ export enum EffectLinearKeyBlendMode {
 	Additive = 'Additive',
 	Multiplicative = 'Multiplicative',
 }
-export enum EffectPositionRotate {
-	Rotate0 = '0°',
-	Rotate90 = '90°',
-	Rotate180 = '180°',
-	Rotate270 = '270°',
-}
+
 export enum EffectFilmLookColorMode {
 	NotChanged = 'Not changed',
 	Monocrome = 'Monocrome',

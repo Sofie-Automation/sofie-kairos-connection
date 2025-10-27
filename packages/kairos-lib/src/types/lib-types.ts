@@ -34,3 +34,10 @@ export enum Resolution {
 	Resolution1920x1080 = '1920x1080',
 	Resolution3840x2160 = '3840x2160',
 }
+
+export enum Rotate {
+	Rotate0 = '0°',
+	Rotate90 = '90°',
+	Rotate180 = '180°',
+	Rotate270 = '270°',
+}

@@ -43,6 +43,9 @@ export type AnyRef =
 	| StreamOutputSettingRef
 	| AudioOutputSettingRef
 	| SourceIntMVRef
+	| MultiViewRef
+	| MultiViewPipRef
+	| MultiViewInputRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -212,6 +215,12 @@ export function refToPath(ref: AnyRef): string {
 			return `OUT_AUDIO${ref.audioOutputSetting}`
 		case 'mv-int':
 			return `INTSOURCES.MV${ref.mvId}`
+		case 'multi-view':
+			return `MV${ref.mvId}`
+		case 'multi-view-pip':
+			return `MV${ref.mvId}.Windows.PIP-${ref.pipId}`
+		case 'multi-view-input':
+			return `MV${ref.mvId}.Inputs.${ref.inputId}`
 		default:
 			assertNever(ref)
 
@@ -368,6 +377,22 @@ export function pathToRef(ref: string): AnyRef | string {
 	} else if (path[0].startsWith('OUT_AUDIO') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
 		if (!Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
+	} else if (path[0].startsWith('MV')) {
+		const mvIndex = parseInt(path[0].slice(2), 10)
+
+		if (!Number.isNaN(mvIndex) && mvIndex > 0) {
+			if (path.length === 1) {
+				return refMultiView(mvIndex)
+			} else if (path[1] === 'Windows' && path[2].startsWith('PIP-') && path.length === 3) {
+				const pipIndex = parseInt(path[2].slice(4), 10)
+				if (!Number.isNaN(mvIndex) && !Number.isNaN(pipIndex) && mvIndex > 0 && pipIndex > 0)
+					return refMultiViewPip(refMultiView(mvIndex), pipIndex)
+			} else if (path[1] === 'Inputs' && path.length === 3) {
+				const inputIndex = parseInt(path[2], 10)
+				if (!Number.isNaN(mvIndex) && !Number.isNaN(inputIndex) && mvIndex > 0 && inputIndex > 0)
+					return refMultiViewInput(refMultiView(mvIndex), inputIndex)
+			}
+		}
 	} else if (path[0] === 'AUDIOMIXER') {
 		return refAudioMixerChannel(path.slice(1)) // Omit 'AUDIOMIXER'
 	} else if (path[0] === 'FXINPUTS') {
@@ -467,6 +492,12 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refAudioOutputSetting(1)
 		case 'mv-int':
 			return refSourceIntMV(1)
+		case 'multi-view':
+			return refMultiView(1)
+		case 'multi-view-pip':
+			return refMultiViewPip(refMultiView(1), 1)
+		case 'multi-view-input':
+			return refMultiViewInput(refMultiView(1), 1)
 		default:
 			assertNever(realm)
 
@@ -865,4 +896,29 @@ export function refStreamOutputSetting(streamOutput: number): StreamOutputSettin
 }
 export function refAudioOutputSetting(audioOutput: number): AudioOutputSettingRef {
 	return { realm: 'audio-output-setting', audioOutputSetting: audioOutput }
+}
+
+// ------------------------------- MV ----------------------------------
+export type MultiViewRef = {
+	realm: 'multi-view'
+	mvId: number
+}
+export function refMultiView(mvId: number): MultiViewRef {
+	return { realm: 'multi-view', mvId }
+}
+export type MultiViewPipRef = {
+	realm: 'multi-view-pip'
+	mvId: number
+	pipId: number
+}
+export function refMultiViewPip(mvRef: MultiViewRef, pipId: number): MultiViewPipRef {
+	return { realm: 'multi-view-pip', mvId: mvRef.mvId, pipId }
+}
+export type MultiViewInputRef = {
+	realm: 'multi-view-input'
+	mvId: number
+	inputId: number
+}
+export function refMultiViewInput(mvRef: MultiViewRef, inputId: number): MultiViewInputRef {
+	return { realm: 'multi-view-input', mvId: mvRef.mvId, inputId }
 }

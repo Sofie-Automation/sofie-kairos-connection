@@ -10,6 +10,7 @@ import {
 	stringifyRef,
 	stringifyImageStoreClip,
 	stringifyString,
+	stringifyPos2Df,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -178,8 +179,23 @@ import {
 	refSourceIntMV,
 	SourceIntMVRef,
 	MultiViewSourceObject,
+	MultiViewRef,
+	refMultiView,
+	MultiViewObject,
+	MultiViewPipRef,
+	refMultiViewPip,
 	UpdateMediaObject,
 	MediaStatus,
+	MultiViewPipObject,
+	MultiViewInputRef,
+	refMultiViewInput,
+	MultiViewInputObject,
+	UpdateMultiViewObject,
+	ShowTallyBorder,
+	UpdateMultiViewInputObject,
+	Rotate,
+	LabelPosition,
+	UpdateMultiViewPipObject,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -255,6 +271,11 @@ import {
 	ColorCircleSourceObjectEncodingDefinition,
 	MultiViewSourceObjectEncodingDefinition,
 } from './object-encoding/intSources.js'
+import {
+	MultiViewInputObjectEncodingDefinition,
+	MultiViewObjectEncodingDefinition,
+	MultiViewPipObjectEncodingDefinition,
+} from './object-encoding/mv.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -1820,6 +1841,83 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		PIP-<1-36>
 	// 	Inputs
 	// 		<1-36>
+
+	async getMultiView(mvRef: number | MultiViewRef): Promise<MultiViewObject> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		return this.#getObject(refToPath(mvRef), MultiViewObjectEncodingDefinition)
+	}
+	async updateMultiView(mvRef: number | MultiViewRef, props: Partial<UpdateMultiViewObject>): Promise<void> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		await this.setAttributes(refToPath(mvRef), [
+			{ attribute: 'available', value: stringifyBoolean(props.available) },
+			{ attribute: 'background', value: stringifyColorRGB(props.background) },
+			{ attribute: 'text_scale', value: stringifyFloat(props.textScale) },
+			{ attribute: 'show_tally_border', value: stringifyEnum<ShowTallyBorder>(props.showTallyBorder, ShowTallyBorder) },
+			{ attribute: 'tally_border_width', value: stringifyFloat(props.tallyBorderWidth) },
+			// { attribute: 'request_on_demand', value: stringifyBoolean(props.requestOnDemand) },
+		])
+	}
+	async multiViewRecallLayout(mvRef: number | MultiViewRef): Promise<void> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		return this.executeFunction(`${refToPath(mvRef)}.recall_layout`)
+	}
+	async multiViewClearLayout(mvRef: number | MultiViewRef): Promise<void> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		return this.executeFunction(`${refToPath(mvRef)}.clear_layout`)
+	}
+	async listMultiViewPips(mvRef: number | MultiViewRef): Promise<MultiViewPipRef[]> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		const list = await this.getList(`${refToPath(mvRef)}.Windows`)
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/Windows.PIP-(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refMultiViewPip(mvRef, index)
+			})
+		)
+	}
+	async getMultiViewPip(pipRef: MultiViewPipRef): Promise<MultiViewPipObject> {
+		return this.#getObject(refToPath(pipRef), MultiViewPipObjectEncodingDefinition)
+	}
+	async updateMultiViewPip(pipRef: MultiViewPipRef, props: Partial<UpdateMultiViewPipObject>): Promise<void> {
+		await this.setAttributes(refToPath(pipRef), [
+			{ attribute: 'position', value: stringifyPos2Df(props.position) },
+			{ attribute: 'size', value: stringifyFloat(props.size) },
+			{ attribute: 'rotate', value: stringifyEnum<Rotate>(props.rotate, Rotate) },
+			{ attribute: 'label_position', value: stringifyEnum<LabelPosition>(props.labelPosition, LabelPosition) },
+			{ attribute: 'text_color', value: stringifyColorRGB(props.textColor) },
+			{ attribute: 'background_color', value: stringifyColorRGB(props.backgroundColor) },
+			{ attribute: 'background_opacity', value: stringifyFloat(props.backgroundOpacity) },
+		])
+	}
+	async listMultiViewInputs(mvRef: number | MultiViewRef): Promise<MultiViewInputRef[]> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		const list = await this.getList(`${refToPath(mvRef)}.Inputs`)
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/Inputs.(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refMultiViewInput(mvRef, index)
+			})
+		)
+	}
+	async getMultiViewInput(mvInputRef: MultiViewInputRef): Promise<MultiViewInputObject> {
+		return this.#getObject(refToPath(mvInputRef), MultiViewInputObjectEncodingDefinition)
+	}
+	async updateMultiViewInput(mvInputRef: MultiViewInputRef, props: Partial<UpdateMultiViewInputObject>): Promise<void> {
+		await this.setAttributes(refToPath(mvInputRef), [
+			{ attribute: 'source', value: stringifyAnySourceRef(props.source) },
+			{ attribute: 'tally_root', value: stringifyInteger(props.tallyRoot) },
+			{ attribute: 'request_on_demand', value: stringifyBoolean(props.requestOnDemand) },
+		])
+	}
+
 	// MACROS
 	// 	Macro
 	async listMacros(
