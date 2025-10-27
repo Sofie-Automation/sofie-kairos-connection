@@ -21,6 +21,7 @@ import {
 	AudioPlayerRef,
 	SourceBaseRef,
 	SourceIntRef,
+	SourceIntMVRef,
 	GfxChannelRef,
 	GfxSceneRef,
 	AudioMixerChannelRef,
@@ -303,14 +304,14 @@ describe('ref conversions', () => {
 			} satisfies SourceIntRef)
 
 			expect(pathToRef('INTSOURCES.MV1')).toStrictEqual({
-				realm: 'source-int',
-				path: ['MV1'],
-			} satisfies SourceIntRef)
+				realm: 'mv-int',
+				mvId: 1,
+			} satisfies SourceIntMVRef)
 
 			expect(pathToRef('INTSOURCES.MV4')).toStrictEqual({
-				realm: 'source-int',
-				path: ['MV4'],
-			} satisfies SourceIntRef)
+				realm: 'mv-int',
+				mvId: 4,
+			} satisfies SourceIntMVRef)
 		})
 
 		test('MatteRef', () => {
@@ -440,14 +441,14 @@ describe('ref conversions', () => {
 
 		test('SourceIntRef - complete coverage', () => {
 			expect(pathToRef('INTSOURCES.MV2')).toStrictEqual({
-				realm: 'source-int',
-				path: ['MV2'],
-			} satisfies SourceIntRef)
+				realm: 'mv-int',
+				mvId: 2,
+			} satisfies SourceIntMVRef)
 
 			expect(pathToRef('INTSOURCES.MV3')).toStrictEqual({
-				realm: 'source-int',
-				path: ['MV3'],
-			} satisfies SourceIntRef)
+				realm: 'mv-int',
+				mvId: 3,
+			} satisfies SourceIntMVRef)
 		})
 
 		test('IpInputSettingRef', () => {

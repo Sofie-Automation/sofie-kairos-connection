@@ -42,6 +42,7 @@ export type AnyRef =
 	| NDIOutputSettingRef
 	| StreamOutputSettingRef
 	| AudioOutputSettingRef
+	| SourceIntMVRef
 
 export function isRef(ref: unknown): ref is AnyRef {
 	if (typeof ref !== 'object' || ref === null) return false
@@ -60,6 +61,7 @@ export type AnySourceRef =
 	| ImageStoreRef
 	| SourceBaseRef
 	| SourceIntRef
+	| SourceIntMVRef
 	| SceneRef
 	| MatteRef
 	| AuxRef
@@ -73,9 +75,11 @@ export function isAnySourceRef(ref: AnyRef): ref is AnySourceRef {
 		ref.realm === 'imageStore' ||
 		ref.realm === 'source-base' ||
 		ref.realm === 'source-int' ||
+		ref.realm === 'mv-int' ||
 		ref.realm === 'scene' ||
 		ref.realm === 'matte' ||
 		ref.realm === 'aux' ||
+		ref.realm === 'fxInput' ||
 		isAnyInputRef(ref)
 	)
 }
@@ -206,6 +210,8 @@ export function refToPath(ref: AnyRef): string {
 			return `OUT_STREAM${ref.streamOutputSetting}`
 		case 'audio-output-setting':
 			return `OUT_AUDIO${ref.audioOutputSetting}`
+		case 'mv-int':
+			return `INTSOURCES.MV${ref.mvId}`
 		default:
 			assertNever(ref)
 
@@ -291,15 +297,13 @@ export function pathToRef(ref: string): AnyRef | string {
 	} else if (path[0] === 'INTSOURCES') {
 		if (path.length === 2) {
 			const path1 = path[1] as SourceIntRef['path'][0]
-			if (
-				path1 === 'ColorBar' ||
-				path1 === 'ColorCircle' ||
-				path1 === 'MV1' ||
-				path1 === 'MV2' ||
-				path1 === 'MV3' ||
-				path1 === 'MV4'
-			) {
+			if (path1 === 'ColorBar' || path1 === 'ColorCircle') {
 				return refSourceInt([path1])
+			} else if (path[1].startsWith('MV')) {
+				const mvId = parseInt(path[1].slice(2), 10)
+				if (!Number.isNaN(mvId) && mvId > 0) {
+					return refSourceIntMV(mvId)
+				}
 			} else {
 				assertNever(path1)
 			}
@@ -461,6 +465,8 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refStreamOutputSetting(1)
 		case 'audio-output-setting':
 			return refAudioOutputSetting(1)
+		case 'mv-int':
+			return refSourceIntMV(1)
 		default:
 			assertNever(realm)
 
@@ -700,10 +706,18 @@ export function refSourceBase(path: SourceBaseRef['path']): SourceBaseRef {
 
 export type SourceIntRef = {
 	realm: 'source-int'
-	path: ['ColorBar' | 'ColorCircle' | 'MV1' | 'MV2' | 'MV3' | 'MV4']
+	path: ['ColorBar' | 'ColorCircle']
 }
 export function refSourceInt(path: SourceIntRef['path']): SourceIntRef {
 	return { realm: 'source-int', path }
+}
+
+export type SourceIntMVRef = {
+	realm: 'mv-int'
+	mvId: number
+}
+export function refSourceIntMV(mvId: number): SourceIntMVRef {
+	return { realm: 'mv-int', mvId }
 }
 
 // ------------------------ AUDIOMIXER Channels -------------------------
