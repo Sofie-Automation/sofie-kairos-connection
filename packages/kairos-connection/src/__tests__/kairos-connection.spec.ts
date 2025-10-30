@@ -128,6 +128,8 @@ import {
 	refMediaImage,
 	refMediaSound,
 	GfxChannelRef,
+	MultiViewSourceObject,
+	SourceIntMVRef,
 	refMatte,
 	MediaStatus,
 } from 'kairos-lib'
@@ -605,7 +607,63 @@ describe('KairosConnection', () => {
 		// 	ColorBar
 		// 	ColorCircle
 		// 	MV<1-4>
+		test('INTSOURCES', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'INTSOURCES.ColorBar.name': ['INTSOURCES.ColorBar.name=ColorBar'],
+					'INTSOURCES.ColorCircle.name': ['INTSOURCES.ColorCircle.name=ColorCircle'],
+					'list_ex:INTSOURCES': [
+						'list_ex:INTSOURCES=',
+						'BLACK',
+						'WHITE',
+						'INTSOURCES.ColorBar',
+						'INTSOURCES.ColorCircle',
+						'INTSOURCES.MV1',
+						'INTSOURCES.MV2',
+						'INTSOURCES.MV3',
+						'INTSOURCES.MV4',
+						'',
+					],
+					'INTSOURCES.MV1.available': ['INTSOURCES.MV1.available=1'],
+					'INTSOURCES.MV1.name': ['INTSOURCES.MV1.name=MV1'],
+				}[message]
+				if (reply) {
+					return reply
+				}
 
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(await connection.getColorBarSource()).toStrictEqual({
+				name: 'ColorBar',
+			})
+			expect(await connection.getColorCircleSource()).toStrictEqual({
+				name: 'ColorCircle',
+			})
+
+			expect(await connection.listMultiViewerSources()).toStrictEqual([
+				{
+					realm: 'mv-int',
+					mvId: 1,
+				},
+				{
+					realm: 'mv-int',
+					mvId: 2,
+				},
+				{
+					realm: 'mv-int',
+					mvId: 3,
+				},
+				{
+					realm: 'mv-int',
+					mvId: 4,
+				},
+			] satisfies SourceIntMVRef[])
+			expect(await connection.getMultiViewerSource(1)).toStrictEqual({
+				available: true,
+				name: 'MV1',
+			} satisfies MultiViewSourceObject)
+		})
 		// INPUTSETTINGS
 		// 	IPINPUTS
 		// 		IN_IP<1-48>

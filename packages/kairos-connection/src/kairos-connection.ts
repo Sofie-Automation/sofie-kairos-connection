@@ -173,6 +173,11 @@ import {
 	RamRecorderRef,
 	GfxChannelRef,
 	refGfxChannel,
+	ColorBarSourceObject,
+	ColorCircleSourceObject,
+	refSourceIntMV,
+	SourceIntMVRef,
+	MultiViewSourceObject,
 	UpdateMediaObject,
 	MediaStatus,
 } from 'kairos-lib'
@@ -245,6 +250,11 @@ import {
 	SDIOutputSettingEncodingDefinition,
 	StreamOutputSettingEncodingDefinition,
 } from './object-encoding/outputSettings.js'
+import {
+	ColorBarSourceObjectEncodingDefinition,
+	ColorCircleSourceObjectEncodingDefinition,
+	MultiViewSourceObjectEncodingDefinition,
+} from './object-encoding/intSources.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
@@ -339,6 +349,29 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	ColorBar
 	// 	ColorCircle
 	// 	MV<1-4>
+	async getColorBarSource(): Promise<ColorBarSourceObject> {
+		return this.#getObject(`INTSOURCES.ColorBar`, ColorBarSourceObjectEncodingDefinition)
+	}
+	async getColorCircleSource(): Promise<ColorCircleSourceObject> {
+		return this.#getObject(`INTSOURCES.ColorCircle`, ColorCircleSourceObjectEncodingDefinition)
+	}
+	async listMultiViewerSources(): Promise<SourceIntMVRef[]> {
+		const list = await this.getList('INTSOURCES')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^INTSOURCES.MV(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refSourceIntMV(index)
+			})
+		)
+	}
+	async getMultiViewerSource(mvRef: number | SourceIntMVRef): Promise<MultiViewSourceObject> {
+		if (typeof mvRef === 'number') mvRef = refSourceIntMV(mvRef)
+		return this.#getObject(refToPath(mvRef), MultiViewSourceObjectEncodingDefinition)
+	}
 
 	// INPUTSETTINGS
 	// 	IPINPUTS
