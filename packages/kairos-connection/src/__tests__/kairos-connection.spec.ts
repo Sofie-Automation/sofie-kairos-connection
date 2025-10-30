@@ -27,7 +27,7 @@ import {
 	EffectMatrixCorrectionObject,
 	EffectPCropObject,
 	EffectPositionObject,
-	EffectPositionRotate,
+	Rotate,
 	EffectRGBCorrectionObject,
 	EffectTemperatureCorrectionObject,
 	EffectToneCurveCorrectionObject,
@@ -132,6 +132,14 @@ import {
 	SourceIntMVRef,
 	refMatte,
 	MediaStatus,
+	MultiViewObject,
+	ShowTallyBorder,
+	refMultiViewPip,
+	refMultiView,
+	refMultiViewInput,
+	MultiViewPipObject,
+	LabelPosition,
+	MultiViewInputObject,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -2770,7 +2778,7 @@ describe('KairosConnection', () => {
 							x: 0,
 							y: 0,
 						},
-						rotate: EffectPositionRotate.Rotate0,
+						rotate: Rotate.Rotate0,
 					})
 				).toBeUndefined()
 				expect(
@@ -2783,7 +2791,7 @@ describe('KairosConnection', () => {
 						x: 0,
 						y: 0,
 					},
-					rotate: EffectPositionRotate.Rotate0,
+					rotate: Rotate.Rotate0,
 				} satisfies EffectPositionObject)
 			})
 			test('PCrop', async () => {
@@ -3725,6 +3733,256 @@ describe('KairosConnection', () => {
 		// 		PIP-<1-36>
 		// 	Inputs
 		// 		<1-36>
+		test('MV', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:MV1.Windows': [
+						'list_ex:MV1.Windows=',
+						'MV1.Windows.PIP-1',
+						'MV1.Windows.PIP-2',
+						'MV1.Windows.PIP-3',
+						'MV1.Windows.PIP-4',
+						'MV1.Windows.PIP-5',
+						'MV1.Windows.PIP-6',
+						'MV1.Windows.PIP-7',
+						'MV1.Windows.PIP-8',
+						'MV1.Windows.PIP-9',
+						'MV1.Windows.PIP-10',
+						'MV1.Windows.PIP-11',
+						'MV1.Windows.PIP-12',
+						'MV1.Windows.PIP-13',
+						'MV1.Windows.PIP-14',
+						'MV1.Windows.PIP-15',
+						'MV1.Windows.PIP-16',
+						'MV1.Windows.PIP-17',
+						'',
+					],
+					'MV1.Windows.PIP-1.position': ['MV1.Windows.PIP-1.position=-0.3/0.168'],
+					'MV1.Windows.PIP-1.size': ['MV1.Windows.PIP-1.size=0.3801'],
+					'MV1.Windows.PIP-1.rotate': ['MV1.Windows.PIP-1.rotate=0°'],
+					'MV1.Windows.PIP-1.label_position': ['MV1.Windows.PIP-1.label_position=Hidden'],
+					'MV1.Windows.PIP-1.text_color': ['MV1.Windows.PIP-1.text_color=rgb(230,230,230)'],
+					'MV1.Windows.PIP-1.background_color': ['MV1.Windows.PIP-1.background_color=rgb(0,0,0)'],
+					'MV1.Windows.PIP-1.background_opacity': ['MV1.Windows.PIP-1.background_opacity=0.5'],
+					'MV1.Windows.PIP-1.position=-0.3/0.168': ['OK'],
+					'MV1.Windows.PIP-1.size=0.3801': ['OK'],
+					'MV1.Windows.PIP-1.rotate=0°': ['OK'],
+					'MV1.Windows.PIP-1.label_position=Hidden': ['OK'],
+					'MV1.Windows.PIP-1.text_color=rgb(230,230,230)': ['OK'],
+					'MV1.Windows.PIP-1.background_color=rgb(0,0,0)': ['OK'],
+					'MV1.Windows.PIP-1.background_opacity=0.5': ['OK'],
+					'list_ex:MV1.Inputs': [
+						'list_ex:MV1.Inputs=',
+						'MV1.Inputs.1',
+						'MV1.Inputs.2',
+						'MV1.Inputs.3',
+						'MV1.Inputs.4',
+						'MV1.Inputs.5',
+						'MV1.Inputs.6',
+						'MV1.Inputs.7',
+						'MV1.Inputs.8',
+						'MV1.Inputs.9',
+						'MV1.Inputs.10',
+						'MV1.Inputs.11',
+						'MV1.Inputs.12',
+						'MV1.Inputs.13',
+						'MV1.Inputs.14',
+						'MV1.Inputs.15',
+						'MV1.Inputs.16',
+						'MV1.Inputs.17',
+						'MV1.Inputs.18',
+						'MV1.Inputs.19',
+						'MV1.Inputs.20',
+						'MV1.Inputs.21',
+						'MV1.Inputs.22',
+						'MV1.Inputs.23',
+						'MV1.Inputs.24',
+						'MV1.Inputs.25',
+						'MV1.Inputs.26',
+						'MV1.Inputs.27',
+						'MV1.Inputs.28',
+						'MV1.Inputs.29',
+						'MV1.Inputs.30',
+						'MV1.Inputs.31',
+						'MV1.Inputs.32',
+						'MV1.Inputs.33',
+						'MV1.Inputs.34',
+						'MV1.Inputs.35',
+						'MV1.Inputs.36',
+						'',
+					],
+					'MV1.Inputs.1.source': ['MV1.Inputs.1.source=IP-AUX10'],
+					'MV1.Inputs.1.tally_root': ['MV1.Inputs.1.tally_root=1'],
+					'MV1.Inputs.1.request_on_demand': ['MV1.Inputs.1.request_on_demand=1'],
+					'MV1.available': ['MV1.available=1'],
+					'MV1.background': ['MV1.background=rgb(39,35,35)'],
+					'MV1.text_scale': ['MV1.text_scale=0.15'],
+					'MV1.show_tally_border': ['MV1.show_tally_border=Active'],
+					'MV1.tally_border_width': ['MV1.tally_border_width=1'],
+					'MV1.available=1': ['OK'],
+					'MV1.background=rgb(39,35,35)': ['OK'],
+					'MV1.text_scale=0.15': ['OK'],
+					'MV1.show_tally_border=Active': ['OK'],
+					'MV1.tally_border_width=1': ['OK'],
+					'MV1.recall_layout=': ['OK'],
+					'MV1.clear_layout=': ['OK'],
+					'MV1.Inputs.1.source=IP-AUX10': ['OK'],
+					'MV1.Inputs.1.tally_root=1': ['OK'],
+					'MV1.Inputs.1.request_on_demand=1': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			expect(await connection.getMultiView(1)).toStrictEqual({
+				available: true,
+				background: {
+					blue: 35,
+					green: 35,
+					red: 39,
+				},
+				showTallyBorder: ShowTallyBorder.Active,
+				tallyBorderWidth: 1,
+				textScale: 0.15,
+			} satisfies MultiViewObject)
+			expect(
+				await connection.updateMultiView(1, {
+					available: true,
+					background: {
+						blue: 35,
+						green: 35,
+						red: 39,
+					},
+					showTallyBorder: ShowTallyBorder.Active,
+					tallyBorderWidth: 1,
+					textScale: 0.15,
+				})
+			).toBeUndefined()
+			expect(await connection.multiViewRecallLayout(1)).toBeUndefined()
+			expect(await connection.multiViewClearLayout(1)).toBeUndefined()
+
+			expect(await connection.listMultiViewPips(1)).toStrictEqual([
+				{ mvId: 1, pipId: 1, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 2, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 3, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 4, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 5, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 6, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 7, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 8, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 9, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 10, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 11, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 12, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 13, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 14, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 15, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 16, realm: 'multi-view-pip' },
+				{ mvId: 1, pipId: 17, realm: 'multi-view-pip' },
+			])
+			expect(await connection.listMultiViewInputs(1)).toStrictEqual([
+				{ inputId: 1, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 2, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 3, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 4, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 5, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 6, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 7, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 8, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 9, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 10, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 11, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 12, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 13, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 14, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 15, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 16, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 17, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 18, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 19, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 20, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 21, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 22, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 23, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 24, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 25, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 26, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 27, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 28, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 29, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 30, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 31, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 32, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 33, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 34, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 35, mvId: 1, realm: 'multi-view-input' },
+				{ inputId: 36, mvId: 1, realm: 'multi-view-input' },
+			])
+			expect(await connection.getMultiViewPip(refMultiViewPip(refMultiView(1), 1))).toStrictEqual({
+				backgroundColor: {
+					blue: 0,
+					green: 0,
+					red: 0,
+				},
+				backgroundOpacity: 0.5,
+				labelPosition: LabelPosition.Hidden,
+				position: {
+					x: -0.3,
+					y: 0.168,
+				},
+				rotate: Rotate.Rotate0,
+				size: 0.3801,
+				textColor: {
+					blue: 230,
+					green: 230,
+					red: 230,
+				},
+			} satisfies MultiViewPipObject)
+			expect(
+				await connection.updateMultiViewPip(refMultiViewPip(refMultiView(1), 1), {
+					backgroundColor: {
+						blue: 0,
+						green: 0,
+						red: 0,
+					},
+					backgroundOpacity: 0.5,
+					labelPosition: LabelPosition.Hidden,
+					position: {
+						x: -0.3,
+						y: 0.168,
+					},
+					rotate: Rotate.Rotate0,
+					size: 0.3801,
+					textColor: {
+						blue: 230,
+						green: 230,
+						red: 230,
+					},
+				})
+			).toBeUndefined()
+
+			expect(await connection.getMultiViewInput(refMultiViewInput(refMultiView(1), 1))).toStrictEqual({
+				requestOnDemand: true,
+				source: {
+					path: 'IP-AUX10',
+					pathIsName: false,
+					realm: 'aux',
+				},
+				tallyRoot: 1,
+			} satisfies MultiViewInputObject)
+
+			expect(
+				await connection.updateMultiViewInput(refMultiViewInput(refMultiView(1), 1), {
+					requestOnDemand: true,
+					source: {
+						path: 'IP-AUX10',
+						pathIsName: false,
+						realm: 'aux',
+					},
+					tallyRoot: 1,
+				})
+			).toBeUndefined()
+		})
 		// MACROS
 		// 	Macro
 

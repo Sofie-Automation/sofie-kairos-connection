@@ -5,7 +5,7 @@ import {
 	EffectTransform2DType,
 	EffectVirtualPTZObject,
 	EffectPositionObject,
-	EffectPositionRotate,
+	Rotate,
 	EffectPCropObject,
 	UpdateEffectCropObject,
 	UpdateEffectPCropObject,
@@ -118,7 +118,7 @@ export const EffectPositionObjectEncodingDefinition: ObjectEncodingDefinition<Ef
 	height: { protocolName: 'height', parser: parseInteger },
 	rotate: {
 		protocolName: 'rotate',
-		parser: (value) => parseEnum<EffectPositionRotate>(value, EffectPositionRotate),
+		parser: (value) => parseEnum<Rotate>(value, Rotate),
 	},
 }
 
@@ -131,7 +131,7 @@ export function EncodeUpdateEffectPositionObject(props: Partial<UpdateEffectPosi
 		{ attribute: 'height', value: stringifyInteger(props.height) },
 		{
 			attribute: 'rotate',
-			value: stringifyEnum<EffectPositionRotate>(props.rotate, EffectPositionRotate),
+			value: stringifyEnum<Rotate>(props.rotate, Rotate),
 		},
 	]
 }
