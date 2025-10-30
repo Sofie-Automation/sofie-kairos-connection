@@ -196,6 +196,7 @@ import {
 	Rotate,
 	LabelPosition,
 	UpdateMultiViewPipObject,
+	refSceneLayer,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -730,7 +731,13 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		Layers
 	// 			Layer
 
-	async listSceneLayers(layerRef: SceneLayerRef, deep?: boolean): Promise<(SceneLayerRef & { name: string })[]> {
+	async listSceneLayers(
+		layerRef: SceneLayerRef | SceneRef,
+		deep?: boolean
+	): Promise<(SceneLayerRef & { name: string })[]> {
+		if (layerRef.realm === 'scene') {
+			layerRef = refSceneLayer(layerRef, [])
+		}
 		return (await this._listDeep(layerRef, ['Effects'], deep)).map((itemPath) => {
 			const paths = splitPath(itemPath, 'Layers')
 			if (paths.length !== 2)
