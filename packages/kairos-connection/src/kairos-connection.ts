@@ -768,6 +768,14 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async updateSceneLayer(layerRef: SceneLayerRef, props: Partial<UpdateSceneLayerObject>): Promise<void> {
 		await this.setAttributes(refToPath(layerRef), [
+			// Note: Change dissolve before sourceA/sourcePgm/sourcePst to ensure it takes effect when changing the source
+			{ attribute: 'dissolve_enabled', value: stringifyBoolean(props.dissolveEnabled) },
+			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
+			{
+				attribute: 'dissolve_mode',
+				value: stringifyEnum<DissolveMode>(props.dissolveMode, DissolveMode),
+			},
+
 			{ attribute: 'opacity', value: stringifyFloat(props.opacity) },
 			{ attribute: 'sourceA', value: stringifyAnySourceRef(props.sourceA) },
 			{ attribute: 'source_pgm', value: stringifyAnySourceRef(props.sourcePgm) },
@@ -782,12 +790,6 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'color', value: stringifyColorRGB(props.color) },
 			{ attribute: 'clean_mask', value: stringifyInteger(props.cleanMask) },
 			{ attribute: 'source_clean_mask', value: stringifyInteger(props.sourceCleanMask) },
-			{ attribute: 'dissolve_enabled', value: stringifyBoolean(props.dissolveEnabled) },
-			{ attribute: 'dissolve_time', value: stringifyInteger(props.dissolveTime) },
-			{
-				attribute: 'dissolve_mode',
-				value: stringifyEnum<DissolveMode>(props.dissolveMode, DissolveMode),
-			},
 			{ attribute: 'blend_mode', value: stringifyEnum<SceneLayerBlendMode>(props.blendMode, SceneLayerBlendMode) },
 		])
 	}
