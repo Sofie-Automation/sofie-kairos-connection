@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Convential Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) for commit guidelines.
 
+## [0.2.1](https://github.com/Sofie-Automation/sofie-kairos-connection/compare/v0.2.0...v0.2.1) (Wed Nov 12 2025)
+
+
+### Fixes
+
+* ensure proper order of scene layer dissolve properties (#20) [a2d7198](https://github.com/Sofie-Automation/sofie-kairos-connection/commit/a2d7198d5a962345efc4bec90364b34ee28fc70e)
+
 ## [0.2.0](https://github.com/Sofie-Automation/sofie-kairos-connection/compare/v0.1.1...v0.2.0) (Thu Oct 30 2025)
 
 
