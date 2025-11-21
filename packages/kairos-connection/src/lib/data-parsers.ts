@@ -96,6 +96,7 @@ export function stringifyString(value: undefined): undefined
 export function stringifyString(value: string): string
 export function stringifyString(value: string | undefined): string | undefined
 export function stringifyString(value: string | undefined): string | undefined {
+	if (value === undefined) return undefined
 	return `${value}`
 }
 

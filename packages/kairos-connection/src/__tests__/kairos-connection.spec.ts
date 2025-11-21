@@ -206,7 +206,12 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 				): Promise<TRes> {
 					const orgError = new Error()
 					try {
+						this.mockLogTraffic({ type: 'sent', message: commandStr })
 						const replyLines = await this._replyHandler(commandStr, expectedResponse, expectedResponsePath)
+
+						for (const line of replyLines) {
+							this.mockLogTraffic({ type: 'received', message: line })
+						}
 
 						if (replyLines.length === 1 && replyLines[0] === 'Error') {
 							throw new ResponseError(commandStr, replyLines[0])
@@ -268,6 +273,40 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 					this._mockSubscribeValue = handler
 				}
 
+				/** Log traffic during execution of a callback */
+				public async mockCaptureTraffic(
+					callback: (messageLog: {
+						receivedMessages: string[]
+						sentMessages: string[]
+						allMessages: IMockLoggedMessage[]
+					}) => Promise<void> | void
+				) {
+					const messageLog: {
+						receivedMessages: string[]
+						sentMessages: string[]
+						allMessages: IMockLoggedMessage[]
+					} = {
+						receivedMessages: [],
+						sentMessages: [],
+						allMessages: [],
+					}
+					const listener = (msg: IMockLoggedMessage) => {
+						if (msg.type === 'received') messageLog.receivedMessages.push(msg.message)
+						else if (msg.type === 'sent') messageLog.sentMessages.push(msg.message)
+						messageLog.allMessages.push(msg)
+					}
+					this.logListeners.push(listener)
+
+					// Execute callback
+					await callback(messageLog)
+					// Clean up:
+					this.logListeners = this.logListeners.filter((cb) => cb !== listener)
+				}
+				private logListeners: ((msg: IMockLoggedMessage) => void)[] = []
+				private mockLogTraffic(msg: IMockLoggedMessage) {
+					this.logListeners.forEach((cb) => cb(msg))
+				}
+
 				// Override subscribeValue to use mock if set
 				subscribeValue(
 					path: string,
@@ -282,8 +321,20 @@ const MockMinimalKairosConnection = vi.hoisted(() => {
 		},
 	}
 })
+interface IMockLoggedMessage {
+	type: 'received' | 'sent'
+	message: string
+}
 interface IMockMinimalKairosConnection extends MinimalKairosConnection {
 	isAMock: boolean
+
+	mockCaptureTraffic(
+		callback: (messageLog: {
+			receivedMessages: string[]
+			sentMessages: string[]
+			allMessages: IMockLoggedMessage[]
+		}) => Promise<void> | void
+	): Promise<void>
 
 	mockSetReplyHandler: (
 		handler: (
@@ -3603,6 +3654,8 @@ describe('KairosConnection', () => {
 					'MEDIA.clips.MyFile1&#46;mxf.name': ['MEDIA.clips.MyFile1&#46;mxf.name=MyFile1&#46;mxf'],
 					'MEDIA.clips.MyFile1&#46;mxf.status': ['MEDIA.clips.MyFile1&#46;mxf.status=0'],
 					'MEDIA.clips.MyFile1&#46;mxf.load_progress': ['MEDIA.clips.MyFile1&#46;mxf.load_progress=0'],
+					'MEDIA.stills.myStill.name=myNewStillName': ['OK'],
+					'MEDIA.ramrec.myRamRec.status=2': ['OK'],
 				}[message]
 				if (reply) {
 					return reply
@@ -3630,6 +3683,23 @@ describe('KairosConnection', () => {
 			expect(await connection.getMediaImage(refMediaImage(['nonexistent']))).toBeUndefined()
 			expect(await connection.listMediaSounds()).toStrictEqual([])
 			expect(await connection.getMediaSound(refMediaSound(['nonexistent']))).toBeUndefined()
+
+			await connection.mockCaptureTraffic(async (messageLog) => {
+				expect(
+					await connection.updateMediaStill(refMediaStill(['myStill']), {
+						name: 'myNewStillName',
+					})
+				).toBeUndefined()
+				expect(messageLog.sentMessages.length).toBe(1)
+			})
+			await connection.mockCaptureTraffic(async (messageLog) => {
+				expect(
+					await connection.updateMediaRamRec(refMediaRamRec(['myRamRec']), {
+						status: MediaStatus.LOAD,
+					})
+				).toBeUndefined()
+				expect(messageLog.sentMessages.length).toBe(1)
+			})
 		})
 
 		// TRANSLIB
