@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Convential Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) for commit guidelines.
 
+## [0.2.2](https://github.com/Sofie-Automation/sofie-kairos-connection/compare/v0.2.1...v0.2.2) (Fri Nov 21 2025)
+
+
+### Fixes
+
+* bug that caused all update methods to set strings to 'undefined' [2b4b724](https://github.com/Sofie-Automation/sofie-kairos-connection/commit/2b4b724d9b3b599113d2292ea57bf5373c4abeef)
+
 ## [0.2.1](https://github.com/Sofie-Automation/sofie-kairos-connection/compare/v0.2.0...v0.2.1) (Wed Nov 12 2025)
 
 
