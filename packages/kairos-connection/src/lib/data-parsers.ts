@@ -12,6 +12,8 @@ import {
 	MediaStillRef,
 	MediaImageRef,
 	exampleRef,
+	AnyMVSourceRef,
+	isAnyMVSourceRef,
 } from 'kairos-lib'
 
 export function stringifyRef<Ref extends AnyRef>(
@@ -242,6 +244,23 @@ export function stringifyAnySourceRef(ref: AnySourceRef | string | null | undefi
 	if (typeof ref === 'string') {
 		// pass through parseAnySourceRef to ensure that the string is of the correct type / realm:
 		ref = parseAnySourceRef(ref)
+	}
+	if (ref === undefined) return undefined
+	if (ref === null) return '<unknown>'
+
+	return refToPath(ref)
+}
+
+export function parseAnyMVSourceRef(value: string): AnyMVSourceRef {
+	const ref = pathToRef(value)
+	if (!isRef(ref)) throw new Error(`Unable to parse AnyMVSourceRef from string: "${value}"`)
+	if (!isAnyMVSourceRef(ref)) throw new Error(`Unable to parse AnyMVSourceRef, is a "${ref.realm}" (value: "${value}")`)
+	return ref
+}
+export function stringifyAnyMVSourceRef(ref: AnyMVSourceRef | string | null | undefined): string | undefined {
+	if (typeof ref === 'string') {
+		// pass through parseAnyMVSourceRef to ensure that the string is of the correct type / realm:
+		ref = parseAnyMVSourceRef(ref)
 	}
 	if (ref === undefined) return undefined
 	if (ref === null) return '<unknown>'

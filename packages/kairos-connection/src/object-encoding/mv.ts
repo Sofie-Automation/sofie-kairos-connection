@@ -8,7 +8,7 @@ import {
 	ShowTallyBorder,
 } from 'kairos-lib'
 import {
-	parseAnySourceRef,
+	parseAnyMVSourceRef,
 	parseBoolean,
 	parseColorRGB,
 	parseEnum,
@@ -38,7 +38,7 @@ export const MultiViewPipObjectEncodingDefinition: ObjectEncodingDefinition<Mult
 }
 
 export const MultiViewInputObjectEncodingDefinition: ObjectEncodingDefinition<MultiViewInputObject> = {
-	source: { protocolName: 'source', parser: parseAnySourceRef },
+	source: { protocolName: 'source', parser: parseAnyMVSourceRef },
 	tallyRoot: { protocolName: 'tally_root', parser: parseInteger },
 	requestOnDemand: { protocolName: 'request_on_demand', parser: parseBoolean },
 }
