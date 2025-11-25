@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Convential Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) for commit guidelines.
 
+## [0.2.3](https://github.com/Sofie-Automation/sofie-kairos-connection/compare/v0.2.2...v0.2.3) (Tue Nov 25 2025)
+
+
+### Fixes
+
+* source references [13a08b7](https://github.com/Sofie-Automation/sofie-kairos-connection/commit/13a08b7edf2e4781d96e76491a855050152350c8)
+
 ## [0.2.2](https://github.com/Sofie-Automation/sofie-kairos-connection/compare/v0.2.1...v0.2.2) (Fri Nov 21 2025)
 
 
