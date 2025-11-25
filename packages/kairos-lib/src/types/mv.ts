@@ -1,5 +1,5 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
-import { AnySourceRef } from '../main.js'
+import { AnyMVSourceRef } from '../main.js'
 import { ColorRGB, Pos2Df, Rotate } from './lib-types.js'
 
 export interface MultiViewObject {
@@ -40,7 +40,7 @@ export interface MultiViewPipObject {
 }
 export interface MultiViewInputObject {
 	/** ObjectID **/
-	source: AnySourceRef
+	source: AnyMVSourceRef
 	/** int **/
 	tallyRoot: number
 	/** bool **/

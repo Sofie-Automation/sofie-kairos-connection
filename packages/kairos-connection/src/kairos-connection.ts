@@ -11,6 +11,7 @@ import {
 	stringifyImageStoreClip,
 	stringifyString,
 	stringifyPos2Df,
+	stringifyAnyMVSourceRef,
 } from './lib/data-parsers.js'
 import { MinimalKairosConnection, SubscriptionCallback } from './minimal/kairos-minimal.js'
 import {
@@ -1921,7 +1922,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async updateMultiViewInput(mvInputRef: MultiViewInputRef, props: Partial<UpdateMultiViewInputObject>): Promise<void> {
 		await this.setAttributes(refToPath(mvInputRef), [
-			{ attribute: 'source', value: stringifyAnySourceRef(props.source) },
+			{ attribute: 'source', value: stringifyAnyMVSourceRef(props.source) },
 			{ attribute: 'tally_root', value: stringifyInteger(props.tallyRoot) },
 			{ attribute: 'request_on_demand', value: stringifyBoolean(props.requestOnDemand) },
 		])

@@ -53,40 +53,6 @@ export function isRef(ref: unknown): ref is AnyRef {
 	return true
 }
 
-// --------------------------- Sources -----------------------------
-
-/**
- * Any refs that can be used as sources
- * */
-export type AnySourceRef =
-	| RamRecorderRef
-	| ClipPlayerRef
-	| ImageStoreRef
-	| SourceBaseRef
-	| SourceIntRef
-	| SourceIntMVRef
-	| SceneRef
-	| MatteRef
-	| AuxRef
-	| FxInputRef
-	| AnyInputRef
-
-export function isAnySourceRef(ref: AnyRef): ref is AnySourceRef {
-	return (
-		ref.realm === 'ramRecorder' ||
-		ref.realm === 'clipPlayer' ||
-		ref.realm === 'imageStore' ||
-		ref.realm === 'source-base' ||
-		ref.realm === 'source-int' ||
-		ref.realm === 'mv-int' ||
-		ref.realm === 'scene' ||
-		ref.realm === 'matte' ||
-		ref.realm === 'aux' ||
-		ref.realm === 'fxInput' ||
-		isAnyInputRef(ref)
-	)
-}
-
 /** Converts a Ref to a Kairos path */
 export function refToPath(ref: AnyRef): string {
 	switch (ref.realm) {
@@ -529,6 +495,54 @@ export function splitPath(path: RefPath, ...splits: string[]): RefPath[] {
 	splitPaths.push(currentPath)
 
 	return splitPaths
+}
+
+// --------------------------- Sources -----------------------------
+
+/**
+ * Any refs that can be used as sources
+ */
+export type AnySourceRef =
+	| SceneRef
+	| AnyInputRef
+	| MediaStillRef
+	| ImageStoreRef
+	| MediaRamRecRef
+	| RamRecorderRef
+	| ClipPlayerRef
+	| MatteRef
+	| GfxChannelRef
+	| SourceBaseRef
+	| SourceIntRef
+	| SourceIntMVRef
+
+export function isAnySourceRef(ref0: AnyRef): ref0 is AnySourceRef {
+	const ref = ref0 as AnySourceRef
+	if (
+		ref.realm === 'scene' ||
+		isAnyInputRef(ref) ||
+		ref.realm === 'media-still' ||
+		ref.realm === 'imageStore' ||
+		ref.realm === 'media-ramrec' ||
+		ref.realm === 'ramRecorder' ||
+		ref.realm === 'clipPlayer' ||
+		ref.realm === 'matte' ||
+		ref.realm === 'gfx-channel' ||
+		ref.realm === 'source-base' ||
+		ref.realm === 'source-int' ||
+		ref.realm === 'mv-int'
+	)
+		return true
+	else assertNever(ref)
+	return false
+}
+
+export type AnyMVSourceRef = AnySourceRef | AuxRef
+export function isAnyMVSourceRef(ref0: AnyRef): ref0 is AnyMVSourceRef {
+	const ref = ref0 as AnyMVSourceRef
+	if (isAnySourceRef(ref) || ref.realm === 'aux') return true
+	else assertNever(ref)
+	return false
 }
 
 // ---------------------------- SCENES -----------------------------

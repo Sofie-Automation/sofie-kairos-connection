@@ -140,6 +140,9 @@ import {
 	MultiViewPipObject,
 	LabelPosition,
 	MultiViewInputObject,
+	refGfxChannel,
+	refSourceIntMV,
+	refSourceInt,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
@@ -1450,6 +1453,19 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Layers.Background.blend_mode': ['SCENES.Main.Layers.Background.blend_mode=Default'],
 					'SCENES.Main.Layers.Background.opacity=1': ['OK'],
 					'SCENES.Main.Layers.Background.sourceA=SCENES.Folder&#46;1.Scene&#46;1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=SCENES.Main': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=IP1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=MEDIA.stills.test': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=IS1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=MEDIA.ramrec.test': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=RR1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=CP1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=MATTES.ColA': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=GFX1': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=BLACK': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=INTSOURCES.ColorBar': ['OK'],
+					'SCENES.Main.Layers.Background.sourceA=INTSOURCES.MV1': ['OK'],
+
 					'SCENES.Main.Layers.Background.source_pgm=BLACK': ['OK'],
 					'SCENES.Main.Layers.Background.source_pst=BLACK': ['OK'],
 					'SCENES.Main.Layers.Background.sourceOptions=BLACK,CP1,CP2,RR1,RR2,RR3,RR4,RR5,RR6,RR7,RR8,IS1,IS2,IS3,IS4,IS5,IS6,IS7,IS8,SCENES.Templates.2Box,SCENES.Templates.4Box,SCENES.Templates.OTS Left,SCENES.Templates.OTS Right,SCENES.Templates.Title,SCENES.Templates.Sidecar':
@@ -1552,6 +1568,21 @@ describe('KairosConnection', () => {
 					sourcePst: refSourceBase(['BLACK']),
 				})
 			).toBeUndefined()
+
+			const sceneLayer = refSceneLayer(refMain, ['Background'])
+			// Go through all options available in KairosCreator:
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refScene(['Main']) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refIpInput(1) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refMediaStill(['test']) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refImageStore(1) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refMediaRamRec(['test']) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refRamRecorder(1) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refClipPlayer(1) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refMatte(['ColA']) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refGfxChannel(1) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refSourceBase(['BLACK']) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refSourceInt(['ColorBar']) })).toBeUndefined()
+			expect(await connection.updateSceneLayer(sceneLayer, { sourceA: refSourceIntMV(1) })).toBeUndefined()
 
 			expect(await connection.getSceneLayer(refSceneLayer(refMain, ['Background']))).toStrictEqual({
 				activeBus: SceneLayerActiveBus.ABus,
@@ -4033,22 +4064,14 @@ describe('KairosConnection', () => {
 
 			expect(await connection.getMultiViewInput(refMultiViewInput(refMultiView(1), 1))).toStrictEqual({
 				requestOnDemand: true,
-				source: {
-					path: 'IP-AUX10',
-					pathIsName: false,
-					realm: 'aux',
-				},
+				source: refAuxId('IP-AUX10'),
 				tallyRoot: 1,
 			} satisfies MultiViewInputObject)
 
 			expect(
 				await connection.updateMultiViewInput(refMultiViewInput(refMultiView(1), 1), {
 					requestOnDemand: true,
-					source: {
-						path: 'IP-AUX10',
-						pathIsName: false,
-						realm: 'aux',
-					},
+					source: refAuxId('IP-AUX10'),
 					tallyRoot: 1,
 				})
 			).toBeUndefined()
