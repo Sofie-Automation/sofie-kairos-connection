@@ -316,6 +316,8 @@ export function pathToRef(ref: string): AnyRef | string {
 		const index = parseInt(path[0].slice(3), 10)
 		if (!Number.isNaN(index) && index > 0) return refGfxChannel(index)
 	} else if (path[0] === 'GFXSCENES') {
+		// Note: It is difficult to differentiate between GfxScene and GfxSceneItem here,
+		// since a GfxScene can be in folders..
 		return refGfxScene(path.slice(1))
 	} else if (path[0] === 'AUX') {
 		if (path.length === 2) {
@@ -327,7 +329,7 @@ export function pathToRef(ref: string): AnyRef | string {
 			return refAuxEffect(auxRef, path.slice(3))
 		}
 	} else if (path[0].includes('-AUX')) {
-		// Auxes are often refered to without the prefix
+		// Auxes are often referred to without the prefix
 		if (path.length === 1) {
 			return refAuxId(path[0])
 		}
@@ -341,7 +343,7 @@ export function pathToRef(ref: string): AnyRef | string {
 		const index = parseInt(path[0].slice(6), 10)
 		if (!Number.isNaN(index) && index > 0) return refStreamInput(index)
 	} else if (path[0].startsWith('HDMI') && path.length === 1) {
-		const index = parseInt(path[0].slice(6), 10)
+		const index = parseInt(path[0].slice(4), 10)
 		if (!Number.isNaN(index) && index > 0) return refHDMIInput(index)
 	} else if (path[0].startsWith('SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
@@ -439,7 +441,7 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 		case 'scene-snapshot':
 			return refSceneSnapshot(refScene(['Scene1']), ['Snapshot1'])
 		case 'scene-snapshot-layer':
-			return refSceneSnapshotLayer(refSceneSnapshot(refScene(['Scene1']), ['Snapshot1']), ['Backgrounf'])
+			return refSceneSnapshotLayer(refSceneSnapshot(refScene(['Scene1']), ['Snapshot1']), ['Background'])
 		case 'macro':
 			return refMacro(['Macro1'])
 		case 'source-base':
@@ -579,7 +581,7 @@ export function isAnySourceRef(ref0: AnyRef): ref0 is AnySourceRef {
 		ref.realm === 'mv-int'
 	)
 		return true
-	else assertNever(ref)
+	else assertNever(ref) // Just a type guard, to ensure all cases are covered
 	return false
 }
 

@@ -268,7 +268,7 @@ describe('KairosConnection', () => {
 				// Simulate delayed response
 				setTimeout(() => {
 					if (!abort.aborted) {
-						callback(path, null, 'somevalue')
+						callback(path, null, 'some-value')
 					}
 				}, 100)
 			})

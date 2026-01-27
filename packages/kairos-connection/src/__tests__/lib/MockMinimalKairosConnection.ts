@@ -181,9 +181,12 @@ export const getMockMinimalKairosConnection: () => {
 					this.logListeners.push(listener)
 
 					// Execute callback
-					await callback(messageLog)
-					// Clean up:
-					this.logListeners = this.logListeners.filter((cb) => cb !== listener)
+					try {
+						await callback(messageLog)
+					} finally {
+						// Clean up:
+						this.logListeners = this.logListeners.filter((cb) => cb !== listener)
+					}
 				}
 				private logListeners: ((msg: IMockLoggedMessage) => void)[] = []
 				private mockLogTraffic(msg: IMockLoggedMessage) {
