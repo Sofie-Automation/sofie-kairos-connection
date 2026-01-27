@@ -5263,8 +5263,12 @@ describe('KairosConnection', () => {
 		test('GFXSCENES commands', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
-					'list_ex:GFXSCENES': ['list_ex:GFXSCENES=', 'GFXSCENES.Test', ''],
+					'list_ex:GFXSCENES': ['list_ex:GFXSCENES=', 'GFXSCENES.Test', 'GFXSCENES.Folder', ''],
 					'list_ex:GFXSCENES.Test': ['list_ex:GFXSCENES.Test=', ''],
+					'list_ex:GFXSCENES.Folder': ['list_ex:GFXSCENES.Folder=', 'GFXSCENES.Folder.gfxScene', ''],
+					'GFXSCENES.Folder.resolution': ['Error'],
+					'GFXSCENES.Folder.gfxScene.resolution': ['GFXSCENES.Folder.gfxScene.resolution=1920x1080'],
+
 					'GFXSCENES.Test.resolution': ['GFXSCENES.Test.resolution=1920x1080'],
 					'GFXSCENES.Test.resolution=1280x720': ['OK'],
 					'GFXSCENES.Test.Renderer.width': ['GFXSCENES.Test.Renderer.width=1920'],
@@ -5280,15 +5284,20 @@ describe('KairosConnection', () => {
 
 				throw new Error(`Unexpected message: ${message}`)
 			})
-			expect(await connection.listGfxScenes()).toStrictEqual([
+			expect(await connection.listGfxScenes(undefined, true)).toStrictEqual([
 				{
 					realm: 'gfxScene',
 					scenePath: ['Test'],
 					name: 'Test',
-				} satisfies GfxSceneRef & {
-					name: string
 				},
-			])
+				{
+					realm: 'gfxScene',
+					scenePath: ['Folder', 'gfxScene'],
+					name: 'gfxScene',
+				},
+			] satisfies (GfxSceneRef & {
+				name: string
+			})[])
 			expect(await connection.getGfxScene(refGfxScene(['Test']))).toStrictEqual({
 				resolution: Resolution.Resolution1920x1080,
 			} satisfies GfxSceneObject)

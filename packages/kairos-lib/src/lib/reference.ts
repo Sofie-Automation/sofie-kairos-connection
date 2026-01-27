@@ -870,10 +870,19 @@ export function refAuxName(path: AuxRef['path']): AuxRef {
 }
 // ------------------------------- INPUTS ------------------------------
 export type AnyInputRef = IpInputRef | SDIInputRef | NDIInputRef | StreamInputRef | HDMIInputRef
-export function isAnyInputRef(ref: AnyRef): ref is AnyInputRef {
-	return (
-		ref.realm === 'ip-input' || ref.realm === 'sdi-input' || ref.realm === 'ndi-input' || ref.realm === 'stream-input'
+export function isAnyInputRef(ref0: AnyRef): ref0 is AnyInputRef {
+	const ref = ref0 as AnyInputRef
+
+	if (
+		ref.realm === 'ip-input' ||
+		ref.realm === 'sdi-input' ||
+		ref.realm === 'ndi-input' ||
+		ref.realm === 'stream-input' ||
+		ref.realm === 'hdmi-input'
 	)
+		return true
+	else assertNever(ref) // Just a type check to ensure that all cases are covered
+	return false
 }
 
 export type IpInputRef = {

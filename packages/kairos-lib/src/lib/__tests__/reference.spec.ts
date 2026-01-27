@@ -365,9 +365,10 @@ describe('ref conversions', () => {
 				scenePath: ['Scene1'],
 			} satisfies GfxSceneRef)
 
-			expect(pathToRef('GFXSCENES.Templates.Logo')).toStrictEqual({
+			// Note: There is no (?) way to differentiate between GfxScene and GfxSceneItem, just based on path
+			expect(pathToRef('GFXSCENES.Folder.Scene2')).toStrictEqual({
 				realm: 'gfxScene',
-				scenePath: ['Templates', 'Logo'],
+				scenePath: ['Folder', 'Scene2'],
 			} satisfies GfxSceneRef)
 		})
 

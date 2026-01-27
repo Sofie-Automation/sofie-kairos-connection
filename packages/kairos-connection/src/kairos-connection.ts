@@ -2691,13 +2691,56 @@ export class KairosConnection extends MinimalKairosConnection {
 		gfxSceneRef: GfxSceneRef = { realm: 'gfxScene', scenePath: [] },
 		deep?: boolean
 	): Promise<(GfxSceneRef & { name: string })[]> {
-		return (await this._listDeep(gfxSceneRef, [], deep)).map((itemPath) => {
-			return {
-				realm: 'gfxScene',
-				name: itemPath[itemPath.length - 1],
-				scenePath: itemPath.slice(1), // remove the "GFXSCENES" part
+		const gfxScenes: (GfxSceneRef & { name: string })[] = []
+		const isGfxScene = async (itemPath: string): Promise<boolean> => {
+			try {
+				// Check if it has a .resolution attribute, which only GfxScenes have:
+				await this.getAttribute(`${itemPath}.resolution`)
+				return true
+			} catch (e) {
+				if (e instanceof ResponseError) {
+					return false
+				} else throw e
 			}
-		})
+		}
+		const processItem = async (rawPath: string) => {
+			// It is a bit tricky to determine whether it's a GfxScene or an item inside a GfxScene.
+
+			const itemPath = protocolDecodePath(rawPath) // decode the path
+
+			// Folders have other GFXscenes in them
+			// GFXScenes have a .resolution attribute
+
+			if (await isGfxScene(rawPath)) {
+				gfxScenes.push({
+					realm: 'gfxScene',
+					name: itemPath[itemPath.length - 1],
+					scenePath: itemPath.slice(1), // remove the "GFXSCENES" part
+				})
+				return
+			}
+			if (!deep) return
+
+			// It is not a GfxScene, maybe it is a folder containing GfxScenes?
+			const subPaths = await this.getList(rawPath)
+			// If it contains at least one GfxScene, then it is a folder:
+			if (await isGfxScene(subPaths[0])) {
+				// It contains a GfxScene, so it is a folder
+
+				for (const subPath of subPaths) {
+					await processItem(subPath)
+				}
+			} else {
+				// Is neither a GfxScene nor a folder containing GfxScenes
+				return
+			}
+		}
+
+		for (const rawPath of await this.getList(refToPath(gfxSceneRef))) {
+			await processItem(rawPath)
+		}
+
+		return gfxScenes
 	}
 	async getGfxScene(gfxSceneRef: GfxSceneRef): Promise<GfxSceneObject> {
 		return this.#getObject(refToPath(gfxSceneRef), GfxSceneObjectEncodingDefinition)
