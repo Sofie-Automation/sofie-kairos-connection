@@ -1,5 +1,13 @@
 {
 	"extends": "./tsconfig.build.json",
-	"include": ["src/**/*.ts", "examples/**/*.ts"],
-	"exclude": ["node_modules/**", "scratch/**"]
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.mts",
+		"src/__tests__/kairos-connection.spec.mts",
+		"src/__tests__/kairos-connection_1_7.spec.mts",
+	],
+	"exclude": [
+		"node_modules/**",
+		"scratch/**"
+	]
 }

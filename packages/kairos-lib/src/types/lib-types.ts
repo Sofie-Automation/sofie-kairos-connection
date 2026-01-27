@@ -41,3 +41,15 @@ export enum Rotate {
 	Rotate180 = '180°',
 	Rotate270 = '270°',
 }
+
+export enum ProcessingFormat {
+	// Added in 2.0
+	Default = 'Default',
+	YCbCr422 = 'YCbCr 422',
+	RGBA8 = 'RGBA8',
+	RGBA16 = 'RGBA16',
+	RGBA16f = 'RGBA16f',
+	YCbCrA8 = 'YCbCrA8',
+	YCbCrA16 = 'YCbCrA16',
+	YCbCrA16f = 'YCbCrA16f',
+}

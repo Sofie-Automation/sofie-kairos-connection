@@ -1,6 +1,6 @@
 import type { ObjectEncodingDefinition } from './types.js'
 import { parseBoolean, parseCommaSeparated, parseEnum, parseInteger, parseAnySourceRef } from '../lib/data-parsers.js'
-import { AudioAuxObject, AuxObject, AuxRecordingStatus } from 'kairos-lib'
+import { AudioAuxObject, AuxObject, AuxRecordingStatus, ProcessingFormat } from 'kairos-lib'
 
 export const AuxObjectEncodingDefinition: ObjectEncodingDefinition<AuxObject> = {
 	recordingStatus: {
@@ -26,6 +26,11 @@ export const AuxObjectEncodingDefinition: ObjectEncodingDefinition<AuxObject> = 
 	tallyRoot: {
 		protocolName: 'tally_root',
 		parser: parseInteger,
+	},
+	processingFormat: {
+		protocolName: 'processing_format',
+		parser: (value) => parseEnum<ProcessingFormat>(value, ProcessingFormat),
+		addedInVersion: { v: '2.0', defaultValue: ProcessingFormat.Default },
 	},
 }
 

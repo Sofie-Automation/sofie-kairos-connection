@@ -1,6 +1,6 @@
 import { OmitReadonly } from '../lib/omit-readonly.js'
 import { SceneTransitionRef, AnySourceRef, SceneLayerEffectRef } from '../lib/reference.js'
-import { ColorRGB, DissolveMode, Resolution } from './lib-types.js'
+import { ColorRGB, DissolveMode, ProcessingFormat, Resolution } from './lib-types.js'
 
 export interface SceneObject {
 	/**
@@ -65,6 +65,12 @@ export interface SceneObject {
 	 * Scene-Resolution. The selectable defaults are “1280x720p”, “1920x1080p” and
 	 * “3840x2160”. */
 	resolution: Resolution
+
+	/**
+	 * enum: processing_format
+	 * Added in version 2.0
+	 */
+	processingFormat: ProcessingFormat
 
 	/** list[ObjectID] */
 	nextTransition: SceneTransitionRef[]

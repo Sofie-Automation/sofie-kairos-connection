@@ -1,6 +1,12 @@
 import type { AnySourceRef } from '../lib/reference.js'
 import type { OmitReadonly } from '../lib/omit-readonly.js'
+import { ProcessingFormat } from './lib-types.js'
 
+// NDI-AUX<1-2>
+// STREAM-AUX<1-2>
+// IP-AUX<1-32>
+// SDI-AUX<1-16>
+// HDMI-AUX<1-20> Added in 2.0
 export interface AuxObject {
 	readonly recordingStatus: AuxRecordingStatus
 
@@ -16,6 +22,9 @@ export interface AuxObject {
 	 * [ integer ]
 	 */
 	tallyRoot: number
+
+	/** Added in 2.0 */
+	processingFormat: ProcessingFormat
 }
 
 export interface AudioAuxObject {

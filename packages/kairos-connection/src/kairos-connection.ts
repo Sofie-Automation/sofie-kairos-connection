@@ -149,6 +149,10 @@ import {
 	UpdateAudioOutputSettingObject,
 	refIpInputSetting,
 	StreamInputSettingRef,
+	HDMIInputSettingRef,
+	refHDMIInputSetting,
+	HDMIInputSettingObject,
+	UpdateHDMIInputSettingObject,
 	IpOutputSettingRef,
 	StreamInputSettingObject,
 	UpdateIpOutputSettingObject,
@@ -198,6 +202,23 @@ import {
 	LabelPosition,
 	UpdateMultiViewPipObject,
 	refSceneLayer,
+	SystemInfoObject,
+	UpdateSystemInfoObject,
+	SystemSettingsObject,
+	UpdateSystemSettingsObject,
+	HDMIOutputSettingRef,
+	refHDMIOutputSetting,
+	HDMIOutputSettingObject,
+	UpdateHDMIOutputSettingObject,
+	FrequencyEnum,
+	ColorModel,
+	BitDepth,
+	SDPColorspace,
+	SDPTcs,
+	SceneSnapshotLayerRef,
+	MediaLUTRef,
+	LUTObject,
+	UpdateLUTObject,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -253,6 +274,7 @@ import {
 	InputObjectEncodingDefinition,
 	FxInputObjectEncodingDefinition,
 	RamRecPlayerObjectEncodingDefinition,
+	LUTObjectEncodingDefinition,
 } from './object-encoding/index.js'
 import { omitFalsy } from './lib/lib.js'
 import {
@@ -260,9 +282,11 @@ import {
 	NDIInputSettingEncodingDefinition,
 	SDIInputSettingEncodingDefinition,
 	StreamInputSettingEncodingDefinition,
+	HDMIInputSettingEncodingDefinition,
 } from './object-encoding/inputSettings.js'
 import {
 	AudioOutputSettingEncodingDefinition,
+	HDMIOutputSettingEncodingDefinition,
 	IpOutputSettingEncodingDefinition,
 	NDIOutputSettingEncodingDefinition,
 	SDIOutputSettingEncodingDefinition,
@@ -278,22 +302,29 @@ import {
 	MultiViewObjectEncodingDefinition,
 	MultiViewPipObjectEncodingDefinition,
 } from './object-encoding/mv.js'
+import { SystemInfoObjectEncodingDefinition, SystemSettingsObjectEncodingDefinition } from './object-encoding/sys.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
-		const attributeNames = getProtocolAttributeNames(definition)
-
-		const values = await this.getAttributes(pathPrefix, attributeNames)
-
-		return Object.fromEntries(
-			Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).map(([id, def]) => {
-				const value = values[def.protocolName]
-				if (value === undefined) {
-					throw new Error(`Missing attribute "${def.protocolName}" in response for path "${pathPrefix}"`)
+		const obj: TObj = {} as any
+		await Promise.all(
+			Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).map(async ([key, def]) => {
+				let value: TObj[keyof TObj]
+				try {
+					const rawValue = await this.getAttribute(`${pathPrefix}.${def.protocolName}`)
+					value = def.parser(rawValue)
+				} catch (e) {
+					if (e instanceof ResponseError && def.addedInVersion) {
+						// Currently, we don't actually support version detection, so we just assume that any error here means that the property is not supported
+						value = def.addedInVersion.defaultValue
+					} else {
+						throw e
+					}
 				}
-				return [id, def.parser(value) as any] // TODO - type this properly
+				obj[key as keyof TObj] = value
 			})
-		) as TObj
+		)
+		return obj
 	}
 
 	#subscribeObject<TObj>(
@@ -366,6 +397,37 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	// SYS
+	//   SystemSettings
+	async getSystemInfo(): Promise<SystemInfoObject> {
+		return this.#getObject(`SYS`, SystemInfoObjectEncodingDefinition)
+	}
+	async updateSystemInfo(props: Partial<UpdateSystemInfoObject>): Promise<void> {
+		await this.setAttributes('SYS', [
+			{ attribute: 'var1', value: stringifyString(props.var1) },
+			{ attribute: 'var2', value: stringifyString(props.var2) },
+			{ attribute: 'var3', value: stringifyString(props.var3) },
+			{ attribute: 'var4', value: stringifyString(props.var4) },
+			{ attribute: 'var5', value: stringifyString(props.var5) },
+			{ attribute: 'var6', value: stringifyString(props.var6) },
+			{ attribute: 'var7', value: stringifyString(props.var7) },
+			{ attribute: 'var8', value: stringifyString(props.var8) },
+		])
+	}
+	async getSystemSettings(): Promise<SystemSettingsObject> {
+		// Note: introduced in Kairos FW 2.0
+		return this.#getObject(`SYS.SystemSettings`, SystemSettingsObjectEncodingDefinition)
+	}
+	async updateSystemSettings(props: Partial<UpdateSystemSettingsObject>): Promise<void> {
+		// Note: introduced in Kairos FW 2.0
+		await this.setAttributes('SYS.SystemSettings', [
+			{ attribute: 'raw_panel_enable', value: stringifyBoolean(props.rawPanelEnable) },
+			{ attribute: 'raw_panel_1', value: stringifyString(props.rawPanel1) },
+			{ attribute: 'raw_panel_2', value: stringifyString(props.rawPanel2) },
+			{ attribute: 'raw_panel_3', value: stringifyString(props.rawPanel3) },
+			{ attribute: 'option_panel_enable', value: stringifyBoolean(props.optionPanelEnable) },
+			{ attribute: 'option_panel', value: stringifyString(props.optionPanel) },
+		])
+	}
 	// INTSOURCES
 	// 	BLACK
 	// 	WHITE
@@ -405,7 +467,8 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		IN_NDI<1-2>
 	// 	STREAMINPUTS
 	// 		IN_STREAM<1-6>
-
+	//  HDMIINPUTS
+	//      IN_HDMI<1-20>
 	async listIpInputSettings(): Promise<IpInputSettingRef[]> {
 		// "IN_IP4"
 		const list = await this.getList('IPINPUTS')
@@ -509,6 +572,36 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
 	}
+	async listHDMIInputsSettings(): Promise<HDMIInputSettingRef[]> {
+		// Note: introduced in Kairos FW 2.0
+		// "IN_HDMI"
+		const list = await this.getList('HDMIINPUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^IN_HDMI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refHDMIInputSetting(index)
+			})
+		)
+	}
+	async getHDMIInputSetting(hdmiInputSettingRef: HDMIInputSettingRef | number): Promise<HDMIInputSettingObject> {
+		// Note: introduced in Kairos FW 2.0
+		if (typeof hdmiInputSettingRef === 'number') hdmiInputSettingRef = refHDMIInputSetting(hdmiInputSettingRef)
+		return this.#getObject(refToPath(hdmiInputSettingRef), HDMIInputSettingEncodingDefinition)
+	}
+	async updateHDMIInputSetting(
+		hdmiInputSettingRef: HDMIInputSettingRef | number,
+		props: Partial<UpdateHDMIInputSettingObject>
+	): Promise<void> {
+		// Note: introduced in Kairos FW 2.0
+		if (typeof hdmiInputSettingRef === 'number') hdmiInputSettingRef = refHDMIInputSetting(hdmiInputSettingRef)
+		await this.setAttributes(refToPath(hdmiInputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
+	}
 
 	// OUTPUTSETTINGS
 	// 	IPOUTS
@@ -521,6 +614,8 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		OUT_STREAM<1-2>
 	// 	AUDIOOUTS
 	// 		OUT_AUDIO<1-8>
+	//   HDMIOUTS
+	// 		OUT_HDMI<1-20>
 
 	async listIpOutputSettings(): Promise<IpOutputSettingRef[]> {
 		// "OUT_IP"
@@ -547,6 +642,15 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof ipOutputSettingRef === 'number') ipOutputSettingRef = refIpOutputSetting(ipOutputSettingRef)
 		await this.setAttributes(refToPath(ipOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'format', value: stringifyString(props.format) },
+			{ attribute: 'frequency', value: stringifyEnum<FrequencyEnum>(props.frequency, FrequencyEnum) },
+			{ attribute: 'color_model', value: stringifyEnum<ColorModel>(props.colorModel, ColorModel) },
+			{ attribute: 'bitDepth', value: stringifyEnum<BitDepth>(props.bitDepth, BitDepth) },
+			{ attribute: 'SDPColorspace', value: stringifyEnum<SDPColorspace>(props.SDPColorspace, SDPColorspace) },
+			{ attribute: 'SDPTcs', value: stringifyEnum<SDPTcs>(props.SDPTcs, SDPTcs) },
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listSDIOutputSettings(): Promise<SDIOutputSettingRef[]> {
@@ -574,6 +678,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof sdiOutputSettingRef === 'number') sdiOutputSettingRef = refSDIOutputSetting(sdiOutputSettingRef)
 		await this.setAttributes(refToPath(sdiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listNDIOutputSettings(): Promise<NDIOutputSettingRef[]> {
@@ -601,6 +708,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof ndiOutputSettingRef === 'number') ndiOutputSettingRef = refNDIOutputSetting(ndiOutputSettingRef)
 		await this.setAttributes(refToPath(ndiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listStreamOutputSettings(): Promise<StreamOutputSettingRef[]> {
@@ -632,6 +742,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			streamOutputSettingRef = refStreamOutputSetting(streamOutputSettingRef)
 		await this.setAttributes(refToPath(streamOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listAudioOutputSettings(): Promise<AudioOutputSettingRef[]> {
@@ -661,6 +774,34 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof audioOutputSettingRef === 'number') audioOutputSettingRef = refAudioOutputSetting(audioOutputSettingRef)
 		await this.setAttributes(refToPath(audioOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
+	}
+	async listHDMIOutputSettings(): Promise<HDMIOutputSettingRef[]> {
+		// "OUT_HDMI"
+		const list = await this.getList('HDMIOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_HDMI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refHDMIOutputSetting(index)
+			})
+		)
+	}
+	async getHDMIOutputSetting(hdmiOutputSettingRef: HDMIOutputSettingRef | number): Promise<HDMIOutputSettingObject> {
+		if (typeof hdmiOutputSettingRef === 'number') hdmiOutputSettingRef = refHDMIOutputSetting(hdmiOutputSettingRef)
+		return this.#getObject(refToPath(hdmiOutputSettingRef), HDMIOutputSettingEncodingDefinition)
+	}
+	async updateHDMIOutputSetting(
+		hdmiOutputSettingRef: HDMIOutputSettingRef | number,
+		props: Partial<UpdateHDMIOutputSettingObject>
+	): Promise<void> {
+		if (typeof hdmiOutputSettingRef === 'number') hdmiOutputSettingRef = refHDMIOutputSetting(hdmiOutputSettingRef)
+		await this.setAttributes(refToPath(hdmiOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 
@@ -1277,6 +1418,47 @@ export class KairosConnection extends MinimalKairosConnection {
 	async sceneSnapshotDeleteEx(snapshotRef: SceneSnapshotRef): Promise<void> {
 		return this.executeFunction(`${refToPath(snapshotRef)}.delete_ex`)
 	}
+	// SCENES.Scene.Snapshots.SNP.Layer
+	async listSceneSnapshotLayers(snapshotRef: SceneSnapshotRef): Promise<(SceneSnapshotLayerRef & { name: string })[]> {
+		// Added in 2.0
+		return (await this._listDeep(`${refToPath(snapshotRef)}`, [], false)).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Snapshots')
+			if (paths.length !== 2)
+				throw new Error(
+					`Invalid Snapshot path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
+				)
+
+			const snapshotPath = paths[1][0]
+			const snapshotLayerPath = paths[1].slice(1)
+
+			if (snapshotLayerPath.length === 0)
+				throw new Error(`Invalid Snapshot Layer path: "${JSON.stringify(paths)}" (${JSON.stringify(itemPath)})`)
+
+			return {
+				realm: 'scene-snapshot-layer',
+				name: paths[1][paths[1].length - 1],
+				scenePath: paths[0].slice(1), // remove the "SCENES" part
+				snapshotPath: [snapshotPath],
+				layerPath: snapshotLayerPath,
+			}
+		})
+	}
+	async sceneSnapshotLayerRecall(snapshotLayerRef: SceneSnapshotLayerRef): Promise<void> {
+		// Added in 2.0
+		return this.executeFunction(`${refToPath(snapshotLayerRef)}.recall`)
+	}
+	// SCENES.Controller (Added in 2.0)
+	// SCENES.Controller.Transitions (Added in 2.0)
+	// SCENES.Controller.Snapshots (Added in 2.0)
+	// SCENES.Controller.Snapshots.SNP (Added in 2.0)
+	// SCENES.Controller.Snapshots.SNP.Scene (Added in 2.0)
+	// SCENES.Controller.Snapshots.SNP.Scene.Layer (Added in 2.0)
+	// SCENES.Controller.Scene (Added in 2.0)
+	// SCENES.Controller.Scene.Layers (Added in 2.0)
+	// SCENES.Controller.Scene.Transitions (Added in 2.0)
+	// SCENES.Controller.Scene.Snapshots (Added in 2.0)
+	// SCENES.Controller.Scene.Snapshots.SNP.Layer (Added in 2.0)
+
 	// SOURCES:
 	// 	FXINPUTS
 	// 		Fx
@@ -1350,10 +1532,15 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	// 	MATTES
 	// 		ColorMatte
-	// 		TestPattern
+	// 		TestPattern (removed in 2.0)
 	// 		Shaped
 	// 		Rays
 	// 		Starfield
+	//      ColorBar   (added in 2.0)
+	//      Grid       (added in 2.0)
+	//      Gradient   (added in 2.0)
+	//      Chessboard (added in 2.0)
+	//      CrossHatch (added in 2.0)
 
 	// RAMRECORDERS
 	// 	RR<1-8>
@@ -1597,7 +1784,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		file_name.png
 	// 	sounds
 	// 		file_name.wav
-
+	//  luts
 	/**
 	 * @example kairos.listMediaClips(undefined, true) // List all media clips, in all sub-folders
 	 */
@@ -1748,6 +1935,42 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 			throw error
 		})
+	}
+
+	async listMediaLUTs(
+		path: MediaLUTRef = { realm: 'media-lut', lutPath: [] },
+		deep?: boolean
+	): Promise<(MediaLUTRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-lut',
+				name: itemPath[itemPath.length - 1],
+				lutPath: itemPath.slice(2), // remove the "MEDIA.luts" part
+			}
+		})
+	}
+	async getMediaLUT(ref: MediaLUTRef): Promise<LUTObject | undefined> {
+		const path = refToPath(ref)
+
+		return this.#getObject(path, LUTObjectEncodingDefinition).catch(async (error) => {
+			if (error instanceof ResponseError) {
+				const dirPath = path.split('.').slice(0, -1).join('.') // remove the last part (the media name)
+				const mediaName = path.split('.').slice(-1)[0]
+				// Check if the clip exists, or there actually was an error:
+				const objectList = await this.getList(dirPath)
+				if (!objectList.includes(mediaName)) {
+					// The object does not exist, so we return undefined
+					return undefined
+				}
+			}
+			throw error
+		})
+	}
+	async updateMediaLUT(ref: MediaLUTRef, props: Partial<UpdateLUTObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'title', value: stringifyString(props.title) },
+			// status is read only
+		])
 	}
 
 	// TRANSLIB
@@ -2000,6 +2223,19 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	//          LeaveColor         (added in 2.0)
+	//          Mirror             (added in 2.0)
+	//          EdgeDetection      (added in 2.0)
+	//          Sharpening         (added in 2.0)
+	//          Emboss             (added in 2.0)
+	//          Overlay            (added in 2.0)
+	//          SourceSubstitution (added in 2.0)
+	//          CornerPinning      (added in 2.0)
+	//          Defocus            (added in 2.0)
+	//          Swirl              (added in 2.0)
+	//          Freeze             (added in 2.0)
+	//          OutputFreeze       (added in 2.0)
+	//          InfoOverlay        (added in 2.0)
 	// 	IP-AUX<1-32>
 	// 		Effects
 	// 			YUVCorrection
@@ -2011,6 +2247,19 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	//          LeaveColor			(added in 2.0)
+	//          Mirror				(added in 2.0)
+	//          EdgeDetection		(added in 2.0)
+	//          Sharpening			(added in 2.0)
+	//          Emboss				(added in 2.0)
+	//          Overlay				(added in 2.0)
+	//          SourceSubstitution	(added in 2.0)
+	//          CornerPinning		(added in 2.0)
+	//          Defocus				(added in 2.0)
+	//          Swirl				(added in 2.0)
+	//          Freeze				(added in 2.0)
+	//          OutputFreeze		(added in 2.0)
+	//          InfoOverlay			(added in 2.0)
 	// 	SDI-AUX<1-16>
 	// 		Effects
 	// 			YUVCorrection
@@ -2022,6 +2271,43 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	//          LeaveColor			(added in 2.0)
+	//          Mirror				(added in 2.0)
+	//          EdgeDetection		(added in 2.0)
+	//          Sharpening			(added in 2.0)
+	//          Emboss				(added in 2.0)
+	//          Overlay				(added in 2.0)
+	//          SourceSubstitution	(added in 2.0)
+	//          CornerPinning		(added in 2.0)
+	//          Defocus				(added in 2.0)
+	//          Swirl				(added in 2.0)
+	//          Freeze				(added in 2.0)
+	//          OutputFreeze		(added in 2.0)
+	//          InfoOverlay			(added in 2.0)
+	//  HDMI-AUX<1-20>                 (added in 2.0)
+	// 		Effects                    (added in 2.0)
+	// 			YUVCorrection          (added in 2.0)
+	//          RGBCorrection          (added in 2.0)
+	//          Crop                   (added in 2.0)
+	//          CornerPinning          (added in 2.0)
+	//          MatrixCorrection       (added in 2.0)
+	//          ToneCurveCorrection    (added in 2.0)
+	//          TemperatureCorrection  (added in 2.0)
+	//          LUTCorrection          (added in 2.0)
+	//          SourceSubstitution     (added in 2.0)
+	//          LeaveColor             (added in 2.0)
+	//          Mirror                 (added in 2.0)
+	//          EdgeDetection          (added in 2.0)
+	//          Sharpening             (added in 2.0)
+	//          Emboss                 (added in 2.0)
+	//          Overlay                (added in 2.0)
+	//          Defocus                (added in 2.0)
+	//          Swirl                  (added in 2.0)
+	//          Freeze                 (added in 2.0)
+	//          OutputFreeze           (added in 2.0)
+	//          FilmLook               (added in 2.0)
+	//          GlowEffect             (added in 2.0)
+	//          InfoOverlay            (added in 2.0)
 	async listAuxes(): Promise<AuxRef[]> {
 		const rawAuxes = await this.getList('AUX')
 
@@ -2240,6 +2526,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	NDI<1-2>
 	// 	STREAM<1-6>
 	// 	SDI<1-32>
+	//  HDMI<1-20> added in 2.0
 	async getInput(inputRef: AnyInputRef): Promise<InputObject> {
 		const obj = await this.#getObject(refToPath(inputRef), InputObjectEncodingDefinition)
 
@@ -2278,6 +2565,10 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	HTTP Trigger
 	// 	IP Trigger
 	// 	GPO Command
+	//  Device			Added in 2.0
+	//     HTTP Trigger	Added in 2.0
+	//     IP Trigger	Added in 2.0
+	//     GPO Command	Added in 2.0
 	// MVPRESETS
 	// 	<1-12>
 	// 		Inputs
@@ -2316,6 +2607,85 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	// GFXSCENES
 	// 	GfxScene
+	//    Box                 Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Ellipse             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Diamond             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Triangle            Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    RightTriangle       Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Trapezoid           Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Parallelogram       Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Hexagon             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Cross               Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Text                Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    TextBox             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ScrollText          Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Counter             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Clock               Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    WorldClock          Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowLeft           Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowRight          Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowUp             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowDown           Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    file_name.png       Added in 2.0
+	//    GfxDropShadow       Added in 2.0
+	//    HtmlElement         Added in 2.0
 
 	async listGfxScenes(
 		gfxSceneRef: GfxSceneRef = { realm: 'gfxScene', scenePath: [] },
@@ -2374,6 +2744,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		Counter
 	// 		Clock
 	// PANELPROFILES
+	//      Profile<1-8>  	  Added in 2.0
 	// AUDIOGENERATORS
 	// 	GEN<1-2>
 	// AUDIOPLAYERS
@@ -2519,6 +2890,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	MIXOUT<1-8>
 	// AUDIOOUTPUTS
 	// CPANELPROFILES
+	//      Profile-Compact<1-8> Added in 2.0
 	// ParameterCouples
 	// 	Couple
 	// PANELLAYOUTS
@@ -2585,6 +2957,58 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	// SPANELPROFILES
+	//    Profile<1-2>    				Added in 2.0
+
+	// FXPRESETS						Added in 2.0
+	//     FX							Added in 2.0
+	//         Crop						Added in 2.0
+	//         Transform2D				Added in 2.0
+	//         CornerPinning			Added in 2.0
+	//         LuminanceKey				Added in 2.0
+	//         ChromaKey				Added in 2.0
+	//         PathLinear				Added in 2.0
+	//         PathAnimation			Added in 2.0
+	//         YUVCorrection			Added in 2.0
+	//         RGBCorrection			Added in 2.0
+	//         LUTCorrection			Added in 2.0
+	//         Mirror					Added in 2.0
+	//         EdgeDetection			Added in 2.0
+	//         Sharpening				Added in 2.0
+	//         Emboss					Added in 2.0
+	//         Defocus					Added in 2.0
+	//         Swirl					Added in 2.0
+	//         LeaveColor				Added in 2.0
+	//         VirtualPTZ				Added in 2.0
+	//         Border					Added in 2.0
+	//         TextureBorder			Added in 2.0
+	//         DropShadow				Added in 2.0
+	//         GaussShadow				Added in 2.0
+	//         Freeze					Added in 2.0
+	//         OutputFreeze				Added in 2.0
+	//         Mosaic					Added in 2.0
+	//         Invert					Added in 2.0
+	//         Mask						Added in 2.0
+	//         KeyBorder				Added in 2.0
+	//         ToneCurveCorrection		Added in 2.0
+	//         MatrixCorrection			Added in 2.0
+	//         TemperatureCorrection	Added in 2.0
+	//         LinearKey				Added in 2.0
+	//         Position					Added in 2.0
+	//         PCrop					Added in 2.0
+	//         FilmLook					Added in 2.0
+	//         GlowEffect				Added in 2.0
+	// LISTENERS						Added in 2.0
+	// LPANELLAYOUTS					Added in 2.0
+	// LPANELPROFILES					Added in 2.0
+	//     Profile-Large<1-8>			Added in 2.0
+	// SystemLUTs						Added in 2.0
+	//     Cinema						Added in 2.0
+	//     Cinema (Bright)				Added in 2.0
+	//     Cinema (Cold)				Added in 2.0
+	//     Cinema (Warm)				Added in 2.0
+	//     Cinema (Drama)				Added in 2.0
+	//     Artistic <1-5>				Added in 2.0
+	//     B&W <1-2>					Added in 2.0
 
 	/**
 	 * Convenience method for listing items in a deep list

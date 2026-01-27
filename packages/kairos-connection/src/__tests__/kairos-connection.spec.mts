@@ -1,12 +1,12 @@
 import { expect, test, describe, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest'
+import { MockedKairosConnection } from './lib/MockMinimalKairosConnection.js'
+
 import {
 	ClipPlayerObject,
 	PlayerTMS,
 	KairosConnection,
 	MacroObject,
 	MacroStatus,
-	MinimalKairosConnection,
-	ResponseError,
 	SceneLayerActiveBus,
 	SceneLayerBlendMode,
 	DissolveMode,
@@ -53,7 +53,6 @@ import {
 	GfxSceneItemObject,
 	GfxSceneHTMLElementItemObject,
 	GfxSceneObject,
-	SubscriptionCallback,
 	AudioPlayerObject,
 	AuxObject,
 	AuxRecordingStatus,
@@ -64,7 +63,7 @@ import {
 	InputRecordingStatus,
 } from '../main.js'
 import { KairosRecorder } from './lib/kairos-recorder.js'
-import { parseResponseForCommand, ExpectedResponseType } from '../minimal/parser.js'
+import { ExpectedResponseType } from '../minimal/parser.js'
 import {
 	refAuxEffect,
 	refAuxId,
@@ -143,213 +142,37 @@ import {
 	refGfxChannel,
 	refSourceIntMV,
 	refSourceInt,
+	HDMIInputSettingRef,
+	refHDMIInputSetting,
+	HDMIInputSettingObject,
+	HDMIOutputSettingRef,
+	refHDMIOutputSetting,
+	HDMIOutputSettingObject,
+	SDPColorspace,
+	SDPTcs,
+	BitDepth,
+	ColorModel,
+	FrequencyEnum,
+	refSceneSnapshotLayer,
+	ProcessingFormat,
 } from 'kairos-lib'
 import { parseImageStoreClip, parseRefOptional } from '../lib/data-parsers.js'
 
 // Mock the MinimalKairosConnection class
-vi.mock(import('../minimal/kairos-minimal.js'), async (original) => {
-	const org = await original()
+const MockMinimalKairosConnection = await vi.hoisted(async () => {
+	const { getMockMinimalKairosConnection } = await import('./lib/MockMinimalKairosConnection.js')
+
+	return getMockMinimalKairosConnection()
+})
+
+vi.mock('../minimal/kairos-minimal.js', async (importOriginal) => {
+	const original: typeof import('../minimal/kairos-minimal.js') = await importOriginal()
 	return {
-		...org,
-		MinimalKairosConnection: MockMinimalKairosConnection.getClass(org.MinimalKairosConnection),
-		OriginalMinimalKairosConnection: org.MinimalKairosConnection,
+		...original,
+		MinimalKairosConnection: MockMinimalKairosConnection.getClass(original.MinimalKairosConnection),
+		OriginalMinimalKairosConnection: original.MinimalKairosConnection,
 	}
 })
-const MockMinimalKairosConnection = vi.hoisted(() => {
-	const connections: Array<MinimalKairosConnection> = []
-
-	return {
-		mockConnections(): MinimalKairosConnection[] {
-			return connections
-		},
-
-		clearMockConnections(): void {
-			connections.splice(0, connections.length)
-		},
-		getClass: (originalClass: typeof MinimalKairosConnection) => {
-			// This uses extends the original class, and replaces some of the
-			class MockKairosMinimalConnectionInstance extends originalClass implements IMockMinimalKairosConnection {
-				private _mockConnected = false
-				private _replyHandler: (
-					commandStr: string,
-					expectedResponse: ExpectedResponseType,
-					expectedResponsePath: string | null
-				) => Promise<string[]> = () => {
-					throw new Error('No reply handler set')
-				}
-				private _mockSubscribeValue: (
-					path: string,
-					abort: AbortSignal,
-					callback: SubscriptionCallback<string>,
-					fetchCurrentValue: boolean
-				) => void = () => {
-					throw new Error('No subscribe handler set')
-				}
-
-				public isAMock = true
-
-				get connected(): boolean {
-					return this._mockConnected
-				}
-
-				connect(_host?: string, _port?: number): void {
-					this._mockConnected = true
-				}
-
-				disconnect(): void {
-					this._mockConnected = false
-				}
-				discard(): void {
-					this._mockConnected = false
-				}
-				async executeCommand<TRes>(
-					commandStr: string,
-					expectedResponse: ExpectedResponseType,
-					expectedResponsePath: string | null
-				): Promise<TRes> {
-					const orgError = new Error()
-					try {
-						this.mockLogTraffic({ type: 'sent', message: commandStr })
-						const replyLines = await this._replyHandler(commandStr, expectedResponse, expectedResponsePath)
-
-						for (const line of replyLines) {
-							this.mockLogTraffic({ type: 'received', message: line })
-						}
-
-						if (replyLines.length === 1 && replyLines[0] === 'Error') {
-							throw new ResponseError(commandStr, replyLines[0])
-						}
-
-						const response = parseResponseForCommand(replyLines, {
-							serializedCommand: commandStr,
-							expectedResponse,
-							expectedResponsePath,
-						})
-						if (response.remainingLines.length > 0) {
-							throw new Error('Mock error: Unexpected remaining lines: ' + response.remainingLines.join(', '))
-						}
-						if (response.connectionError) {
-							this.emit('error', response.connectionError)
-						}
-
-						if (!response.commandResponse) {
-							throw new Error(`No reply received for command: ${commandStr}`)
-						}
-						if (response.commandResponse.type === 'error') {
-							throw response.commandResponse.error
-						} else {
-							return response.commandResponse.value as TRes
-						}
-					} catch (e) {
-						if (e instanceof Error) {
-							// Append context to error message:
-							e.message += ` (in response to ${commandStr} )`
-
-							// Append original call stack to the error:
-							const orgStack = `${orgError.stack}`.replace('Error: \n', '')
-
-							if (e.stack) {
-								e.stack = `${e.stack}\n--- Original stack: -------------------\n${orgStack}`
-							} else {
-								e.stack = orgStack
-							}
-						}
-						throw e
-					}
-				}
-
-				// ------------ Mock methods --------------------------------------------------------------------------
-
-				public mockSetReplyHandler(
-					handler: (
-						message: string,
-						expectedResponse: ExpectedResponseType,
-						expectedResponsePath: string | null
-					) => Promise<string[]>
-				) {
-					this._replyHandler = handler
-				}
-
-				public mockSetSubscribeValue(
-					handler: (path: string, abort: AbortSignal, callback: SubscriptionCallback<string>) => void
-				) {
-					this._mockSubscribeValue = handler
-				}
-
-				/** Log traffic during execution of a callback */
-				public async mockCaptureTraffic(
-					callback: (messageLog: {
-						receivedMessages: string[]
-						sentMessages: string[]
-						allMessages: IMockLoggedMessage[]
-					}) => Promise<void> | void
-				) {
-					const messageLog: {
-						receivedMessages: string[]
-						sentMessages: string[]
-						allMessages: IMockLoggedMessage[]
-					} = {
-						receivedMessages: [],
-						sentMessages: [],
-						allMessages: [],
-					}
-					const listener = (msg: IMockLoggedMessage) => {
-						if (msg.type === 'received') messageLog.receivedMessages.push(msg.message)
-						else if (msg.type === 'sent') messageLog.sentMessages.push(msg.message)
-						messageLog.allMessages.push(msg)
-					}
-					this.logListeners.push(listener)
-
-					// Execute callback
-					await callback(messageLog)
-					// Clean up:
-					this.logListeners = this.logListeners.filter((cb) => cb !== listener)
-				}
-				private logListeners: ((msg: IMockLoggedMessage) => void)[] = []
-				private mockLogTraffic(msg: IMockLoggedMessage) {
-					this.logListeners.forEach((cb) => cb(msg))
-				}
-
-				// Override subscribeValue to use mock if set
-				subscribeValue(
-					path: string,
-					abort: AbortSignal,
-					callback: SubscriptionCallback<string>,
-					fetchCurrentValue = true
-				): void {
-					this._mockSubscribeValue(path, abort, callback, fetchCurrentValue)
-				}
-			}
-			return MockKairosMinimalConnectionInstance
-		},
-	}
-})
-interface IMockLoggedMessage {
-	type: 'received' | 'sent'
-	message: string
-}
-interface IMockMinimalKairosConnection extends MinimalKairosConnection {
-	isAMock: boolean
-
-	mockCaptureTraffic(
-		callback: (messageLog: {
-			receivedMessages: string[]
-			sentMessages: string[]
-			allMessages: IMockLoggedMessage[]
-		}) => Promise<void> | void
-	): Promise<void>
-
-	mockSetReplyHandler: (
-		handler: (
-			message: string,
-			expectedResponse: ExpectedResponseType,
-			expectedResponsePath: string | null
-		) => Promise<string[]>
-	) => void
-	mockSetSubscribeValue: (handler: (path: string, abort: AbortSignal, callback: any) => void) => void
-}
-
-type MockedKairosConnection = IMockMinimalKairosConnection & InstanceType<typeof KairosConnection>
 
 describe('KairosConnection', () => {
 	let connection: MockedKairosConnection
@@ -357,7 +180,10 @@ describe('KairosConnection', () => {
 	let emulatorConnection: KairosRecorder | null
 
 	beforeAll(async () => {
+		// setupMock()
+
 		if (process.env.KAIROS_EMULATOR_IP) {
+			console.log('Using Kairos emulator at', process.env.KAIROS_EMULATOR_IP)
 			emulatorConnection = new KairosRecorder(process.env.KAIROS_EMULATOR_IP)
 			await emulatorConnection.init()
 		}
@@ -646,6 +472,7 @@ describe('KairosConnection', () => {
 
 			// Set up a default reply handler for the connection
 			// That uses the stored responses from the Kairos emulator:
+
 			connection.mockSetReplyHandler(
 				async (
 					message: string,
@@ -663,6 +490,97 @@ describe('KairosConnection', () => {
 		})
 
 		// SYS
+		test('SYS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'SYS.release_version': ['SYS.release_version=1'],
+					'SYS.system_id': ['SYS.system_id=B767169F0DCB9D96'],
+					'SYS.var1': ['SYS.var1='],
+					'SYS.var2': ['SYS.var2='],
+					'SYS.var3': ['SYS.var3='],
+					'SYS.var4': ['SYS.var4='],
+					'SYS.var5': ['SYS.var5='],
+					'SYS.var6': ['SYS.var6='],
+					'SYS.var7': ['SYS.var7='],
+					'SYS.var8': ['SYS.var8='],
+					'SYS.smart_routing_enabled': ['SYS.smart_routing_enabled=1'],
+					'SYS.var1=value1': ['OK'],
+					'SYS.var2=value2': ['OK'],
+					'SYS.var3=value3': ['OK'],
+					'SYS.var4=value4': ['OK'],
+					'SYS.var5=value5': ['OK'],
+					'SYS.var6=value6': ['OK'],
+					'SYS.var7=value7': ['OK'],
+					'SYS.var8=value8': ['OK'],
+					'SYS.SystemSettings.raw_panel_enable': ['SYS.SystemSettings.raw_panel_enable=0'],
+					'SYS.SystemSettings.raw_panel_status': ['SYS.SystemSettings.raw_panel_status='],
+					'SYS.SystemSettings.raw_panel_1': ['SYS.SystemSettings.raw_panel_1=0.0.0.0:9923'],
+					'SYS.SystemSettings.raw_panel_2': ['SYS.SystemSettings.raw_panel_2=0.0.0.0:9923'],
+					'SYS.SystemSettings.raw_panel_3': ['SYS.SystemSettings.raw_panel_3=0.0.0.0:9923'],
+					'SYS.SystemSettings.option_panel_enable': ['SYS.SystemSettings.option_panel_enable=0'],
+					'SYS.SystemSettings.option_panel_status': ['SYS.SystemSettings.option_panel_status='],
+					'SYS.SystemSettings.option_panel': ['SYS.SystemSettings.option_panel=0.0.0.0:9923'],
+					'SYS.SystemSettings.raw_panel_enable=1': ['OK'],
+					'SYS.SystemSettings.raw_panel_1=0.0.0.0:9923': ['OK'],
+					'SYS.SystemSettings.raw_panel_2=0.0.0.0:9923': ['Permission Error'],
+					'SYS.SystemSettings.raw_panel_3=0.0.0.0:9923': ['Permission Error'],
+					'SYS.SystemSettings.option_panel_enable=1': ['OK'],
+					'SYS.SystemSettings.option_panel=0.0.0.0:9923': ['Permission Error'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			expect(await connection.getSystemInfo()).toStrictEqual({
+				releaseVersion: '1',
+				smartRoutingEnabled: true,
+				systemId: 'B767169F0DCB9D96',
+				var1: '',
+				var2: '',
+				var3: '',
+				var4: '',
+				var5: '',
+				var6: '',
+				var7: '',
+				var8: '',
+			})
+			expect(
+				await connection.updateSystemInfo({
+					var1: 'value1',
+					var2: 'value2',
+					var3: 'value3',
+					var4: 'value4',
+					var5: 'value5',
+					var6: 'value6',
+					var7: 'value7',
+					var8: 'value8',
+				})
+			).toBeUndefined()
+
+			expect(await connection.getSystemSettings()).toStrictEqual({
+				rawPanelEnable: false, // boolean
+				rawPanelStatus: '', // string
+				rawPanel1: '0.0.0.0:9923', // ConnectionString
+				rawPanel2: '0.0.0.0:9923', // ConnectionString
+				rawPanel3: '0.0.0.0:9923', // ConnectionString
+				optionPanelEnable: false, // boolean
+				optionPanelStatus: '', // string
+				optionPanel: '0.0.0.0:9923', // ConnectionString
+			})
+			expect(
+				await connection.updateSystemSettings({
+					rawPanelEnable: true,
+					rawPanel1: '0.0.0.0:9923',
+					// rawPanel2: '0.0.0.0:9923', // Emulator replied with Permission Error
+					// rawPanel3: '0.0.0.0:9923',// Emulator replied with Permission Error
+					optionPanelEnable: true,
+					// optionPanel: '0.0.0.0:9923',// Emulator replied with Permission Error
+				})
+			).toBeUndefined()
+		})
 		// INTSOURCES
 		// 	BLACK
 		// 	WHITE
@@ -972,6 +890,68 @@ describe('KairosConnection', () => {
 				})
 			).toBeUndefined()
 		})
+		//  HDMIINPUTS
+		//      IN_HDMI<1-20>
+
+		test('HDMIINPUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:HDMIINPUTS': [
+						'list_ex:HDMIINPUTS=',
+						'IN_HDMI1',
+						'IN_HDMI2',
+						'IN_HDMI3',
+						'IN_HDMI4',
+						'IN_HDMI5',
+						'IN_HDMI6',
+						'IN_HDMI7',
+						'IN_HDMI8',
+						'IN_HDMI9',
+						'IN_HDMI10',
+						'IN_HDMI11',
+						'IN_HDMI12',
+						'IN_HDMI13',
+						'IN_HDMI14',
+						'IN_HDMI15',
+						'IN_HDMI16',
+						'IN_HDMI17',
+						'IN_HDMI18',
+						'IN_HDMI19',
+						'IN_HDMI20',
+						'',
+					],
+					'IN_HDMI1.status': ['IN_HDMI1.status=3'],
+					'IN_HDMI1.status_text': ['IN_HDMI1.status_text=Disabled'],
+					'IN_HDMI1.tally': ['IN_HDMI1.tally=0'],
+					'IN_HDMI1.delay': ['IN_HDMI1.delay=5'],
+					'IN_HDMI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const inputs: HDMIInputSettingRef[] = []
+			for (let i = 1; i <= 20; i++) {
+				inputs.push(refHDMIInputSetting(i))
+			}
+			expect(await connection.listHDMIInputsSettings()).toStrictEqual(inputs)
+
+			expect(await connection.getHDMIInputSetting(refHDMIInputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'Disabled',
+				tally: 0,
+				delay: 5,
+			} satisfies HDMIInputSettingObject)
+
+			expect(
+				await connection.updateHDMIInputSetting(refHDMIInputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
 		// OUTPUTSETTINGS
 		// 	IPOUTS
 		// 		OUT_IP<1-32>
@@ -1012,11 +992,26 @@ describe('KairosConnection', () => {
 						'OUT_IP30',
 						'OUT_IP31',
 						'OUT_IP32',
+						'OUT_IP33',
+						'OUT_IP34',
+						'OUT_IP35',
+						'OUT_IP36',
+						'OUT_IP37',
+						'OUT_IP38',
+						'OUT_IP39',
+						'OUT_IP40',
 						'',
 					],
 					'OUT_IP1.status': ['OUT_IP1.status=3'],
-					'OUT_IP1.status_text': ['OUT_IP1.status_text=disabled'],
-					'OUT_IP1.delay': ['OUT_IP1.delay=5'],
+					'OUT_IP1.status_text': ['OUT_IP1.status_text=Disabled'],
+					'OUT_IP1.delay': ['OUT_IP1.delay=0'],
+					'OUT_IP1.format': ['OUT_IP1.format=1920x1080p'],
+					'OUT_IP1.frequency': ['OUT_IP1.frequency=59 hz'],
+					'OUT_IP1.color_model': ['OUT_IP1.color_model=YCbCr422'],
+					'OUT_IP1.bitdepth': ['OUT_IP1.bitdepth=10-Bit'],
+					'OUT_IP1.SDP_Colorspace': ['OUT_IP1.SDP_Colorspace=BT709'],
+					'OUT_IP1.SDP_Tcs': ['OUT_IP1.SDP_Tcs=SDR'],
+					'OUT_IP1.compare': ['OUT_IP1.compare=<unknown>'],
 					'OUT_IP1.delay=5': ['OK'],
 				}[message]
 				if (reply) {
@@ -1027,15 +1022,22 @@ describe('KairosConnection', () => {
 			})
 
 			const inputs: IpOutputSettingRef[] = []
-			for (let i = 1; i <= 32; i++) {
+			for (let i = 1; i <= 40; i++) {
 				inputs.push(refIpOutputSetting(i))
 			}
 			expect(await connection.listIpOutputSettings()).toStrictEqual(inputs)
 
 			expect(await connection.getIpOutputSetting(refIpOutputSetting(1))).toStrictEqual({
+				SDPColorspace: SDPColorspace.BT709,
+				SDPTcs: SDPTcs.SDR,
+				bitDepth: BitDepth['10Bit'],
+				colorModel: ColorModel.YCbCr422,
+				compare: '<unknown>',
+				delay: 0,
+				format: '1920x1080p',
+				frequency: FrequencyEnum['59hz'],
 				status: 3,
-				statusText: 'disabled',
-				delay: 5,
+				statusText: 'Disabled',
 			} satisfies IpOutputSettingObject)
 
 			expect(
@@ -1044,6 +1046,7 @@ describe('KairosConnection', () => {
 				})
 			).toBeUndefined()
 		})
+
 		// 	SDIOUTS
 		// 		OUT_SDI<1-16>
 		test('SDIOUTS', async () => {
@@ -1073,9 +1076,10 @@ describe('KairosConnection', () => {
 						'OUT_SDI20',
 						'',
 					],
-					'OUT_SDI1.status': ['OUT_SDI1.status=3'],
-					'OUT_SDI1.status_text': ['OUT_SDI1.status_text=disabled'],
+					'OUT_SDI1.status': ['OUT_SDI1.status=0'],
+					'OUT_SDI1.status_text': ['OUT_SDI1.status_text=Ok'],
 					'OUT_SDI1.delay': ['OUT_SDI1.delay=5'],
+					'OUT_SDI1.compare': ['OUT_SDI1.compare=<unknown>'],
 					'OUT_SDI1.delay=5': ['OK'],
 				}[message]
 				if (reply) {
@@ -1092,9 +1096,10 @@ describe('KairosConnection', () => {
 			expect(await connection.listSDIOutputSettings()).toStrictEqual(outputs)
 
 			expect(await connection.getSDIOutputSetting(refSDIOutputSetting(1))).toStrictEqual({
-				status: 3,
-				statusText: 'disabled',
+				status: 0,
+				statusText: 'Ok',
 				delay: 5,
+				compare: '<unknown>',
 			} satisfies SDIOutputSettingObject)
 
 			expect(
@@ -1111,8 +1116,9 @@ describe('KairosConnection', () => {
 				const reply = {
 					'list_ex:NDIOUTS': ['list_ex:NDIOUTS=', 'OUT_NDI1', 'OUT_NDI2', ''],
 					'OUT_NDI1.status': ['OUT_NDI1.status=3'],
-					'OUT_NDI1.status_text': ['OUT_NDI1.status_text=disabled'],
+					'OUT_NDI1.status_text': ['OUT_NDI1.status_text=Disabled'],
 					'OUT_NDI1.delay': ['OUT_NDI1.delay=5'],
+					'OUT_NDI1.compare': ['OUT_NDI1.compare=<unknown>'],
 					'OUT_NDI1.delay=5': ['OK'],
 				}[message]
 				if (reply) {
@@ -1130,8 +1136,9 @@ describe('KairosConnection', () => {
 
 			expect(await connection.getNDIOutputSetting(refNDIOutputSetting(1))).toStrictEqual({
 				status: 3,
-				statusText: 'disabled',
+				statusText: 'Disabled',
 				delay: 5,
+				compare: '<unknown>',
 			} satisfies NDIOutputSettingObject)
 
 			expect(
@@ -1150,6 +1157,7 @@ describe('KairosConnection', () => {
 					'OUT_STREAM1.status_text': ['OUT_STREAM1.status_text=disabled'],
 					'OUT_STREAM1.delay': ['OUT_STREAM1.delay=5'],
 					'OUT_STREAM1.delay=5': ['OK'],
+					'OUT_STREAM1.compare': ['OUT_STREAM1.compare=<unknown>'],
 				}[message]
 				if (reply) {
 					return reply
@@ -1168,6 +1176,7 @@ describe('KairosConnection', () => {
 				status: 3,
 				statusText: 'disabled',
 				delay: 5,
+				compare: '<unknown>',
 			} satisfies StreamOutputSettingObject)
 
 			expect(
@@ -1219,6 +1228,67 @@ describe('KairosConnection', () => {
 
 			expect(
 				await connection.updateAudioOutputSetting(refAudioOutputSetting(1), {
+					delay: 5,
+				})
+			).toBeUndefined()
+		})
+		//   HDMIOUTS
+		// 		OUT_HDMI<1-20>
+		test('HDMIOUTS', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:HDMIOUTS': [
+						'list_ex:HDMIOUTS=',
+						'OUT_HDMI1',
+						'OUT_HDMI2',
+						'OUT_HDMI3',
+						'OUT_HDMI4',
+						'OUT_HDMI5',
+						'OUT_HDMI6',
+						'OUT_HDMI7',
+						'OUT_HDMI8',
+						'OUT_HDMI9',
+						'OUT_HDMI10',
+						'OUT_HDMI11',
+						'OUT_HDMI12',
+						'OUT_HDMI13',
+						'OUT_HDMI14',
+						'OUT_HDMI15',
+						'OUT_HDMI16',
+						'OUT_HDMI17',
+						'OUT_HDMI18',
+						'OUT_HDMI19',
+						'OUT_HDMI20',
+						'',
+					],
+					'OUT_HDMI1.status': ['OUT_HDMI1.status=3'],
+					'OUT_HDMI1.status_text': ['OUT_HDMI1.status_text=Disabled'],
+					'OUT_HDMI1.delay': ['OUT_HDMI1.delay=5'],
+					'OUT_HDMI1.compare': ['OUT_HDMI1.compare=<unknown>'],
+					'OUT_HDMI1.delay=5': ['OK'],
+				}[message]
+				if (reply) {
+					return reply
+				}
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+
+			const outputs: HDMIOutputSettingRef[] = []
+			for (let i = 1; i <= 20; i++) {
+				outputs.push(refHDMIOutputSetting(i))
+			}
+			expect(await connection.listHDMIOutputSettings()).toStrictEqual(outputs)
+
+			expect(await connection.getHDMIOutputSetting(refHDMIOutputSetting(1))).toStrictEqual({
+				status: 3,
+				statusText: 'Disabled',
+				delay: 5,
+				compare: '<unknown>',
+			} satisfies HDMIOutputSettingObject)
+
+			expect(
+				await connection.updateHDMIOutputSetting(refHDMIOutputSetting(1), {
 					delay: 5,
 				})
 			).toBeUndefined()
@@ -1318,6 +1388,7 @@ describe('KairosConnection', () => {
 					'SCENES.Main.all_selected_auto=': ['OK'],
 					'SCENES.Main.all_selected_cut=': ['OK'],
 					'SCENES.Main.store_snapshot=': ['OK'],
+					'SCENES.Main.processing_format': ['SCENES.Main.processing_format=Default'],
 				}[message]
 				if (reply) {
 					return reply
@@ -1379,6 +1450,7 @@ describe('KairosConnection', () => {
 				resolutionX: 1920,
 				resolutionY: 1080,
 				tally: 3,
+				processingFormat: ProcessingFormat.Default,
 			} satisfies SceneObject)
 
 			expect(await connection.sceneAuto(refScene(['Main']))).toBeUndefined()
@@ -3326,6 +3398,51 @@ describe('KairosConnection', () => {
 			expect(await connection.sceneSnapshotAbort(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
 			expect(await connection.sceneSnapshotDeleteEx(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
 		})
+		test('SCENES.Layers.Snapshots.SNP.Layer', async () => {
+			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
+				const reply = {
+					'list_ex:SCENES.Main.Snapshots.SNP1': [
+						'list_ex:SCENES.Main.Snapshots.SNP1=',
+						'SCENES.Main.Snapshots.SNP1.Background',
+						'SCENES.Main.Snapshots.SNP1.Layer-1',
+						'SCENES.Main.Snapshots.SNP1.Layer-2',
+						'',
+					],
+					'SCENES.Main.Snapshots.SNP1.Background.recall=': ['OK'],
+				}[message]
+				if (reply) return reply
+
+				throw new Error(`Unexpected message: ${message}`)
+			})
+			const snapShotRef = refSceneSnapshot(refMain, ['SNP1'])
+			expect(await connection.listSceneSnapshotLayers(snapShotRef)).toStrictEqual([
+				{
+					realm: 'scene-snapshot-layer',
+					name: 'Background',
+					scenePath: ['Main'],
+					snapshotPath: ['SNP1'],
+					layerPath: ['Background'],
+				},
+				{
+					realm: 'scene-snapshot-layer',
+					name: 'Layer-1',
+					scenePath: ['Main'],
+					snapshotPath: ['SNP1'],
+					layerPath: ['Layer-1'],
+				},
+				{
+					realm: 'scene-snapshot-layer',
+					name: 'Layer-2',
+					scenePath: ['Main'],
+					snapshotPath: ['SNP1'],
+					layerPath: ['Layer-2'],
+				},
+			])
+
+			const layerRef = refSceneSnapshotLayer(snapShotRef, ['Background'])
+
+			expect(await connection.sceneSnapshotLayerRecall(layerRef)).toBeUndefined()
+		})
 
 		// SOURCES
 		// 	FXINPUTS
@@ -4297,6 +4414,7 @@ describe('KairosConnection', () => {
 					'IP-AUX1.stop_record=': ['OK'],
 					'IP-AUX1.grab=': ['OK'],
 					'IP-AUX1.grab=test-name': ['OK'],
+					'IP-AUX1.processing_format': ['IP-AUX1.processing_format=Default'],
 				}[message]
 				if (reply) return reply
 
@@ -4415,6 +4533,7 @@ describe('KairosConnection', () => {
 				sourceOptions: [refMatte(['ColA']), refMatte(['ColB']), refMatte(['ColC'])],
 				source: refSourceBase(['WHITE']),
 				tallyRoot: 1,
+				processingFormat: ProcessingFormat.Default,
 			} satisfies AuxObject)
 
 			expect(await connection.auxRecord(refAuxId('IP-AUX1'))).toBeUndefined()
