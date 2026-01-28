@@ -647,9 +647,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'format', value: stringifyString(props.format) },
 			{ attribute: 'frequency', value: stringifyEnum<FrequencyEnum>(props.frequency, FrequencyEnum) },
 			{ attribute: 'color_model', value: stringifyEnum<ColorModel>(props.colorModel, ColorModel) },
-			{ attribute: 'bitDepth', value: stringifyEnum<BitDepth>(props.bitDepth, BitDepth) },
-			{ attribute: 'SDPColorspace', value: stringifyEnum<SDPColorspace>(props.SDPColorspace, SDPColorspace) },
-			{ attribute: 'SDPTcs', value: stringifyEnum<SDPTcs>(props.SDPTcs, SDPTcs) },
+			{ attribute: 'bitdepth', value: stringifyEnum<BitDepth>(props.bitDepth, BitDepth) },
+			{ attribute: 'SDP_Colorspace', value: stringifyEnum<SDPColorspace>(props.SDPColorspace, SDPColorspace) },
+			{ attribute: 'SDP_Tcs', value: stringifyEnum<SDPTcs>(props.SDPTcs, SDPTcs) },
 			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
