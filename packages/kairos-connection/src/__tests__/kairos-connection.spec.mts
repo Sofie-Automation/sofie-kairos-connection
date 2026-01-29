@@ -606,6 +606,7 @@ describe('KairosConnection', () => {
 					],
 					'INTSOURCES.MV1.available': ['INTSOURCES.MV1.available=1'],
 					'INTSOURCES.MV1.name': ['INTSOURCES.MV1.name=MV1'],
+					'INTSOURCES.MV999.available': ['Error'],
 				}[message]
 				if (reply) {
 					return reply
@@ -643,6 +644,9 @@ describe('KairosConnection', () => {
 				available: true,
 				name: 'MV1',
 			} satisfies MultiViewSourceObject)
+
+			expect(await connection.multiViewerSourceExists(1)).toBe(true)
+			expect(await connection.multiViewerSourceExists(999)).toBe(false)
 		})
 		// INPUTSETTINGS
 		// 	IPINPUTS
@@ -1389,6 +1393,7 @@ describe('KairosConnection', () => {
 					'SCENES.Main.all_selected_cut=': ['OK'],
 					'SCENES.Main.store_snapshot=': ['OK'],
 					'SCENES.Main.processing_format': ['SCENES.Main.processing_format=Default'],
+					'SCENES.NonExistent.color': ['Error'],
 				}[message]
 				if (reply) {
 					return reply
@@ -1459,6 +1464,9 @@ describe('KairosConnection', () => {
 			expect(await connection.sceneAllSelectedAuto(refScene(['Main']))).toBeUndefined()
 			expect(await connection.sceneAllSelectedCut(refScene(['Main']))).toBeUndefined()
 			expect(await connection.sceneStoreSnapshot(refScene(['Main']))).toBeUndefined()
+
+			expect(await connection.sceneExists(refScene(['Main']))).toBe(true)
+			expect(await connection.sceneExists(refScene(['NonExistent']))).toBe(false)
 		})
 		// SCENES.Scene.Layers
 		// 		Layers
@@ -1551,6 +1559,7 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Layers.Background.show_layer=': ['OK'],
 					'SCENES.Main.Layers.Background.hide_layer=': ['OK'],
 					'SCENES.Main.Layers.Background.toggle_layer=': ['OK'],
+					'SCENES.Main.Layers.NonExistent.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -1712,6 +1721,9 @@ describe('KairosConnection', () => {
 			expect(await connection.sceneLayerShowLayer(refSceneLayer(refMain, ['Background']))).toBeUndefined()
 			expect(await connection.sceneLayerHideLayer(refSceneLayer(refMain, ['Background']))).toBeUndefined()
 			expect(await connection.sceneLayerToggleLayer(refSceneLayer(refMain, ['Background']))).toBeUndefined()
+
+			expect(await connection.sceneLayerExists(refSceneLayer(refScene(['Main']), ['Background']))).toBe(true)
+			expect(await connection.sceneLayerExists(refSceneLayer(refScene(['Main']), ['NonExistent']))).toBe(false)
 		})
 		// SCENES.Scene.Layers.Layer
 		// 				Effects
@@ -3161,6 +3173,7 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Transitions.L1.duration=20': ['OK'],
 					'SCENES.Main.Transitions.L1.transition_cut=': ['OK'],
 					'SCENES.Main.Transitions.L1.transition_auto=': ['OK'],
+					'SCENES.Main.Transitions.NonExistent.duration': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -3276,8 +3289,10 @@ describe('KairosConnection', () => {
 
 			expect(await connection.sceneTransitionTransitionCut(refTransition)).toBeUndefined()
 			expect(await connection.sceneTransitionTransitionAuto(refTransition)).toBeUndefined()
-		})
 
+			expect(await connection.sceneTransitionExists(refTransition)).toBe(true)
+			expect(await connection.sceneTransitionExists(refSceneTransition(refMain, ['NonExistent']))).toBe(false)
+		})
 		test('SCENES.Layers.Transitions.Mix.Effect', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
 				const reply = {
@@ -3287,6 +3302,7 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Transitions.L1.L1.Effect-1.effect_name': [
 						'SCENES.Main.Transitions.L1.L1.Effect-1.effect_name=Mix',
 					],
+					'SCENES.Main.Transitions.L1.L1.NonExistent.curve': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -3307,6 +3323,13 @@ describe('KairosConnection', () => {
 				effect: 'MIX_FX.Mix',
 				effectName: 'Mix',
 			} satisfies SceneTransitionMixEffectObject)
+
+			const refTransitionNonExistent = refSceneTransitionMixEffect(
+				refSceneTransitionMix(refSceneTransition(refMain, ['L1']), ['L1']),
+				['NonExistent']
+			)
+			expect(await connection.sceneTransitionMixEffectExists(refTransitionMixEffect)).toBe(true)
+			expect(await connection.sceneTransitionMixEffectExists(refTransitionNonExistent)).toBe(false)
 		})
 		// SCENES.Scene.Layers.Layer
 		// 			Snapshots
@@ -3339,6 +3362,7 @@ describe('KairosConnection', () => {
 					'SCENES.Main.Snapshots.SNP1.update=': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.abort=': ['OK'],
 					'SCENES.Main.Snapshots.SNP1.delete_ex=': ['OK'],
+					'SCENES.Main.Snapshots.SNP999.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -3397,6 +3421,9 @@ describe('KairosConnection', () => {
 			expect(await connection.sceneSnapshotUpdate(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
 			expect(await connection.sceneSnapshotAbort(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
 			expect(await connection.sceneSnapshotDeleteEx(refSceneSnapshot(refMain, ['SNP1']))).toBeUndefined()
+
+			expect(await connection.sceneSnapshotExists(refSceneSnapshot(refMain, ['SNP1']))).toBe(true)
+			expect(await connection.sceneSnapshotExists(refSceneSnapshot(refMain, ['SNP999']))).toBe(false)
 		})
 		test('SCENES.Layers.Snapshots.SNP.Layer', async () => {
 			connection.mockSetReplyHandler(async (message: string): Promise<string[]> => {
@@ -3488,6 +3515,7 @@ describe('KairosConnection', () => {
 					'FXINPUTS.FxGFX1.advanced_resolution_control': ['FXINPUTS.FxGFX1.advanced_resolution_control=0'],
 					'FXINPUTS.FxGFX1.resolution_x': ['FXINPUTS.FxGFX1.resolution_x=1920'],
 					'FXINPUTS.FxGFX1.resolution_y': ['FXINPUTS.FxGFX1.resolution_y=1080'],
+					'FXINPUTS.NonExistent.name': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -3530,6 +3558,9 @@ describe('KairosConnection', () => {
 				resolutionY: 1080,
 				scaleMode: ScaleMode.None,
 			} satisfies FxInputObject)
+
+			expect(await connection.fxInputExists(refFxInput(['FxGFX1']))).toBe(true)
+			expect(await connection.fxInputExists(refFxInput(['NonExistent']))).toBe(false)
 		})
 		// 	MATTES
 		// 		ColorMatte
@@ -3611,6 +3642,7 @@ describe('KairosConnection', () => {
 					'RR1.playlist_back=': ['OK'],
 					'RR1.playlist_next=': ['OK'],
 					'RR1.playlist_end=': ['OK'],
+					'RR999.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -3664,6 +3696,9 @@ describe('KairosConnection', () => {
 			expect(await connection.ramRecorderPlaylistBack(1)).toBeUndefined()
 			expect(await connection.ramRecorderPlaylistNext(1)).toBeUndefined()
 			expect(await connection.ramRecorderPlaylistEnd(1)).toBeUndefined()
+
+			expect(await connection.ramRecorderExists(1)).toBe(true)
+			expect(await connection.ramRecorderExists(999)).toBe(false)
 		})
 		// PLAYERS
 		// 	CP<1-2>
@@ -3700,6 +3735,7 @@ describe('KairosConnection', () => {
 					'CP1.playlist_back=': ['OK'],
 					'CP1.playlist_next=': ['OK'],
 					'CP1.playlist_end=': ['OK'],
+					'CP999.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -3754,6 +3790,9 @@ describe('KairosConnection', () => {
 			expect(await connection.clipPlayerPlaylistBack(1)).toBeUndefined()
 			expect(await connection.clipPlayerPlaylistNext(1)).toBeUndefined()
 			expect(await connection.clipPlayerPlaylistEnd(1)).toBeUndefined()
+
+			expect(await connection.clipPlayerExists(1)).toBe(true)
+			expect(await connection.clipPlayerExists(999)).toBe(false)
 		})
 
 		// MEDIA
@@ -3848,6 +3887,13 @@ describe('KairosConnection', () => {
 				).toBeUndefined()
 				expect(messageLog.sentMessages.length).toBe(1)
 			})
+
+			expect(await connection.mediaClipExists(refMediaClip(['MyFile1.mxf']))).toBe(true)
+			expect(await connection.mediaClipExists(refMediaClip(['nonexistent']))).toBe(false)
+			expect(await connection.mediaStillExists(refMediaStill(['nonexistent']))).toBe(false)
+			expect(await connection.mediaRamRecExists(refMediaRamRec(['nonexistent']))).toBe(false)
+			expect(await connection.mediaImageExists(refMediaImage(['nonexistent']))).toBe(false)
+			expect(await connection.mediaSoundExists(refMediaSound(['nonexistent']))).toBe(false)
 		})
 
 		// TRANSLIB
@@ -4211,6 +4257,7 @@ describe('KairosConnection', () => {
 					'MACROS.M-1.pause=': ['OK'],
 					'MACROS.M-1.stop=': ['OK'],
 					'MACROS.M-1.delete_ex=': ['OK'],
+					'MACROS.M-999.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -4249,6 +4296,9 @@ describe('KairosConnection', () => {
 			expect(await connection.macroPause(refMacro(['M-1']))).toBeUndefined()
 			expect(await connection.macroStop(refMacro(['M-1']))).toBeUndefined()
 			expect(await connection.macroDeleteEx(refMacro(['M-1']))).toBeUndefined()
+
+			expect(await connection.macroExists(refMacro(['M-1']))).toBe(true)
+			expect(await connection.macroExists(refMacro(['M-999']))).toBe(false)
 		})
 
 		// AUX
@@ -4415,6 +4465,7 @@ describe('KairosConnection', () => {
 					'IP-AUX1.grab=': ['OK'],
 					'IP-AUX1.grab=test-name': ['OK'],
 					'IP-AUX1.processing_format': ['IP-AUX1.processing_format=Default'],
+					'IP-AUX999.available': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -4540,8 +4591,10 @@ describe('KairosConnection', () => {
 			expect(await connection.auxRecordLoop(refAuxId('IP-AUX1'))).toBeUndefined()
 			expect(await connection.auxRecordStop(refAuxId('IP-AUX1'))).toBeUndefined()
 			expect(await connection.auxGrabStill(refAuxId('IP-AUX1'))).toBeUndefined()
-
 			expect(await connection.auxGrabStill(refAuxId('IP-AUX1'), 'test-name')).toBeUndefined()
+
+			expect(await connection.auxExists(refAuxId('IP-AUX1'))).toBe(true)
+			expect(await connection.auxExists(refAuxId('IP-AUX999'))).toBe(false)
 		})
 
 		describe('AUX.Effects', async () => {
@@ -5184,6 +5237,7 @@ describe('KairosConnection', () => {
 					'IP1.record_loop=': ['OK'],
 					'IP1.stop_record=': ['OK'],
 					'IP1.grab=': ['OK'],
+					'IP999.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -5215,6 +5269,9 @@ describe('KairosConnection', () => {
 			expect(await connection.recordInput(refIpInput(1))).toBeUndefined()
 			expect(await connection.recordLoopInput(refIpInput(1))).toBeUndefined()
 			expect(await connection.stopRecordInput(refIpInput(1))).toBeUndefined()
+
+			expect(await connection.inputExists(refIpInput(1))).toBe(true)
+			expect(await connection.inputExists(refIpInput(999))).toBe(false)
 		})
 
 		// TRIGGERS
@@ -5233,6 +5290,7 @@ describe('KairosConnection', () => {
 					'list_ex:GFXCHANNELS': ['list_ex:GFXCHANNELS=', 'GFX1', 'GFX2', ''],
 					'GFX1.scene': ['GFX1.scene=GFXSCENES.Old'],
 					'GFX1.scene=GFXSCENES.Subfolder.New': ['OK'],
+					'GFX999.scene': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -5257,6 +5315,9 @@ describe('KairosConnection', () => {
 					scene: refGfxScene(['Subfolder', 'New']),
 				})
 			).toBeUndefined()
+
+			expect(await connection.gfxChannelExists(1)).toBe(true)
+			expect(await connection.gfxChannelExists(999)).toBe(false)
 		})
 		// GFXSCENES
 		// 	GfxScene
@@ -5279,6 +5340,8 @@ describe('KairosConnection', () => {
 					'GFXSCENES.Test.Renderer.width=100': ['OK'],
 					'GFXSCENES.Test.Renderer.height=200': ['OK'],
 					'GFXSCENES.Test.Renderer.position=10/20': ['OK'],
+					'GFXSCENES.NonExistent.resolution': ['Error'],
+					'GFXSCENES.Test.NonExistent.width': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -5340,6 +5403,12 @@ describe('KairosConnection', () => {
 					url: 'https://10.0.0.1/test',
 				})
 			).toBeUndefined()
+
+			expect(await connection.gfxSceneExists(refGfxScene(['Test']))).toBe(true)
+			expect(await connection.gfxSceneExists(refGfxScene(['NonExistent']))).toBe(false)
+
+			expect(await connection.gfxSceneItemExists(refGfxSceneItem(refGfxScene(['Test']), ['Renderer']))).toBe(true)
+			expect(await connection.gfxSceneItemExists(refGfxSceneItem(refGfxScene(['Test']), ['NonExistent']))).toBe(false)
 		})
 		// 		Text
 		// 		TextBox
@@ -5379,6 +5448,7 @@ describe('KairosConnection', () => {
 					'AP1.playlist_back=': ['OK'],
 					'AP1.playlist_next=': ['OK'],
 					'AP1.playlist_end=': ['OK'],
+					'AP999.timecode': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -5420,6 +5490,9 @@ describe('KairosConnection', () => {
 			expect(await connection.audioPlayerPlaylistBack(1)).toBeUndefined()
 			expect(await connection.audioPlayerPlaylistNext(1)).toBeUndefined()
 			expect(await connection.audioPlayerPlaylistEnd(1)).toBeUndefined()
+
+			expect(await connection.audioPlayerExists(1)).toBe(true)
+			expect(await connection.audioPlayerExists(999)).toBe(false)
 		})
 		// AUDIOMIXERS
 		// 	AUDIOMIXER
@@ -5436,6 +5509,7 @@ describe('KairosConnection', () => {
 					'AUDIOMIXER.mute=1': ['OK'],
 					'AUDIOMIXER.Channel 1.volume=-1': ['OK'],
 					'AUDIOMIXER.Channel 1.mute=1': ['OK'],
+					'AUDIOMIXER.NonExistent.volume': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -5478,6 +5552,10 @@ describe('KairosConnection', () => {
 				volume: 0.2,
 				mute: true,
 			} satisfies AudioMixerObject)
+
+			expect(await connection.audioMixerMainBusExists()).toBe(true)
+			expect(await connection.audioMixerChannelExists(refAudioMixerChannel(['Channel 1']))).toBe(true)
+			expect(await connection.audioMixerChannelExists(refAudioMixerChannel(['NonExistent']))).toBe(false)
 		})
 		// 	AUDIOMONITOR
 		// 	MIXOUT<1-8>
@@ -5521,6 +5599,7 @@ describe('KairosConnection', () => {
 					'IS1.playlist_back=': ['OK'],
 					'IS1.playlist_next=': ['OK'],
 					'IS1.playlist_end=': ['OK'],
+					'IS999.color': ['Error'],
 				}[message]
 				if (reply) return reply
 
@@ -5570,6 +5649,9 @@ describe('KairosConnection', () => {
 			expect(await connection.imageStorePlaylistBack(1)).toBeUndefined()
 			expect(await connection.imageStorePlaylistNext(1)).toBeUndefined()
 			expect(await connection.imageStorePlaylistEnd(1)).toBeUndefined()
+
+			expect(await connection.imageStoreExists(1)).toBe(true)
+			expect(await connection.imageStoreExists(999)).toBe(false)
 		})
 
 		// SPANELPROFILES
