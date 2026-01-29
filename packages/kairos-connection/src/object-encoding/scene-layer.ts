@@ -15,8 +15,8 @@ import {
 	parseInteger,
 	parseFloatValue,
 	parseColorRGB,
-	parseAnySourceRef,
 } from '../lib/data-parsers.js'
+import { parseAnySourceRef } from '../lib/refs.js'
 
 export const SceneLayerObjectEncodingDefinition: ObjectEncodingDefinition<SceneLayerObject> = {
 	opacity: { protocolName: 'opacity', parser: parseFloatValue },

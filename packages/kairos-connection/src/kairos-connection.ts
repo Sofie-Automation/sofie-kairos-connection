@@ -7,7 +7,6 @@ import {
 	stringifyColorRGB,
 	stringifyPos2D,
 	stringifyAnySourceRef,
-	stringifyRef,
 	stringifyImageStoreClip,
 	stringifyString,
 	stringifyPos2Df,
@@ -303,6 +302,7 @@ import {
 	MultiViewPipObjectEncodingDefinition,
 } from './object-encoding/mv.js'
 import { SystemInfoObjectEncodingDefinition, SystemSettingsObjectEncodingDefinition } from './object-encoding/sys.js'
+import { stringifyRef } from './lib/refs.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
