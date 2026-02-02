@@ -24,4 +24,53 @@ This project is composed of a few different packages:
 
 ### Documentation
 
-You can find the generated type docs [here](https://sofie-automation.github.io/sofie-kairos-connection/).
+You can find the auto-generated type docs [here](https://sofie-automation.github.io/sofie-kairos-connection/).
+
+The `kairos-connection` library is a library for communicating with the [Panasonic KAIROS](https://eu.connect.panasonic.com/se/sv/broadcast-proav/itip-centric-video-platform-kairos) video switchers using SPKCP (Simple Panasonic Kairos Control Protocol) / TCP.
+
+### Version support
+
+| Version | Status     | Notes                                                                                                                                                                  |
+| ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.0     | Compatible | Some commands not implemented                                                                                                                                          |
+| 1.7     | Compatible | Some commands not implemented. <br> Properties not available in 1.7 are filled with default values. <br> Will throw errors if methods not available in 1.7 are called. |
+
+### Example usage
+
+```ts
+import * as Kairos from 'kairos-connection'
+const kairos = new Kairos.KairosConnection({
+	host: '127.0.0.1',
+	// port: 3005, // Optional, defaults to 3005
+})
+
+kairos.addListener('disconnect', () => console.log('Disconnected'))
+kairos.addListener('error', (e) => console.log('Error', e))
+
+kairos.addListener('connect', () => {
+	console.log('Connected!')
+
+	Promise.resolve().then(async () => {
+		// List scenes and media clips:
+		console.log(await kairos.listScenes())
+		console.log(await kairos.listMediaClips())
+
+		const refClipPlayer = Kairos.refClipPlayer(1)
+		const refScene = Kairos.refScene(['Main'])
+		const refSceneLayer = Kairos.refSceneLayer(refScene, ['Layer-1'])
+
+		// Special method to load a clip into a clip player (and wait for it to be loaded):
+		await kairos.loadClipPlayerClip(refClipPlayer, {
+			clip: Kairos.refMediaClip(['My-Clip.mxf']),
+			position: 0,
+		})
+		// Start playing the clip:
+		await kairos.clipPlayerPlay(refClipPlayer)
+
+		// Display the clip on a scene layer:
+		await kairos.updateSceneLayer(refSceneLayer, {
+			sourceA: refClipPlayer,
+		})
+	})
+})
+```

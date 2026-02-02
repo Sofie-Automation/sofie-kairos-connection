@@ -333,6 +333,17 @@ export class MinimalKairosConnection extends EventEmitter<KairosConnectionEvents
 		)
 	}
 
+	/** Returns true if the command completes successfully, false if there is a ResponseError */
+	async attributeExists(path: string): Promise<boolean> {
+		try {
+			await this.getAttribute(path)
+			return true
+		} catch (e) {
+			if (e instanceof ResponseError) return false
+			throw e
+		}
+	}
+
 	/**
 	 * Get the value of an attribute from the KAIROS
 	 * Note: This intentionally does not try to deserialize the value, as it does not have enough context to do so.

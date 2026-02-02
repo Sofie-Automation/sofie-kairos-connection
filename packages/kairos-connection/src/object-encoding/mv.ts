@@ -7,14 +7,8 @@ import {
 	Rotate,
 	ShowTallyBorder,
 } from 'kairos-lib'
-import {
-	parseAnyMVSourceRef,
-	parseBoolean,
-	parseColorRGB,
-	parseEnum,
-	parseInteger,
-	parsePos2Df,
-} from '../lib/data-parsers.js'
+import { parseBoolean, parseColorRGB, parseEnum, parseInteger, parsePos2Df } from '../lib/data-parsers.js'
+import { parseAnyMVSourceRef } from '../lib/refs.js'
 
 export const MultiViewObjectEncodingDefinition: ObjectEncodingDefinition<MultiViewObject> = {
 	available: { protocolName: 'available', parser: parseBoolean },

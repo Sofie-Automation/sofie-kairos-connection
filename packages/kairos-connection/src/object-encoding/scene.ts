@@ -1,5 +1,12 @@
 import type { ObjectEncodingDefinition } from './types.js'
-import { SceneObject, SceneLimitOffAction, Resolution, SceneTransitionRef, SceneLayerEffectRef } from 'kairos-lib'
+import {
+	SceneObject,
+	SceneLimitOffAction,
+	Resolution,
+	SceneTransitionRef,
+	SceneLayerEffectRef,
+	ProcessingFormat,
+} from 'kairos-lib'
 import {
 	parseBoolean,
 	parseEnum,
@@ -7,9 +14,9 @@ import {
 	parseFloatValue,
 	parseColorRGB,
 	parseCommaSeparated,
-	parseRef,
 	parseRefOptional,
 } from '../lib/data-parsers.js'
+import { parseRef } from '../lib/refs.js'
 
 export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject> = {
 	advancedResolutionControl: { protocolName: 'advanced_resolution_control', parser: parseBoolean },
@@ -20,6 +27,14 @@ export const SceneObjectEncodingDefinition: ObjectEncodingDefinition<SceneObject
 	resolution: {
 		protocolName: 'resolution',
 		parser: (value) => parseEnum<Resolution>(value, Resolution),
+	},
+	processingFormat: {
+		protocolName: 'processing_format',
+		parser: (value) => parseEnum<ProcessingFormat>(value, ProcessingFormat),
+		addedInVersion: {
+			v: '2.0',
+			defaultValue: ProcessingFormat.Default,
+		},
 	},
 	nextTransition: {
 		protocolName: 'next_transition',

@@ -922,6 +922,28 @@ export interface EffectGlowEffectObject {
 	glowColor: ColorRGB
 }
 
+// Not implemented (yet)
+// CornerPinning: Added in SPKCP version 2.0
+// PathLinear: Added in SPKCP version 2.0
+// PathAnimation: Added in SPKCP version 2.0
+// Mirror: Added in SPKCP version 2.0
+// EdgeDetection: Added in SPKCP version 2.0
+// Sharpening: Added in SPKCP version 2.0
+// Emboss: Added in SPKCP version 2.0
+// Defocus: Added in SPKCP version 2.0
+// Swirl: Added in SPKCP version 2.0
+// LeaveColor: Added in SPKCP version 2.0
+// Border: Added in SPKCP version 2.0
+// TextureBorder: Added in SPKCP version 2.0
+// DropShadow: Added in SPKCP version 2.0
+// GaussShadow: Added in SPKCP version 2.0
+// Freeze: Added in SPKCP version 2.0
+// OutputFreeze: Added in SPKCP version 2.0
+// Mosaic: Added in SPKCP version 2.0
+// Invert: Added in SPKCP version 2.0
+// Mask: Added in SPKCP version 2.0
+// KeyBorder: Added in SPKCP version 2.0
+
 // ------------------------- enums -----------------------------
 
 export enum EffectLuminanceKeyBlendMode {

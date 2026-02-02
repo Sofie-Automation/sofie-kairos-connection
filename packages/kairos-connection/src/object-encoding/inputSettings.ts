@@ -4,6 +4,7 @@ import {
 	NDIInputSettingObject,
 	SDIInputSettingObject,
 	StreamInputSettingObject,
+	HDMIInputSettingObject,
 } from 'kairos-lib'
 import { parseBoolean, parseInteger, parseString } from '../lib/data-parsers.js'
 
@@ -27,6 +28,12 @@ export const NDIInputSettingEncodingDefinition: ObjectEncodingDefinition<NDIInpu
 	tally: { protocolName: 'tally', parser: parseInteger },
 }
 export const StreamInputSettingEncodingDefinition: ObjectEncodingDefinition<StreamInputSettingObject> = {
+	status: { protocolName: 'status', parser: parseInteger },
+	statusText: { protocolName: 'status_text', parser: parseString },
+	tally: { protocolName: 'tally', parser: parseInteger },
+	delay: { protocolName: 'delay', parser: parseInteger },
+}
+export const HDMIInputSettingEncodingDefinition: ObjectEncodingDefinition<HDMIInputSettingObject> = {
 	status: { protocolName: 'status', parser: parseInteger },
 	statusText: { protocolName: 'status_text', parser: parseString },
 	tally: { protocolName: 'tally', parser: parseInteger },

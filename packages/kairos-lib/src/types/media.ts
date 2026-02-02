@@ -11,8 +11,15 @@ export interface MediaObject {
 export enum MediaStatus {
 	NOT_LOADED = 0,
 	LOADING = 1,
-	LOAD = 2,
+	LOAD = 2, // Loaded
 	ERROR = 3,
 }
 
+export interface LUTObject {
+	title: string
+	/** int, 0 = not loaded, 1 = loading, 2 = loaded, 3 = error */
+	readonly status: MediaStatus
+}
+
 export type UpdateMediaObject = OmitReadonly<MediaObject>
+export type UpdateLUTObject = OmitReadonly<LUTObject>

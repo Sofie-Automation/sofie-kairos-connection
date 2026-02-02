@@ -7,7 +7,6 @@ import {
 	stringifyColorRGB,
 	stringifyPos2D,
 	stringifyAnySourceRef,
-	stringifyRef,
 	stringifyImageStoreClip,
 	stringifyString,
 	stringifyPos2Df,
@@ -149,6 +148,10 @@ import {
 	UpdateAudioOutputSettingObject,
 	refIpInputSetting,
 	StreamInputSettingRef,
+	HDMIInputSettingRef,
+	refHDMIInputSetting,
+	HDMIInputSettingObject,
+	UpdateHDMIInputSettingObject,
 	IpOutputSettingRef,
 	StreamInputSettingObject,
 	UpdateIpOutputSettingObject,
@@ -198,6 +201,23 @@ import {
 	LabelPosition,
 	UpdateMultiViewPipObject,
 	refSceneLayer,
+	SystemInfoObject,
+	UpdateSystemInfoObject,
+	SystemSettingsObject,
+	UpdateSystemSettingsObject,
+	HDMIOutputSettingRef,
+	refHDMIOutputSetting,
+	HDMIOutputSettingObject,
+	UpdateHDMIOutputSettingObject,
+	FrequencyEnum,
+	ColorModel,
+	BitDepth,
+	SDPColorspace,
+	SDPTcs,
+	SceneSnapshotLayerRef,
+	MediaLUTRef,
+	LUTObject,
+	UpdateLUTObject,
 } from 'kairos-lib'
 import { ResponseError, TerminateSubscriptionError } from './minimal/errors.js'
 import {
@@ -253,6 +273,7 @@ import {
 	InputObjectEncodingDefinition,
 	FxInputObjectEncodingDefinition,
 	RamRecPlayerObjectEncodingDefinition,
+	LUTObjectEncodingDefinition,
 } from './object-encoding/index.js'
 import { omitFalsy } from './lib/lib.js'
 import {
@@ -260,9 +281,11 @@ import {
 	NDIInputSettingEncodingDefinition,
 	SDIInputSettingEncodingDefinition,
 	StreamInputSettingEncodingDefinition,
+	HDMIInputSettingEncodingDefinition,
 } from './object-encoding/inputSettings.js'
 import {
 	AudioOutputSettingEncodingDefinition,
+	HDMIOutputSettingEncodingDefinition,
 	IpOutputSettingEncodingDefinition,
 	NDIOutputSettingEncodingDefinition,
 	SDIOutputSettingEncodingDefinition,
@@ -278,22 +301,30 @@ import {
 	MultiViewObjectEncodingDefinition,
 	MultiViewPipObjectEncodingDefinition,
 } from './object-encoding/mv.js'
+import { SystemInfoObjectEncodingDefinition, SystemSettingsObjectEncodingDefinition } from './object-encoding/sys.js'
+import { stringifyRef } from './lib/refs.js'
 
 export class KairosConnection extends MinimalKairosConnection {
 	async #getObject<TObj>(pathPrefix: string, definition: ObjectEncodingDefinition<TObj>): Promise<TObj> {
-		const attributeNames = getProtocolAttributeNames(definition)
-
-		const values = await this.getAttributes(pathPrefix, attributeNames)
-
-		return Object.fromEntries(
-			Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).map(([id, def]) => {
-				const value = values[def.protocolName]
-				if (value === undefined) {
-					throw new Error(`Missing attribute "${def.protocolName}" in response for path "${pathPrefix}"`)
+		const obj: TObj = {} as any
+		await Promise.all(
+			Object.entries<ObjectValueEncodingDefinition<TObj, any>>(definition).map(async ([key, def]) => {
+				let value: TObj[keyof TObj]
+				try {
+					const rawValue = await this.getAttribute(`${pathPrefix}.${def.protocolName}`)
+					value = def.parser(rawValue)
+				} catch (e) {
+					if (e instanceof ResponseError && def.addedInVersion) {
+						// Currently, we don't actually support version detection, so we just assume that any error here means that the property is not supported
+						value = def.addedInVersion.defaultValue
+					} else {
+						throw e
+					}
 				}
-				return [id, def.parser(value) as any] // TODO - type this properly
+				obj[key as keyof TObj] = value
 			})
-		) as TObj
+		)
+		return obj
 	}
 
 	#subscribeObject<TObj>(
@@ -366,6 +397,37 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	// SYS
+	//   SystemSettings
+	async getSystemInfo(): Promise<SystemInfoObject> {
+		return this.#getObject(`SYS`, SystemInfoObjectEncodingDefinition)
+	}
+	async updateSystemInfo(props: Partial<UpdateSystemInfoObject>): Promise<void> {
+		await this.setAttributes('SYS', [
+			{ attribute: 'var1', value: stringifyString(props.var1) },
+			{ attribute: 'var2', value: stringifyString(props.var2) },
+			{ attribute: 'var3', value: stringifyString(props.var3) },
+			{ attribute: 'var4', value: stringifyString(props.var4) },
+			{ attribute: 'var5', value: stringifyString(props.var5) },
+			{ attribute: 'var6', value: stringifyString(props.var6) },
+			{ attribute: 'var7', value: stringifyString(props.var7) },
+			{ attribute: 'var8', value: stringifyString(props.var8) },
+		])
+	}
+	async getSystemSettings(): Promise<SystemSettingsObject> {
+		// Note: introduced in Kairos FW 2.0
+		return this.#getObject(`SYS.SystemSettings`, SystemSettingsObjectEncodingDefinition)
+	}
+	async updateSystemSettings(props: Partial<UpdateSystemSettingsObject>): Promise<void> {
+		// Note: introduced in Kairos FW 2.0
+		await this.setAttributes('SYS.SystemSettings', [
+			{ attribute: 'raw_panel_enable', value: stringifyBoolean(props.rawPanelEnable) },
+			{ attribute: 'raw_panel_1', value: stringifyString(props.rawPanel1) },
+			{ attribute: 'raw_panel_2', value: stringifyString(props.rawPanel2) },
+			{ attribute: 'raw_panel_3', value: stringifyString(props.rawPanel3) },
+			{ attribute: 'option_panel_enable', value: stringifyBoolean(props.optionPanelEnable) },
+			{ attribute: 'option_panel', value: stringifyString(props.optionPanel) },
+		])
+	}
 	// INTSOURCES
 	// 	BLACK
 	// 	WHITE
@@ -395,6 +457,10 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof mvRef === 'number') mvRef = refSourceIntMV(mvRef)
 		return this.#getObject(refToPath(mvRef), MultiViewSourceObjectEncodingDefinition)
 	}
+	async multiViewerSourceExists(mvRef: number | SourceIntMVRef): Promise<boolean> {
+		if (typeof mvRef === 'number') mvRef = refSourceIntMV(mvRef)
+		return this.attributeExists(`${refToPath(mvRef)}.${MultiViewSourceObjectEncodingDefinition.available.protocolName}`)
+	}
 
 	// INPUTSETTINGS
 	// 	IPINPUTS
@@ -405,7 +471,8 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		IN_NDI<1-2>
 	// 	STREAMINPUTS
 	// 		IN_STREAM<1-6>
-
+	//  HDMIINPUTS
+	//      IN_HDMI<1-20>
 	async listIpInputSettings(): Promise<IpInputSettingRef[]> {
 		// "IN_IP4"
 		const list = await this.getList('IPINPUTS')
@@ -509,6 +576,36 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
 	}
+	async listHDMIInputsSettings(): Promise<HDMIInputSettingRef[]> {
+		// Note: introduced in Kairos FW 2.0
+		// "IN_HDMI"
+		const list = await this.getList('HDMIINPUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^IN_HDMI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refHDMIInputSetting(index)
+			})
+		)
+	}
+	async getHDMIInputSetting(hdmiInputSettingRef: HDMIInputSettingRef | number): Promise<HDMIInputSettingObject> {
+		// Note: introduced in Kairos FW 2.0
+		if (typeof hdmiInputSettingRef === 'number') hdmiInputSettingRef = refHDMIInputSetting(hdmiInputSettingRef)
+		return this.#getObject(refToPath(hdmiInputSettingRef), HDMIInputSettingEncodingDefinition)
+	}
+	async updateHDMIInputSetting(
+		hdmiInputSettingRef: HDMIInputSettingRef | number,
+		props: Partial<UpdateHDMIInputSettingObject>
+	): Promise<void> {
+		// Note: introduced in Kairos FW 2.0
+		if (typeof hdmiInputSettingRef === 'number') hdmiInputSettingRef = refHDMIInputSetting(hdmiInputSettingRef)
+		await this.setAttributes(refToPath(hdmiInputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+		])
+	}
 
 	// OUTPUTSETTINGS
 	// 	IPOUTS
@@ -521,6 +618,8 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		OUT_STREAM<1-2>
 	// 	AUDIOOUTS
 	// 		OUT_AUDIO<1-8>
+	//   HDMIOUTS
+	// 		OUT_HDMI<1-20>
 
 	async listIpOutputSettings(): Promise<IpOutputSettingRef[]> {
 		// "OUT_IP"
@@ -547,6 +646,15 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof ipOutputSettingRef === 'number') ipOutputSettingRef = refIpOutputSetting(ipOutputSettingRef)
 		await this.setAttributes(refToPath(ipOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'format', value: stringifyString(props.format) },
+			{ attribute: 'frequency', value: stringifyEnum<FrequencyEnum>(props.frequency, FrequencyEnum) },
+			{ attribute: 'color_model', value: stringifyEnum<ColorModel>(props.colorModel, ColorModel) },
+			{ attribute: 'bitdepth', value: stringifyEnum<BitDepth>(props.bitDepth, BitDepth) },
+			{ attribute: 'SDP_Colorspace', value: stringifyEnum<SDPColorspace>(props.SDPColorspace, SDPColorspace) },
+			{ attribute: 'SDP_Tcs', value: stringifyEnum<SDPTcs>(props.SDPTcs, SDPTcs) },
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listSDIOutputSettings(): Promise<SDIOutputSettingRef[]> {
@@ -574,6 +682,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof sdiOutputSettingRef === 'number') sdiOutputSettingRef = refSDIOutputSetting(sdiOutputSettingRef)
 		await this.setAttributes(refToPath(sdiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listNDIOutputSettings(): Promise<NDIOutputSettingRef[]> {
@@ -601,6 +712,9 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof ndiOutputSettingRef === 'number') ndiOutputSettingRef = refNDIOutputSetting(ndiOutputSettingRef)
 		await this.setAttributes(refToPath(ndiOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listStreamOutputSettings(): Promise<StreamOutputSettingRef[]> {
@@ -632,6 +746,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			streamOutputSettingRef = refStreamOutputSetting(streamOutputSettingRef)
 		await this.setAttributes(refToPath(streamOutputSettingRef), [
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+
+			// Added in 2.0:
+			{ attribute: 'compare', value: stringifyString(props.compare) },
 		])
 	}
 	async listAudioOutputSettings(): Promise<AudioOutputSettingRef[]> {
@@ -663,6 +780,34 @@ export class KairosConnection extends MinimalKairosConnection {
 			{ attribute: 'delay', value: stringifyInteger(props.delay) },
 		])
 	}
+	async listHDMIOutputSettings(): Promise<HDMIOutputSettingRef[]> {
+		// "OUT_HDMI"
+		const list = await this.getList('HDMIOUTS')
+
+		return omitFalsy(
+			list.map((rawPath) => {
+				const m = rawPath.match(/^OUT_HDMI(\d+)$/)
+				if (!m) return null
+				const index = parseInt(m[1], 10)
+				if (Number.isNaN(index)) return null
+				return refHDMIOutputSetting(index)
+			})
+		)
+	}
+	async getHDMIOutputSetting(hdmiOutputSettingRef: HDMIOutputSettingRef | number): Promise<HDMIOutputSettingObject> {
+		if (typeof hdmiOutputSettingRef === 'number') hdmiOutputSettingRef = refHDMIOutputSetting(hdmiOutputSettingRef)
+		return this.#getObject(refToPath(hdmiOutputSettingRef), HDMIOutputSettingEncodingDefinition)
+	}
+	async updateHDMIOutputSetting(
+		hdmiOutputSettingRef: HDMIOutputSettingRef | number,
+		props: Partial<UpdateHDMIOutputSettingObject>
+	): Promise<void> {
+		if (typeof hdmiOutputSettingRef === 'number') hdmiOutputSettingRef = refHDMIOutputSetting(hdmiOutputSettingRef)
+		await this.setAttributes(refToPath(hdmiOutputSettingRef), [
+			{ attribute: 'delay', value: stringifyInteger(props.delay) },
+			{ attribute: 'compare', value: stringifyString(props.compare) },
+		])
+	}
 
 	// SCENES
 	// 	Scene
@@ -683,6 +828,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	 */
 	async getScene(sceneRef: SceneRef): Promise<SceneObject> {
 		return this.#getObject(refToPath(sceneRef), SceneObjectEncodingDefinition)
+	}
+	async sceneExists(sceneRef: SceneRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(sceneRef)}.${SceneObjectEncodingDefinition.color.protocolName}`)
 	}
 	async updateScene(sceneRef: SceneRef, props: Partial<UpdateSceneObject>): Promise<void> {
 		await this.setAttributes(refToPath(sceneRef), [
@@ -757,6 +905,9 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async getSceneLayer(layerRef: SceneLayerRef): Promise<SceneLayerObject> {
 		return this.#getObject(refToPath(layerRef), SceneLayerObjectEncodingDefinition)
+	}
+	async sceneLayerExists(layerRef: SceneLayerRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(layerRef)}.${SceneLayerObjectEncodingDefinition.color.protocolName}`)
 	}
 
 	subscribeSceneLayer(
@@ -1191,6 +1342,11 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getSceneTransition(sceneTransitionRef: SceneTransitionRef): Promise<SceneTransitionObject> {
 		return this.#getObject(refToPath(sceneTransitionRef), SceneTransitionObjectEncodingDefinition)
 	}
+	async sceneTransitionExists(sceneTransitionRef: SceneTransitionRef): Promise<boolean> {
+		return this.attributeExists(
+			`${refToPath(sceneTransitionRef)}.${SceneTransitionObjectEncodingDefinition.duration.protocolName}`
+		)
+	}
 	async updateSceneTransition(
 		sceneTransitionRef: SceneTransitionRef,
 		props: Partial<UpdateSceneTransitionObject>
@@ -1211,6 +1367,11 @@ export class KairosConnection extends MinimalKairosConnection {
 		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef
 	): Promise<SceneTransitionMixEffectObject> {
 		return this.#getObject(refToPath(sceneTransitionMixEffectRef), SceneTransitionMixEffectObjectEncodingDefinition)
+	}
+	async sceneTransitionMixEffectExists(sceneTransitionMixEffectRef: SceneTransitionMixEffectRef): Promise<boolean> {
+		return this.attributeExists(
+			`${refToPath(sceneTransitionMixEffectRef)}.${SceneTransitionMixEffectObjectEncodingDefinition.curve.protocolName}`
+		)
 	}
 	async updateSceneTransitionMixEffect(
 		sceneTransitionMixEffectRef: SceneTransitionMixEffectRef,
@@ -1245,6 +1406,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getSceneSnapshot(snapshotRef: SceneSnapshotRef): Promise<SceneSnapshotObject> {
 		return this.#getObject(refToPath(snapshotRef), SceneSnapshotObjectEncodingDefinition)
 	}
+	async sceneSnapshotExists(snapshotRef: SceneSnapshotRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(snapshotRef)}.${SceneSnapshotObjectEncodingDefinition.color.protocolName}`)
+	}
 
 	async updateSceneSnapshot(snapshotRef: SceneSnapshotRef, props: Partial<UpdateSceneSnapshotObject>): Promise<void> {
 		await this.setAttributes(refToPath(snapshotRef), [
@@ -1277,6 +1441,47 @@ export class KairosConnection extends MinimalKairosConnection {
 	async sceneSnapshotDeleteEx(snapshotRef: SceneSnapshotRef): Promise<void> {
 		return this.executeFunction(`${refToPath(snapshotRef)}.delete_ex`)
 	}
+	// SCENES.Scene.Snapshots.SNP.Layer
+	async listSceneSnapshotLayers(snapshotRef: SceneSnapshotRef): Promise<(SceneSnapshotLayerRef & { name: string })[]> {
+		// Added in 2.0
+		return (await this._listDeep(`${refToPath(snapshotRef)}`, [], false)).map((itemPath) => {
+			const paths = splitPath(itemPath, 'Snapshots')
+			if (paths.length !== 2)
+				throw new Error(
+					`Invalid Snapshot path: "${JSON.stringify(paths)}" ("Snapshots" missing) (${JSON.stringify(itemPath)})`
+				)
+
+			const snapshotPath = paths[1][0]
+			const snapshotLayerPath = paths[1].slice(1)
+
+			if (snapshotLayerPath.length === 0)
+				throw new Error(`Invalid Snapshot Layer path: "${JSON.stringify(paths)}" (${JSON.stringify(itemPath)})`)
+
+			return {
+				realm: 'scene-snapshot-layer',
+				name: paths[1][paths[1].length - 1],
+				scenePath: paths[0].slice(1), // remove the "SCENES" part
+				snapshotPath: [snapshotPath],
+				layerPath: snapshotLayerPath,
+			}
+		})
+	}
+	async sceneSnapshotLayerRecall(snapshotLayerRef: SceneSnapshotLayerRef): Promise<void> {
+		// Added in 2.0
+		return this.executeFunction(`${refToPath(snapshotLayerRef)}.recall`)
+	}
+	// SCENES.Controller (Added in 2.0)
+	// SCENES.Controller.Transitions (Added in 2.0)
+	// SCENES.Controller.Snapshots (Added in 2.0)
+	// SCENES.Controller.Snapshots.SNP (Added in 2.0)
+	// SCENES.Controller.Snapshots.SNP.Scene (Added in 2.0)
+	// SCENES.Controller.Snapshots.SNP.Scene.Layer (Added in 2.0)
+	// SCENES.Controller.Scene (Added in 2.0)
+	// SCENES.Controller.Scene.Layers (Added in 2.0)
+	// SCENES.Controller.Scene.Transitions (Added in 2.0)
+	// SCENES.Controller.Scene.Snapshots (Added in 2.0)
+	// SCENES.Controller.Scene.Snapshots.SNP.Layer (Added in 2.0)
+
 	// SOURCES:
 	// 	FXINPUTS
 	// 		Fx
@@ -1294,6 +1499,9 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async getFxInput(fxInputRef: FxInputRef): Promise<FxInputObject> {
 		return this.#getObject(refToPath(fxInputRef), FxInputObjectEncodingDefinition)
+	}
+	async fxInputExists(fxInputRef: FxInputRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(fxInputRef)}.${FxInputObjectEncodingDefinition.name.protocolName}`)
 	}
 	async updateFxInput(fxInputRef: FxInputRef, props: Partial<UpdateFxInputObject>): Promise<void> {
 		await this.setAttributes(refToPath(fxInputRef), [
@@ -1350,10 +1558,15 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	// 	MATTES
 	// 		ColorMatte
-	// 		TestPattern
+	// 		TestPattern (removed in 2.0)
 	// 		Shaped
 	// 		Rays
 	// 		Starfield
+	//      ColorBar   (added in 2.0)
+	//      Grid       (added in 2.0)
+	//      Gradient   (added in 2.0)
+	//      Chessboard (added in 2.0)
+	//      CrossHatch (added in 2.0)
 
 	// RAMRECORDERS
 	// 	RR<1-8>
@@ -1370,6 +1583,12 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getRamRecorder(ramRecorderId: number | RamRecorderRef): Promise<RamRecPlayerObject> {
 		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
 		return this.#getObject(refToPath(refRamRecorder(ramRecorderId)), RamRecPlayerObjectEncodingDefinition)
+	}
+	async ramRecorderExists(ramRecorderId: number | RamRecorderRef): Promise<boolean> {
+		ramRecorderId = this._assertRamRecIdIsValid(ramRecorderId)
+		return this.attributeExists(
+			`${refToPath(refRamRecorder(ramRecorderId))}.${RamRecPlayerObjectEncodingDefinition.color.protocolName}`
+		)
 	}
 	async loadRamRecorderClip(
 		ramRecorderId: number | RamRecorderRef,
@@ -1487,6 +1706,12 @@ export class KairosConnection extends MinimalKairosConnection {
 		playerId = this._assertClipPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refClipPlayer(playerId)), ClipPlayerObjectEncodingDefinition)
 	}
+	async clipPlayerExists(playerId: number | ClipPlayerRef): Promise<boolean> {
+		playerId = this._assertClipPlayerIdIsValid(playerId)
+		return this.attributeExists(
+			`${refToPath(refClipPlayer(playerId))}.${ClipPlayerObjectEncodingDefinition.color.protocolName}`
+		)
+	}
 	async loadClipPlayerClip(
 		playerId: number | ClipPlayerRef,
 		clip: Required<UpdateClipPlayerObject>['clip'],
@@ -1597,7 +1822,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		file_name.png
 	// 	sounds
 	// 		file_name.wav
-
+	//  luts
 	/**
 	 * @example kairos.listMediaClips(undefined, true) // List all media clips, in all sub-folders
 	 */
@@ -1615,6 +1840,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getMediaClip(ref: MediaClipRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
+	}
+	async mediaClipExists(ref: MediaClipRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(ref)}.${MediaObjectEncodingDefinition.name.protocolName}`)
 	}
 	async updateMediaClip(ref: MediaClipRef, props: Partial<UpdateMediaObject>): Promise<void> {
 		await this.setAttributes(refToPath(ref), [
@@ -1643,6 +1871,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaStill(ref: MediaStillRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	async mediaStillExists(ref: MediaStillRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(ref)}.${MediaObjectEncodingDefinition.name.protocolName}`)
+	}
 	async updateMediaStill(ref: MediaStillRef, props: Partial<UpdateMediaObject>): Promise<void> {
 		await this.setAttributes(refToPath(ref), [
 			{ attribute: 'name', value: stringifyString(props.name) },
@@ -1667,6 +1898,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getMediaRamRec(ref: MediaRamRecRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
+	}
+	async mediaRamRecExists(ref: MediaRamRecRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(ref)}.${MediaObjectEncodingDefinition.name.protocolName}`)
 	}
 	/**
 	 * To load a ramrec into RAM, do .updateMediaRamRec(..., {status: MediaStatus.LOAD})
@@ -1696,6 +1930,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMediaImage(ref: MediaImageRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
 	}
+	async mediaImageExists(ref: MediaImageRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(ref)}.${MediaObjectEncodingDefinition.name.protocolName}`)
+	}
 	async updateMediaImage(ref: MediaImageRef, props: Partial<UpdateMediaObject>): Promise<void> {
 		await this.setAttributes(refToPath(ref), [
 			{ attribute: 'name', value: stringifyString(props.name) },
@@ -1721,6 +1958,9 @@ export class KairosConnection extends MinimalKairosConnection {
 
 	async getMediaSound(ref: MediaSoundRef): Promise<MediaObject | undefined> {
 		return this._getMediaObject(ref)
+	}
+	async mediaSoundExists(ref: MediaSoundRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(ref)}.${MediaObjectEncodingDefinition.name.protocolName}`)
 	}
 	async updateMediaSound(ref: MediaSoundRef, props: Partial<UpdateMediaObject>): Promise<void> {
 		await this.setAttributes(refToPath(ref), [
@@ -1748,6 +1988,52 @@ export class KairosConnection extends MinimalKairosConnection {
 			}
 			throw error
 		})
+	}
+
+	async listMediaLUTs(
+		path: MediaLUTRef = { realm: 'media-lut', lutPath: [] },
+		deep?: boolean
+	): Promise<(MediaLUTRef & { name: string })[]> {
+		return this._filterAwayFolders(await this._listDeep(path, [], deep)).map((itemPath) => {
+			return {
+				realm: 'media-lut',
+				name: itemPath[itemPath.length - 1],
+				lutPath: itemPath.slice(2), // remove the "MEDIA.luts" part
+			}
+		})
+	}
+	async getMediaLUT(ref: MediaLUTRef): Promise<LUTObject | undefined> {
+		const path = refToPath(ref)
+
+		return this.#getObject(path, LUTObjectEncodingDefinition).catch(async (error) => {
+			if (error instanceof ResponseError) {
+				const dirPath = path.split('.').slice(0, -1).join('.') // remove the last part (the media name)
+				const mediaName = path.split('.').slice(-1)[0]
+				// Check if the clip exists, or there actually was an error:
+				const objectList = await this.getList(dirPath)
+				if (!objectList.includes(mediaName)) {
+					// The object does not exist, so we return undefined
+					return undefined
+				}
+			}
+			throw error
+		})
+	}
+	async mediaLUTExists(ref: MediaLUTRef): Promise<boolean> {
+		try {
+			return (
+				(await this.getMediaLUT(ref)) !== undefined ||
+				this.attributeExists(`${refToPath(ref)}.${LUTObjectEncodingDefinition.title.protocolName}`)
+			)
+		} catch {
+			return false
+		}
+	}
+	async updateMediaLUT(ref: MediaLUTRef, props: Partial<UpdateLUTObject>): Promise<void> {
+		await this.setAttributes(refToPath(ref), [
+			{ attribute: 'title', value: stringifyString(props.title) },
+			// status is read only
+		])
 	}
 
 	// TRANSLIB
@@ -1856,6 +2142,10 @@ export class KairosConnection extends MinimalKairosConnection {
 		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
 		return this.#getObject(refToPath(mvRef), MultiViewObjectEncodingDefinition)
 	}
+	async multiViewExists(mvRef: number | MultiViewRef): Promise<boolean> {
+		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
+		return this.attributeExists(`${refToPath(mvRef)}.${MultiViewObjectEncodingDefinition.available.protocolName}`)
+	}
 	async updateMultiView(mvRef: number | MultiViewRef, props: Partial<UpdateMultiViewObject>): Promise<void> {
 		if (typeof mvRef === 'number') mvRef = refMultiView(mvRef)
 		await this.setAttributes(refToPath(mvRef), [
@@ -1892,6 +2182,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMultiViewPip(pipRef: MultiViewPipRef): Promise<MultiViewPipObject> {
 		return this.#getObject(refToPath(pipRef), MultiViewPipObjectEncodingDefinition)
 	}
+	async multiViewPipExists(pipRef: MultiViewPipRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(pipRef)}.${MultiViewPipObjectEncodingDefinition.position.protocolName}`)
+	}
 	async updateMultiViewPip(pipRef: MultiViewPipRef, props: Partial<UpdateMultiViewPipObject>): Promise<void> {
 		await this.setAttributes(refToPath(pipRef), [
 			{ attribute: 'position', value: stringifyPos2Df(props.position) },
@@ -1920,6 +2213,11 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getMultiViewInput(mvInputRef: MultiViewInputRef): Promise<MultiViewInputObject> {
 		return this.#getObject(refToPath(mvInputRef), MultiViewInputObjectEncodingDefinition)
 	}
+	async multiViewInputExists(mvInputRef: MultiViewInputRef): Promise<boolean> {
+		return this.attributeExists(
+			`${refToPath(mvInputRef)}.${MultiViewInputObjectEncodingDefinition.source.protocolName}`
+		)
+	}
 	async updateMultiViewInput(mvInputRef: MultiViewInputRef, props: Partial<UpdateMultiViewInputObject>): Promise<void> {
 		await this.setAttributes(refToPath(mvInputRef), [
 			{ attribute: 'source', value: stringifyAnyMVSourceRef(props.source) },
@@ -1944,6 +2242,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getMacro(macroRef: MacroRef): Promise<MacroObject> {
 		return this.#getObject(refToPath(macroRef), MacroObjectEncodingDefinition)
+	}
+	async macroExists(macroRef: MacroRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(macroRef)}.${MacroObjectEncodingDefinition.color.protocolName}`)
 	}
 
 	async updateMacro(macroRef: MacroRef, props: Partial<UpdateMacroObject>): Promise<void> {
@@ -2000,6 +2301,19 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	//          LeaveColor         (added in 2.0)
+	//          Mirror             (added in 2.0)
+	//          EdgeDetection      (added in 2.0)
+	//          Sharpening         (added in 2.0)
+	//          Emboss             (added in 2.0)
+	//          Overlay            (added in 2.0)
+	//          SourceSubstitution (added in 2.0)
+	//          CornerPinning      (added in 2.0)
+	//          Defocus            (added in 2.0)
+	//          Swirl              (added in 2.0)
+	//          Freeze             (added in 2.0)
+	//          OutputFreeze       (added in 2.0)
+	//          InfoOverlay        (added in 2.0)
 	// 	IP-AUX<1-32>
 	// 		Effects
 	// 			YUVCorrection
@@ -2011,6 +2325,19 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	//          LeaveColor			(added in 2.0)
+	//          Mirror				(added in 2.0)
+	//          EdgeDetection		(added in 2.0)
+	//          Sharpening			(added in 2.0)
+	//          Emboss				(added in 2.0)
+	//          Overlay				(added in 2.0)
+	//          SourceSubstitution	(added in 2.0)
+	//          CornerPinning		(added in 2.0)
+	//          Defocus				(added in 2.0)
+	//          Swirl				(added in 2.0)
+	//          Freeze				(added in 2.0)
+	//          OutputFreeze		(added in 2.0)
+	//          InfoOverlay			(added in 2.0)
 	// 	SDI-AUX<1-16>
 	// 		Effects
 	// 			YUVCorrection
@@ -2022,6 +2349,43 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 			TemperatureCorrection
 	// 			FilmLook
 	// 			GlowEffect
+	//          LeaveColor			(added in 2.0)
+	//          Mirror				(added in 2.0)
+	//          EdgeDetection		(added in 2.0)
+	//          Sharpening			(added in 2.0)
+	//          Emboss				(added in 2.0)
+	//          Overlay				(added in 2.0)
+	//          SourceSubstitution	(added in 2.0)
+	//          CornerPinning		(added in 2.0)
+	//          Defocus				(added in 2.0)
+	//          Swirl				(added in 2.0)
+	//          Freeze				(added in 2.0)
+	//          OutputFreeze		(added in 2.0)
+	//          InfoOverlay			(added in 2.0)
+	//  HDMI-AUX<1-20>                 (added in 2.0)
+	// 		Effects                    (added in 2.0)
+	// 			YUVCorrection          (added in 2.0)
+	//          RGBCorrection          (added in 2.0)
+	//          Crop                   (added in 2.0)
+	//          CornerPinning          (added in 2.0)
+	//          MatrixCorrection       (added in 2.0)
+	//          ToneCurveCorrection    (added in 2.0)
+	//          TemperatureCorrection  (added in 2.0)
+	//          LUTCorrection          (added in 2.0)
+	//          SourceSubstitution     (added in 2.0)
+	//          LeaveColor             (added in 2.0)
+	//          Mirror                 (added in 2.0)
+	//          EdgeDetection          (added in 2.0)
+	//          Sharpening             (added in 2.0)
+	//          Emboss                 (added in 2.0)
+	//          Overlay                (added in 2.0)
+	//          Defocus                (added in 2.0)
+	//          Swirl                  (added in 2.0)
+	//          Freeze                 (added in 2.0)
+	//          OutputFreeze           (added in 2.0)
+	//          FilmLook               (added in 2.0)
+	//          GlowEffect             (added in 2.0)
+	//          InfoOverlay            (added in 2.0)
 	async listAuxes(): Promise<AuxRef[]> {
 		const rawAuxes = await this.getList('AUX')
 
@@ -2040,6 +2404,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getAux(auxRef: AuxRef): Promise<AuxObject> {
 		return this.#getObject(refToPath(auxRef), AuxObjectEncodingDefinition)
+	}
+	async auxExists(auxRef: AuxRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(auxRef)}.${AuxObjectEncodingDefinition.available.protocolName}`)
 	}
 	async updateAux(auxRef: AuxRef, props: Partial<UpdateAuxObject>): Promise<void> {
 		await this.setAttributes(refToPath(auxRef), [
@@ -2240,6 +2607,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	NDI<1-2>
 	// 	STREAM<1-6>
 	// 	SDI<1-32>
+	//  HDMI<1-20> added in 2.0
 	async getInput(inputRef: AnyInputRef): Promise<InputObject> {
 		const obj = await this.#getObject(refToPath(inputRef), InputObjectEncodingDefinition)
 
@@ -2247,6 +2615,9 @@ export class KairosConnection extends MinimalKairosConnection {
 			...obj,
 			type: inputRef.realm,
 		}
+	}
+	async inputExists(inputRef: AnyInputRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(inputRef)}.${InputObjectEncodingDefinition.color.protocolName}`)
 	}
 	async updateInput(inputRef: AnyInputRef, props: Partial<UpdateInputObject>): Promise<void> {
 		await this.setAttributes(refToPath(inputRef), [
@@ -2278,6 +2649,10 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	HTTP Trigger
 	// 	IP Trigger
 	// 	GPO Command
+	//  Device			Added in 2.0
+	//     HTTP Trigger	Added in 2.0
+	//     IP Trigger	Added in 2.0
+	//     GPO Command	Added in 2.0
 	// MVPRESETS
 	// 	<1-12>
 	// 		Inputs
@@ -2299,6 +2674,12 @@ export class KairosConnection extends MinimalKairosConnection {
 		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
 		return this.#getObject(refToPath(refGfxChannel(gfxChannelId)), GfxChannelObjectEncodingDefinition)
 	}
+	async gfxChannelExists(gfxChannelId: number | GfxChannelRef): Promise<boolean> {
+		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
+		return this.attributeExists(
+			`${refToPath(refGfxChannel(gfxChannelId))}.${GfxChannelObjectEncodingDefinition.scene.protocolName}`
+		)
+	}
 	async updateGfxChannel(gfxChannelId: number | GfxChannelRef, props: Partial<UpdateGfxChannelObject>): Promise<void> {
 		gfxChannelId = this._assertGfxChannelIdIsValid(gfxChannelId)
 		await this.setAttributes(refToPath(refGfxChannel(gfxChannelId)), [
@@ -2316,21 +2697,146 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	// GFXSCENES
 	// 	GfxScene
+	//    Box                 Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Ellipse             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Diamond             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Triangle            Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    RightTriangle       Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Trapezoid           Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Parallelogram       Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Hexagon             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Cross               Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Text                Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    TextBox             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ScrollText          Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Counter             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    Clock               Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    WorldClock          Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowLeft           Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowRight          Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowUp             Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    ArrowDown           Added in 2.0
+	//       GfxLine          Added in 2.0
+	//       GfxFill          Added in 2.0
+	//       GfxDropShadow    Added in 2.0
+	//    file_name.png       Added in 2.0
+	//    GfxDropShadow       Added in 2.0
+	//    HtmlElement         Added in 2.0
 
 	async listGfxScenes(
 		gfxSceneRef: GfxSceneRef = { realm: 'gfxScene', scenePath: [] },
 		deep?: boolean
 	): Promise<(GfxSceneRef & { name: string })[]> {
-		return (await this._listDeep(gfxSceneRef, [], deep)).map((itemPath) => {
-			return {
-				realm: 'gfxScene',
-				name: itemPath[itemPath.length - 1],
-				scenePath: itemPath.slice(1), // remove the "GFXSCENES" part
+		const gfxScenes: (GfxSceneRef & { name: string })[] = []
+		const isGfxScene = async (itemPath: string): Promise<boolean> => {
+			try {
+				// Check if it has a .resolution attribute, which only GfxScenes have:
+				await this.getAttribute(`${itemPath}.resolution`)
+				return true
+			} catch (e) {
+				if (e instanceof ResponseError) {
+					return false
+				} else throw e
 			}
-		})
+		}
+		const processItem = async (rawPath: string) => {
+			// It is a bit tricky to determine whether it's a GfxScene or an item inside a GfxScene.
+
+			const itemPath = protocolDecodePath(rawPath) // decode the path
+
+			// Folders have other GFXscenes in them
+			// GFXScenes have a .resolution attribute
+
+			if (await isGfxScene(rawPath)) {
+				gfxScenes.push({
+					realm: 'gfxScene',
+					name: itemPath[itemPath.length - 1],
+					scenePath: itemPath.slice(1), // remove the "GFXSCENES" part
+				})
+				return
+			}
+			if (!deep) return
+
+			// It is not a GfxScene, maybe it is a folder containing GfxScenes?
+			const subPaths = await this.getList(rawPath)
+			// If it contains at least one GfxScene, then it is a folder:
+			if (await isGfxScene(subPaths[0])) {
+				// It contains a GfxScene, so it is a folder
+
+				for (const subPath of subPaths) {
+					await processItem(subPath)
+				}
+			} else {
+				// Is neither a GfxScene nor a folder containing GfxScenes
+				return
+			}
+		}
+
+		for (const rawPath of await this.getList(refToPath(gfxSceneRef))) {
+			await processItem(rawPath)
+		}
+
+		return gfxScenes
 	}
 	async getGfxScene(gfxSceneRef: GfxSceneRef): Promise<GfxSceneObject> {
 		return this.#getObject(refToPath(gfxSceneRef), GfxSceneObjectEncodingDefinition)
+	}
+	async gfxSceneExists(gfxSceneRef: GfxSceneRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(gfxSceneRef)}.${GfxSceneObjectEncodingDefinition.resolution.protocolName}`)
 	}
 	async updateGfxScene(gfxSceneRef: GfxSceneRef, props: Partial<UpdateGfxSceneObject>): Promise<void> {
 		await this.setAttributes(refToPath(gfxSceneRef), [
@@ -2349,6 +2855,11 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getGfxSceneItem(gfxSceneItemRef: GfxSceneItemRef): Promise<GfxSceneItemObject> {
 		return await this.#getObject(refToPath(gfxSceneItemRef), GfxSceneItemObjectEncodingDefinition)
+	}
+	async gfxSceneItemExists(gfxSceneItemRef: GfxSceneItemRef): Promise<boolean> {
+		return this.attributeExists(
+			`${refToPath(gfxSceneItemRef)}.${GfxSceneItemObjectEncodingDefinition.width.protocolName}`
+		)
 	}
 	async updateGfxSceneItem(gfxSceneItemRef: GfxSceneItemRef, props: Partial<UpdateGfxSceneItemObject>): Promise<void> {
 		await this.setAttributes(refToPath(gfxSceneItemRef), [
@@ -2374,6 +2885,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 		Counter
 	// 		Clock
 	// PANELPROFILES
+	//      Profile<1-8>  	  Added in 2.0
 	// AUDIOGENERATORS
 	// 	GEN<1-2>
 	// AUDIOPLAYERS
@@ -2391,6 +2903,12 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getAudioPlayer(playerId: number | AudioPlayerRef): Promise<AudioPlayerObject> {
 		playerId = this._assertAudioPlayerIdIsValid(playerId)
 		return this.#getObject(refToPath(refAudioPlayer(playerId)), AudioPlayerObjectEncodingDefinition)
+	}
+	async audioPlayerExists(playerId: number | AudioPlayerRef): Promise<boolean> {
+		playerId = this._assertAudioPlayerIdIsValid(playerId)
+		return this.attributeExists(
+			`${refToPath(refAudioPlayer(playerId))}.${AudioPlayerObjectEncodingDefinition.timecode.protocolName}`
+		)
 	}
 	async loadAudioPlayerClip(
 		playerId: number | AudioPlayerRef,
@@ -2496,6 +3014,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getAudioMixerMainBus(): Promise<AudioMixerObject> {
 		return this.#getObject(`AUDIOMIXER`, AudioMixerObjectEncodingDefinition)
 	}
+	async audioMixerMainBusExists(): Promise<boolean> {
+		return this.attributeExists(`AUDIOMIXER.${AudioMixerObjectEncodingDefinition.volume.protocolName}`)
+	}
 	async updateAudioMixerMainBus(props: Partial<UpdateAudioMixerObject>): Promise<void> {
 		await this.setAttributes(`AUDIOMIXER`, [
 			{ attribute: 'volume', value: stringifyFloat(props.volume) },
@@ -2504,6 +3025,9 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 	async getAudioMixerChannel(channelRef: AudioMixerChannelRef): Promise<AudioMixerObject> {
 		return this.#getObject(`${refToPath(channelRef)}`, AudioMixerObjectEncodingDefinition)
+	}
+	async audioMixerChannelExists(channelRef: AudioMixerChannelRef): Promise<boolean> {
+		return this.attributeExists(`${refToPath(channelRef)}.${AudioMixerObjectEncodingDefinition.volume.protocolName}`)
 	}
 	async updateAudioMixerChannel(
 		channelRef: AudioMixerChannelRef,
@@ -2519,6 +3043,7 @@ export class KairosConnection extends MinimalKairosConnection {
 	// 	MIXOUT<1-8>
 	// AUDIOOUTPUTS
 	// CPANELPROFILES
+	//      Profile-Compact<1-8> Added in 2.0
 	// ParameterCouples
 	// 	Couple
 	// PANELLAYOUTS
@@ -2539,6 +3064,12 @@ export class KairosConnection extends MinimalKairosConnection {
 	async getImageStore(storeId: number | ImageStoreRef): Promise<ImageStoreObject> {
 		storeId = this._assertImageStoreIdIsValid(storeId)
 		return this.#getObject(refToPath(refImageStore(storeId)), ImageStoreObjectEncodingDefinition)
+	}
+	async imageStoreExists(storeId: number | ImageStoreRef): Promise<boolean> {
+		storeId = this._assertImageStoreIdIsValid(storeId)
+		return this.attributeExists(
+			`${refToPath(refImageStore(storeId))}.${ImageStoreObjectEncodingDefinition.color.protocolName}`
+		)
 	}
 	async updateImageStore(storeId: number | ImageStoreRef, props: Partial<UpdateImageStoreObject>): Promise<void> {
 		storeId = this._assertImageStoreIdIsValid(storeId)
@@ -2585,6 +3116,58 @@ export class KairosConnection extends MinimalKairosConnection {
 	}
 
 	// SPANELPROFILES
+	//    Profile<1-2>    				Added in 2.0
+
+	// FXPRESETS						Added in 2.0
+	//     FX							Added in 2.0
+	//         Crop						Added in 2.0
+	//         Transform2D				Added in 2.0
+	//         CornerPinning			Added in 2.0
+	//         LuminanceKey				Added in 2.0
+	//         ChromaKey				Added in 2.0
+	//         PathLinear				Added in 2.0
+	//         PathAnimation			Added in 2.0
+	//         YUVCorrection			Added in 2.0
+	//         RGBCorrection			Added in 2.0
+	//         LUTCorrection			Added in 2.0
+	//         Mirror					Added in 2.0
+	//         EdgeDetection			Added in 2.0
+	//         Sharpening				Added in 2.0
+	//         Emboss					Added in 2.0
+	//         Defocus					Added in 2.0
+	//         Swirl					Added in 2.0
+	//         LeaveColor				Added in 2.0
+	//         VirtualPTZ				Added in 2.0
+	//         Border					Added in 2.0
+	//         TextureBorder			Added in 2.0
+	//         DropShadow				Added in 2.0
+	//         GaussShadow				Added in 2.0
+	//         Freeze					Added in 2.0
+	//         OutputFreeze				Added in 2.0
+	//         Mosaic					Added in 2.0
+	//         Invert					Added in 2.0
+	//         Mask						Added in 2.0
+	//         KeyBorder				Added in 2.0
+	//         ToneCurveCorrection		Added in 2.0
+	//         MatrixCorrection			Added in 2.0
+	//         TemperatureCorrection	Added in 2.0
+	//         LinearKey				Added in 2.0
+	//         Position					Added in 2.0
+	//         PCrop					Added in 2.0
+	//         FilmLook					Added in 2.0
+	//         GlowEffect				Added in 2.0
+	// LISTENERS						Added in 2.0
+	// LPANELLAYOUTS					Added in 2.0
+	// LPANELPROFILES					Added in 2.0
+	//     Profile-Large<1-8>			Added in 2.0
+	// SystemLUTs						Added in 2.0
+	//     Cinema						Added in 2.0
+	//     Cinema (Bright)				Added in 2.0
+	//     Cinema (Cold)				Added in 2.0
+	//     Cinema (Warm)				Added in 2.0
+	//     Cinema (Drama)				Added in 2.0
+	//     Artistic <1-5>				Added in 2.0
+	//     B&W <1-2>					Added in 2.0
 
 	/**
 	 * Convenience method for listing items in a deep list

@@ -2,6 +2,11 @@ import type { OmitReadonly } from '../lib/omit-readonly.js'
 import { AnyInputRef } from '../lib/reference.js'
 import type { ColorRGB } from './lib-types.js'
 
+// IP<1-48>
+// NDI<1-2>
+// STREAM<1-6>
+// SDI<1-32>
+// HDMI<1-20>  Added in 2.0
 export interface InputObject {
 	type: AnyInputRef['realm']
 

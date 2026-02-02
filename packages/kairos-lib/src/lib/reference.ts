@@ -10,10 +10,12 @@ export type AnyRef =
 	| MediaRamRecRef
 	| MediaImageRef
 	| MediaSoundRef
+	| MediaLUTRef
 	| SceneTransitionRef
 	| SceneTransitionMixRef
 	| SceneTransitionMixEffectRef
 	| SceneSnapshotRef
+	| SceneSnapshotLayerRef
 	| MacroRef
 	| RamRecorderRef
 	| ClipPlayerRef
@@ -32,16 +34,19 @@ export type AnyRef =
 	| SDIInputRef
 	| NDIInputRef
 	| StreamInputRef
+	| HDMIInputRef
 	| FxInputRef
 	| IpInputSettingRef
 	| SDIInputSettingRef
 	| NDIInputSettingRef
 	| StreamInputSettingRef
+	| HDMIInputSettingRef
 	| IpOutputSettingRef
 	| SDIOutputSettingRef
 	| NDIOutputSettingRef
 	| StreamOutputSettingRef
 	| AudioOutputSettingRef
+	| HDMIOutputSettingRef
 	| SourceIntMVRef
 	| MultiViewRef
 	| MultiViewPipRef
@@ -84,6 +89,8 @@ export function refToPath(ref: AnyRef): string {
 			return ['MEDIA', 'images', ...ref.clipPath.map(protocolEncodeStr)].join('.')
 		case 'media-sound':
 			return ['MEDIA', 'sounds', ...ref.clipPath.map(protocolEncodeStr)].join('.')
+		case 'media-lut':
+			return ['MEDIA', 'luts', ...ref.lutPath.map(protocolEncodeStr)].join('.')
 		case 'scene-transition':
 			return [
 				'SCENES',
@@ -114,6 +121,14 @@ export function refToPath(ref: AnyRef): string {
 				...ref.scenePath.map(protocolEncodeStr),
 				'Snapshots',
 				...ref.snapshotPath.map(protocolEncodeStr),
+			].join('.')
+		case 'scene-snapshot-layer':
+			return [
+				'SCENES',
+				...ref.scenePath.map(protocolEncodeStr),
+				'Snapshots',
+				...ref.snapshotPath.map(protocolEncodeStr),
+				...ref.layerPath.map(protocolEncodeStr),
 			].join('.')
 		case 'macro':
 			return ['MACROS', ...ref.macroPath.map(protocolEncodeStr)].join('.')
@@ -157,6 +172,8 @@ export function refToPath(ref: AnyRef): string {
 			return `NDI${ref.ndiInput}`
 		case 'stream-input':
 			return `STREAM${ref.streamInput}`
+		case 'hdmi-input':
+			return `HDMI${ref.hdmiInput}`
 		case 'fxInput':
 			return ['FXINPUTS', ...ref.fxInputPath.map(protocolEncodeStr)].join('.')
 		case 'matte':
@@ -169,6 +186,8 @@ export function refToPath(ref: AnyRef): string {
 			return `IN_NDI${ref.ndiInputSetting}`
 		case 'stream-input-setting':
 			return `IN_STREAM${ref.streamInputSetting}`
+		case 'hdmi-input-setting':
+			return `IN_HDMI${ref.hdmiInputSetting}`
 		case 'ip-output-setting':
 			return `OUT_IP${ref.ipOutputSetting}`
 		case 'sdi-output-setting':
@@ -179,6 +198,8 @@ export function refToPath(ref: AnyRef): string {
 			return `OUT_STREAM${ref.streamOutputSetting}`
 		case 'audio-output-setting':
 			return `OUT_AUDIO${ref.audioOutputSetting}`
+		case 'hdmi-output-setting':
+			return `OUT_HDMI${ref.hdmiOutputSetting}`
 		case 'mv-int':
 			return `INTSOURCES.MV${ref.mvId}`
 		case 'multi-view':
@@ -233,8 +254,12 @@ export function pathToRef(ref: string): AnyRef | string {
 				'Snapshots'
 			)
 			const sceneRef = refScene(paths[0])
-			if (paths.length === 2) {
-				return refSceneSnapshot(sceneRef, paths[1])
+			if (paths.length >= 2) {
+				const snapshotRef = refSceneSnapshot(sceneRef, paths[1])
+				if (paths.length === 2) return snapshotRef
+				if (paths.length === 3) {
+					return refSceneSnapshotLayer(snapshotRef, paths[2])
+				}
 			}
 		} else {
 			return refScene(
@@ -252,6 +277,8 @@ export function pathToRef(ref: string): AnyRef | string {
 			return refMediaImage(path.slice(2))
 		} else if (path[1] === 'sounds') {
 			return refMediaSound(path.slice(2))
+		} else if (path[1] === 'luts') {
+			return refMediaLUT(path.slice(2))
 		}
 	} else if (path[0] === 'MACROS') {
 		return refMacro(path.slice(1))
@@ -289,6 +316,8 @@ export function pathToRef(ref: string): AnyRef | string {
 		const index = parseInt(path[0].slice(3), 10)
 		if (!Number.isNaN(index) && index > 0) return refGfxChannel(index)
 	} else if (path[0] === 'GFXSCENES') {
+		// Note: It is difficult to differentiate between GfxScene and GfxSceneItem here,
+		// since a GfxScene can be in folders..
 		return refGfxScene(path.slice(1))
 	} else if (path[0] === 'AUX') {
 		if (path.length === 2) {
@@ -300,7 +329,7 @@ export function pathToRef(ref: string): AnyRef | string {
 			return refAuxEffect(auxRef, path.slice(3))
 		}
 	} else if (path[0].includes('-AUX')) {
-		// Auxes are often refered to without the prefix
+		// Auxes are often referred to without the prefix
 		if (path.length === 1) {
 			return refAuxId(path[0])
 		}
@@ -313,6 +342,9 @@ export function pathToRef(ref: string): AnyRef | string {
 	} else if (path[0].startsWith('STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
 		if (!Number.isNaN(index) && index > 0) return refStreamInput(index)
+	} else if (path[0].startsWith('HDMI') && path.length === 1) {
+		const index = parseInt(path[0].slice(4), 10)
+		if (!Number.isNaN(index) && index > 0) return refHDMIInput(index)
 	} else if (path[0].startsWith('SDI') && path.length === 1) {
 		const index = parseInt(path[0].slice(3), 10)
 		if (!Number.isNaN(index) && index > 0) return refSDIInput(index)
@@ -328,6 +360,9 @@ export function pathToRef(ref: string): AnyRef | string {
 	} else if (path[0].startsWith('IN_STREAM') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
 		if (!Number.isNaN(index) && index > 0) return refStreamInputSetting(index)
+	} else if (path[0].startsWith('IN_HDMI') && path.length === 1) {
+		const index = parseInt(path[0].slice(7), 10)
+		if (!Number.isNaN(index) && index > 0) return refHDMIInputSetting(index)
 	} else if (path[0].startsWith('OUT_IP') && path.length === 1) {
 		const index = parseInt(path[0].slice(6), 10)
 		if (!Number.isNaN(index) && index > 0) return refIpOutputSetting(index)
@@ -343,6 +378,9 @@ export function pathToRef(ref: string): AnyRef | string {
 	} else if (path[0].startsWith('OUT_AUDIO') && path.length === 1) {
 		const index = parseInt(path[0].slice(9), 10)
 		if (!Number.isNaN(index) && index > 0) return refAudioOutputSetting(index)
+	} else if (path[0].startsWith('OUT_HDMI') && path.length === 1) {
+		const index = parseInt(path[0].slice(8), 10)
+		if (!Number.isNaN(index) && index > 0) return refHDMIOutputSetting(index)
 	} else if (path[0].startsWith('MV')) {
 		const mvIndex = parseInt(path[0].slice(2), 10)
 
@@ -389,6 +427,8 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refMediaImage(['Image1'])
 		case 'media-sound':
 			return refMediaSound(['Sound1'])
+		case 'media-lut':
+			return refMediaLUT(['lut1'])
 		case 'scene-transition':
 			return refSceneTransition(refScene(['Scene1']), ['Transition1'])
 		case 'scene-transition-mix':
@@ -400,6 +440,8 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			)
 		case 'scene-snapshot':
 			return refSceneSnapshot(refScene(['Scene1']), ['Snapshot1'])
+		case 'scene-snapshot-layer':
+			return refSceneSnapshotLayer(refSceneSnapshot(refScene(['Scene1']), ['Snapshot1']), ['Background'])
 		case 'macro':
 			return refMacro(['Macro1'])
 		case 'source-base':
@@ -434,6 +476,8 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refNDIInput(1)
 		case 'stream-input':
 			return refStreamInput(1)
+		case 'hdmi-input':
+			return refHDMIInput(1)
 		case 'fxInput':
 			return refFxInput(['FxInput1'])
 		case 'matte':
@@ -446,6 +490,8 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refNDIInputSetting(1)
 		case 'stream-input-setting':
 			return refStreamInputSetting(1)
+		case 'hdmi-input-setting':
+			return refHDMIInputSetting(1)
 		case 'ip-output-setting':
 			return refIpOutputSetting(1)
 		case 'sdi-output-setting':
@@ -456,6 +502,8 @@ export function exampleRef(realm: AnyRef['realm']): AnyRef {
 			return refStreamOutputSetting(1)
 		case 'audio-output-setting':
 			return refAudioOutputSetting(1)
+		case 'hdmi-output-setting':
+			return refHDMIOutputSetting(1)
 		case 'mv-int':
 			return refSourceIntMV(1)
 		case 'multi-view':
@@ -533,7 +581,7 @@ export function isAnySourceRef(ref0: AnyRef): ref0 is AnySourceRef {
 		ref.realm === 'mv-int'
 	)
 		return true
-	else assertNever(ref)
+	else assertNever(ref) // Just a type guard, to ensure all cases are covered
 	return false
 }
 
@@ -578,6 +626,20 @@ export type SceneSnapshotRef = {
 }
 export function refSceneSnapshot(sceneRef: SceneRef, snapshotPath: RefPath): SceneSnapshotRef {
 	return { realm: 'scene-snapshot', scenePath: sceneRef.scenePath, snapshotPath }
+}
+export type SceneSnapshotLayerRef = {
+	realm: 'scene-snapshot-layer'
+	scenePath: RefPath
+	snapshotPath: RefPath
+	layerPath: RefPath
+}
+export function refSceneSnapshotLayer(snapshotRef: SceneSnapshotRef, layerPath: RefPath): SceneSnapshotLayerRef {
+	return {
+		realm: 'scene-snapshot-layer',
+		scenePath: snapshotRef.scenePath,
+		snapshotPath: snapshotRef.snapshotPath,
+		layerPath,
+	}
 }
 
 export type SceneTransitionRef = {
@@ -669,6 +731,14 @@ export function refMediaImage(clipPath: RefPath): MediaImageRef {
 }
 export function refMediaSound(clipPath: RefPath): MediaSoundRef {
 	return { realm: 'media-sound', clipPath }
+}
+
+export type MediaLUTRef = {
+	realm: 'media-lut'
+	lutPath: RefPath
+}
+export function refMediaLUT(lutPath: RefPath): MediaLUTRef {
+	return { realm: 'media-lut', lutPath }
 }
 
 // ---------------------------- MACROS -----------------------------
@@ -785,7 +855,7 @@ export function refMatte(mattePath: MatteRef['mattePath']): MatteRef {
 // ------------------------------- AUX ------------------------------
 
 // Note: we don't specify which type of aux it is, because it looks like there can be
-// other aux types that are not documented (like "HDMI-AUX1")
+// other aux types that are not documented (like "HDMI-AUX1" existed in 1.7 but not documented)
 
 export type AuxRef = {
 	realm: 'aux'
@@ -799,11 +869,20 @@ export function refAuxName(path: AuxRef['path']): AuxRef {
 	return { realm: 'aux', path, pathIsName: true }
 }
 // ------------------------------- INPUTS ------------------------------
-export type AnyInputRef = IpInputRef | SDIInputRef | NDIInputRef | StreamInputRef
-export function isAnyInputRef(ref: AnyRef): ref is AnyInputRef {
-	return (
-		ref.realm === 'ip-input' || ref.realm === 'sdi-input' || ref.realm === 'ndi-input' || ref.realm === 'stream-input'
+export type AnyInputRef = IpInputRef | SDIInputRef | NDIInputRef | StreamInputRef | HDMIInputRef
+export function isAnyInputRef(ref0: AnyRef): ref0 is AnyInputRef {
+	const ref = ref0 as AnyInputRef
+
+	if (
+		ref.realm === 'ip-input' ||
+		ref.realm === 'sdi-input' ||
+		ref.realm === 'ndi-input' ||
+		ref.realm === 'stream-input' ||
+		ref.realm === 'hdmi-input'
 	)
+		return true
+	else assertNever(ref) // Just a type check to ensure that all cases are covered
+	return false
 }
 
 export type IpInputRef = {
@@ -822,6 +901,10 @@ export type StreamInputRef = {
 	realm: 'stream-input'
 	streamInput: number
 }
+export type HDMIInputRef = {
+	realm: 'hdmi-input'
+	hdmiInput: number
+}
 export function refIpInput(ipInput: number): IpInputRef {
 	return { realm: 'ip-input', ipInput }
 }
@@ -833,6 +916,9 @@ export function refNDIInput(ndiInput: number): NDIInputRef {
 }
 export function refStreamInput(streamInput: number): StreamInputRef {
 	return { realm: 'stream-input', streamInput }
+}
+export function refHDMIInput(hdmiInput: number): HDMIInputRef {
+	return { realm: 'hdmi-input', hdmiInput }
 }
 
 export type AuxEffectRef = {
@@ -863,6 +949,10 @@ export type StreamInputSettingRef = {
 	realm: 'stream-input-setting'
 	streamInputSetting: number
 }
+export type HDMIInputSettingRef = {
+	realm: 'hdmi-input-setting'
+	hdmiInputSetting: number
+}
 export function refIpInputSetting(ipInput: number): IpInputSettingRef {
 	return { realm: 'ip-input-setting', ipInputSetting: ipInput }
 }
@@ -874,6 +964,9 @@ export function refNDIInputSetting(ndiInput: number): NDIInputSettingRef {
 }
 export function refStreamInputSetting(streamInput: number): StreamInputSettingRef {
 	return { realm: 'stream-input-setting', streamInputSetting: streamInput }
+}
+export function refHDMIInputSetting(hdmiInput: number): HDMIInputSettingRef {
+	return { realm: 'hdmi-input-setting', hdmiInputSetting: hdmiInput }
 }
 // ------------------------------- OUTPUTSETTINGS ----------------------------------
 export type IpOutputSettingRef = {
@@ -896,6 +989,10 @@ export type AudioOutputSettingRef = {
 	realm: 'audio-output-setting'
 	audioOutputSetting: number
 }
+export type HDMIOutputSettingRef = {
+	realm: 'hdmi-output-setting'
+	hdmiOutputSetting: number
+}
 export function refIpOutputSetting(ipOutput: number): IpOutputSettingRef {
 	return { realm: 'ip-output-setting', ipOutputSetting: ipOutput }
 }
@@ -910,6 +1007,9 @@ export function refStreamOutputSetting(streamOutput: number): StreamOutputSettin
 }
 export function refAudioOutputSetting(audioOutput: number): AudioOutputSettingRef {
 	return { realm: 'audio-output-setting', audioOutputSetting: audioOutput }
+}
+export function refHDMIOutputSetting(hdmiOutput: number): HDMIOutputSettingRef {
+	return { realm: 'hdmi-output-setting', hdmiOutputSetting: hdmiOutput }
 }
 
 // ------------------------------- MV ----------------------------------

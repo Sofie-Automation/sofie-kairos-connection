@@ -1,4 +1,4 @@
-import { parseRef } from '../lib/data-parsers.js'
+import { parseRef } from '../lib/refs.js'
 import type { ObjectEncodingDefinition } from './types.js'
 import { GfxChannelObject, GfxSceneRef } from 'kairos-lib'
 
