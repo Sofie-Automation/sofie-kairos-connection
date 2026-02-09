@@ -1,6 +1,6 @@
 {
   "name": "kairos-connection",
-  "version": "0.2.3",
+  "version": "1.0.0",
   "license": "MIT",
   "packageManager": "yarn@4.10.3",
   "repository": {
@@ -26,7 +26,7 @@
     "/dist"
   ],
   "dependencies": {
-    "kairos-lib": "0.2.3",
+    "kairos-lib": "1.0.0",
     "tslib": "^2.8.1"
   }
 }
